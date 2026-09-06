@@ -1,0 +1,14 @@
+```mermaid
+mindmap
+  root((mmdx))
+    渲染
+      SVG
+      PNG
+    主题
+      tech
+      mocha
+      sketch
+    生态
+      CLI
+      Skill
+```

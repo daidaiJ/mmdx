@@ -1,0 +1,93 @@
+# Release workflow for mmdx (bun-compiled windows-x64 binary + dynamic runtime zip).
+#
+# Trigger: push an annotated tag (git tag -a v1.0.0 -F release-notes.md && git push origin v1.0.0)
+#   - injects the tag name as the binary version (MMDX_VERSION → embed.generated.ts)
+#   - release notes = the annotated tag message (read via GitHub API)
+#   - assets: mmdx-windows-x64.exe, mmdx-dynamic-<tag>.zip, each with .sha256
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build binary (version = tag)
+        env:
+          MMDX_VERSION: ${{ github.ref_name }}
+        run: bun run build
+
+      - name: Assemble dynamic runtime zip
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          mkdir -p dist/mmdx-dynamic/assets/fonts
+          cp -r src dist/mmdx-dynamic/src
+          cp assets/fonts/NotoSansSC-Subset.woff2 dist/mmdx-dynamic/assets/fonts/
+          cp -r skill dist/mmdx-dynamic/skill
+          cp package.json tsconfig.json README.md LICENSE dist/mmdx-dynamic/
+          cat > dist/mmdx-dynamic/RUNTIME.md <<'EOF'
+          # mmdx dynamic runtime
+
+          Requires bun (https://bun.sh). From this directory:
+
+              bun install
+              bun run src/cli.ts --help
+
+          Same CLI as the windows binary (which also bundles svgo minification).
+          EOF
+          cd dist && zip -qr "mmdx-dynamic-${TAG}.zip" mmdx-dynamic
+
+      - name: Generate checksums
+        working-directory: dist
+        run: |
+          for f in mmdx-windows-x64.exe mmdx-dynamic-*.zip; do
+            sha256sum "$f" > "$f.sha256"
+          done
+
+      # Release notes come from the annotated tag message, read via the
+      # GitHub API. The runner checkout may hold only a lightweight tag ref,
+      # where %(contents) falls back to the commit message.
+      - name: Read tag message
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          REF="$(gh api "repos/$GITHUB_REPOSITORY/git/refs/tags/${{ github.ref_name }}")"
+          TYPE="$(echo "$REF" | jq -r '.object.type')"
+          if [ "$TYPE" = "tag" ]; then
+            SHA="$(echo "$REF" | jq -r '.object.sha')"
+            gh api "repos/$GITHUB_REPOSITORY/git/tags/$SHA" --jq '.message' > notes.md
+          else
+            echo "${{ github.ref_name }}" > notes.md
+          fi
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            dist/mmdx-windows-x64.exe \
+            dist/mmdx-windows-x64.exe.sha256 \
+            dist/mmdx-dynamic-*.zip \
+            dist/mmdx-dynamic-*.zip.sha256 \
+            --title "mmdx ${{ github.ref_name }}" \
+            --notes-file notes.md

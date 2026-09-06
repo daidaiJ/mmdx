@@ -1,16 +1,36 @@
 {
   "name": "mmdx",
   "version": "1.0.0",
-  "description": "Mermaid → SVG/PNG exporter with OpenAI-style themes, built for AI agents",
-  "scripts": {},
+  "description": "Mermaid → SVG/PNG exporter with tech-doc themes, bundled CJK font and ELK layout, built for AI agents",
+  "scripts": {
+    "dev": "bun run src/cli.ts",
+    "build": "bun run scripts/build.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun run tests/run.ts"
+  },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "daidaiJ",
+  "license": "MIT",
   "type": "module",
   "bin": {
-    "mmdx": "bin/mmdx.mjs"
+    "mmdx": "src/cli.ts"
   },
   "dependencies": {
-    "@mermaid-js/mermaid-cli": "^11.17.0"
+    "@mermaid-js/layout-elk": "^0.2.3",
+    "mermaid": "^11.17.2",
+    "pngjs": "^7.0.0",
+    "puppeteer-core": "^25.10.0",
+    "svgo": "^4.1.0"
+  },
+  "engines": {
+    "bun": ">=1.1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.1",
+    "@types/pngjs": "^6.0.5",
+    "typescript": "^7.0.2"
+  },
+  "repository": {
+    "url": "git+https://github.com/daidaiJ/mmdx.git"
   }
 }
