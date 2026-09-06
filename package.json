@@ -1,0 +1,16 @@
+{
+  "name": "mmdx",
+  "version": "1.0.0",
+  "description": "Mermaid → SVG/PNG exporter with OpenAI-style themes, built for AI agents",
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bin": {
+    "mmdx": "bin/mmdx.mjs"
+  },
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^11.17.0"
+  }
+}
