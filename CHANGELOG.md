@@ -6,13 +6,15 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-11
+
 ### 办公出图
 
 - 新增画幅预设 `--preset slide|a4|square`（未显式 `-f` 时默认 PNG；`slide` 加大节点字号与间距，底栏预留安全区）
 - 新增图题层 `--title` / `--subtitle` / `--source` / `--unit`，印在 PNG chrome 上（mermaid 与扩展块共用）。**Breaking：** `--title` 不再写入 mermaid frontmatter
 - 新增 `--brand <hex>`：只改扩展块 accent；flowchart 形状分色保持；低对比警告不阻断
 - 新增 `--strict-chart` 与 `--json.warnings`：pie / xychart / radar / flowchart / sequence 预算软护栏
-- 新增围栏：```chart ```kpi ```compare ```funnel ```task ```progress ```swimlane
+- 新增围栏：```chart ```kpi ```compare ```funnel ```task ```progress ```swimlane ```gauge ```vs ```heatmap
 - `--help` 补 `--preset`、`--index` 及上述新参数
 - skill / AGENT_GUIDE 改为办公意图选型：总览 ≤9 节点、何时不画、降级阶梯、默认 PNG
 - tech 主题收一档：关掉 neo 渐变阴影，形状分色改浅底+描边，连线/灰阶降饱和；扩展块统一 8px 圆角、无阴影，kpi 仅第一项强调色
@@ -50,4 +52,5 @@
 
 - `mmdx-windows-x64.exe` — windows x64 单文件（免 Node，需系统 Edge/Chrome）
 
+[1.1.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.1.0
 [1.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.0.0

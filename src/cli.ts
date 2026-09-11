@@ -17,7 +17,7 @@ import { Renderer } from './render.ts';
 import { applyBrand, DEFAULT_TOKENS, type Tokens } from './tokens.ts';
 import { applySlideDensity, DEFAULT_THEME, deepMerge, PRESETS, SIZE_PRESETS, type SizePreset } from './themes.ts';
 
-let VERSION = '1.0.0';
+let VERSION = '1.1.0';
 
 type Optimize = (svg: string, opts: unknown) => { data: string };
 let svgoOptimize: Optimize | null = null;
@@ -37,7 +37,7 @@ Usage:
 
 Input:
   file.md   every fenced block is rendered: \`\`\`mermaid diagrams, plus
-            table/list/card/chart/kpi/compare/funnel/task/progress/swimlane
+            table/list/card/chart/kpi/compare/funnel/task/progress/swimlane/gauge/vs/heatmap
             extension blocks as styled PNG
   file.mmd  a single mermaid diagram
   -         mermaid source from stdin (single diagram)

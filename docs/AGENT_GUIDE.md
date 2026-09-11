@@ -29,6 +29,7 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 
 - 纯列表 → ` ```list ` 或正文
 - 两句前后对比 → ` ```compare `
+- 同一指标两列数字 → ` ```vs `
 - 单盒子带标签 → 写句子
 - 读者从这张图学不到比一段话更多的东西 → 不要画
 
@@ -55,11 +56,14 @@ echo "graph LR; A-->B" | mmdx - -f png
 | 占比 | pie / ` ```chart ` pie | 扇区 3–6 |
 | 趋势 / 数值对比 | ` ```chart ` line / bar | ≤6 类 × ≤2 系列 |
 | 方案对比 | ` ```compare ` | 恰 2 栏 |
+| 数值前后对比 | ` ```vs ` | ≤6 行 × 2 列 |
 | 流程 / 审批 / 判定 | flowchart | ≤9 节点 / ≤12 边 |
 | 跨部门交接 | ` ```swimlane ` | 泳道 ≤5、步骤 ≤8 |
 | 任务状态快照 | ` ```task ` | ≤10 行 |
-| 多指标达成率 | ` ```progress ` | ≤4 环 |
+| 多指标达成率（同心） | ` ```progress ` | ≤4 环 |
+| 并排半环进度 | ` ```gauge ` | ≤4 个 |
 | KPI 大数字 | ` ```kpi ` | ≤4 行 |
+| 提交/发布日历 | ` ```heatmap ` | ≤12 周 |
 | 转化漏斗 | ` ```funnel ` | ≤6 层 |
 | 表格 / 列表 / 卡片 | ` ```table ` / ` ```list ` / ` ```card ` | |
 | 排期 / 构成 / 流向 | gantt / treemap / sankey | |

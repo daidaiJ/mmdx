@@ -151,6 +151,51 @@ Q1 收入, 87
 
 ![progress](ext-progress.png)
 
+## gauge
+
+Side-by-side semicircle dials (sports-watch style), ≤4. Same syntax as progress: `name, percent` or `name, value, target`. Digits sit in the arc, names below. Use this for several metrics side by side; stacked attainment stays on progress.
+
+````markdown
+```gauge
+覆盖率, 87
+SLO, 99
+采纳率, 62
+```
+````
+
+![gauge](ext-gauge.png)
+
+## vs
+
+Two numeric columns on the same metrics (before/after, us/them), ≤6 rows. Optional header `, left, right`. Qualitative option compare stays on compare; multi-category bars stay on chart bar.
+
+````markdown
+```vs
+, 优化前, 优化后
+构建耗时, 42, 11
+镜像体积, 1.8, 0.6
+CI 分钟, 8, 3
+单测, 12, 12
+```
+````
+
+![vs](ext-vs.png)
+
+## heatmap
+
+Calendar heatmap, GitHub-contribution style. `YYYY-MM-DD, count`; missing days are 0; weeks start Monday; span ≤12 weeks. Full-year or hourly heatmaps go to AntV.
+
+````markdown
+```heatmap
+2026-09-01, 2
+2026-09-02, 5
+2026-09-08, 12
+2026-09-11, 3
+```
+````
+
+![heatmap](ext-heatmap.png)
+
 ## swimlane
 
 Cross-team handoff: `step | lane | next`, ≤5 lanes ≤8 steps. Loops, parallelism, and decisions stay on flowchart.

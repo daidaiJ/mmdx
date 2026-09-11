@@ -79,7 +79,7 @@ Three input forms:
 
 | Input | Behavior |
 |---|---|
-| `.md` file | Renders all ```mermaid fences plus extension fences (table/list/card/chart/kpi/compare/funnel/task/progress/swimlane) |
+| `.md` file | Renders all ```mermaid fences plus extension fences (table/list/card/chart/kpi/compare/funnel/task/progress/swimlane/gauge/vs/heatmap) |
 | `.mmd` file | Renders a single mermaid diagram |
 | `-` (stdin) | Reads a single mermaid diagram from standard input |
 

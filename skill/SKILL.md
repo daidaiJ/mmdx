@@ -1,6 +1,6 @@
 ---
 name: mermaid
-description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 流程 flowchart, KPI/表格/卡片, 审批与泳道. Use when the user wants 图/图表/流程图/构成图/对比卡/周报贴图/渲染/导出图片. NOT for AI image generation (文生图/照片级插画) and NOT for analysis-grade stats (grouped bar, dual axis → AntV).
+description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 流程 flowchart, KPI/表格/卡片, 审批与泳道, 半环进度 gauge, 日历热力 heatmap. Use when the user wants 图/图表/流程图/构成图/对比卡/周报贴图/渲染/导出图片. NOT for AI image generation (文生图/照片级插画) and NOT for analysis-grade stats (grouped bar, dual axis → AntV).
 ---
 
 # mmdx — 办公出图（结构图 + 轻量数据图 + 版式块 → PNG）
@@ -39,6 +39,7 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 
 - 纯列表 → ` ```list ` 或正文
 - 两句前后对比 → ` ```compare `（不要做成 Venn）
+- 同一指标两列数字（优化前/后） → ` ```vs `
 - 单盒子带标签 → 写句子
 - 为了「有图」硬画 flowchart 的周报条目 → 用 table / task / list
 
@@ -49,7 +50,8 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 | 占比 | pie 或 ` ```chart ` `type: pie` | 扇区 3–6 | `-f png --preset slide` |
 | 趋势 | ` ```chart ` `type: line` | 类别 ≤6、系列 ≤2 | 不要手写 `xychart-beta` |
 | 数值对比 | ` ```chart ` `type: bar` | 同上 | |
-| 方案对比 | ` ```compare ` | 恰 2 栏 | |
+| 方案对比（定性） | ` ```compare ` | 恰 2 栏 | |
+| 数值前后对比 | ` ```vs ` | ≤6 行 × 2 列 | 不要用 grouped bar |
 | 构成（面积） | treemap | 单元格可读 | |
 | 流向 | sankey | | |
 | 四象限 / 优先级 | quadrant | ≤12 项 | |
@@ -58,8 +60,10 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 | 跨部门交接 | ` ```swimlane ` | 泳道 ≤5、步骤 ≤8 | handoff 才是重点；有环/并行用 flowchart |
 | 需求池 / 多列看板 | kanban | | 当前状态快照改用 ` ```task ` |
 | 任务状态快照 | ` ```task ` | ≤10 行 | 6 态：未开始/设计/开发/测试/已上线/已取消 |
-| 多指标达成率 | ` ```progress ` | ≤4 环 | 绝对值用 kpi |
+| 多指标达成率（同心） | ` ```progress ` | ≤4 环 | 绝对值用 kpi |
+| 并排半环进度 | ` ```gauge ` | ≤4 个 | 覆盖率 / SLO / 冲刺完成；中文在环下 |
 | KPI 大数字 | ` ```kpi ` | ≤4 行 | |
+| 提交/发布日历 | ` ```heatmap ` | ≤12 周 | `YYYY-MM-DD, n`；全年交给 AntV |
 | 表格截图 | ` ```table ` | | GFM 表原文 |
 | 要点列表 | ` ```list ` | | |
 | 要点卡 | ` ```card ` | | `emoji \| 标题 \| 描述` |
@@ -146,6 +150,23 @@ Q1 收入, 87
 交付里程碑, 4300, 5000
 ```
 
+```gauge
+覆盖率, 87
+SLO, 99
+采纳率, 62
+```
+
+```vs
+, 优化前, 优化后
+构建耗时, 42, 11
+镜像体积, 1.8, 0.6
+```
+
+```heatmap
+2026-09-01, 2
+2026-09-08, 12
+```
+
 ```swimlane
 提需求 | 产品 | 评审
 评审 | 产品 | 开发
@@ -153,7 +174,7 @@ Q1 收入, 87
 ```
 ````
 
-kpi 变化列默认**红涨绿跌**（可用 `--css` 覆盖）。progress 第一行 = 最外环。task 不接受「进行中」，必须写具体相位。swimlane 不做并行/判定（有判定用 flowchart）。
+kpi 变化列默认**红涨绿跌**（可用 `--css` 覆盖）。progress 第一行 = 最外环。gauge 是并排半环，第一项用强调色。vs 只接受两列非负数字。heatmap 只接受 `YYYY-MM-DD`，缺天当 0，跨度 >12 周直接失败。task 不接受「进行中」，必须写具体相位。swimlane 不做并行/判定（有判定用 flowchart）。
 
 ## 3. 能上会 / 不能上会
 

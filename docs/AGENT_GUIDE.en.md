@@ -29,6 +29,7 @@ Smoke JSON with `rendered:1` → environment ready. `rendered:0` → see [error 
 
 - Plain list → ` ```list ` or prose
 - Two-sentence before/after → ` ```compare `
+- Two numbers on the same metric → ` ```vs `
 - A single labeled box → write a sentence
 - The figure teaches nothing beyond a paragraph → don't draw it
 
@@ -55,11 +56,14 @@ Chat/slides: `-f png` or `--preset slide|a4|square` (preset defaults to png unle
 | Share / mix | pie / ` ```chart ` pie | 3–6 slices |
 | Trend / numeric compare | ` ```chart ` line / bar | ≤6 cats × ≤2 series |
 | Option compare | ` ```compare ` | exactly 2 columns |
+| Numeric before/after | ` ```vs ` | ≤6 rows × 2 cols |
 | Process / approval / decision | flowchart | ≤9 nodes / ≤12 edges |
 | Cross-team handoff | ` ```swimlane ` | ≤5 lanes, ≤8 steps |
 | Task-status snapshot | ` ```task ` | ≤10 rows |
-| Attainment rings | ` ```progress ` | ≤4 rings |
+| Concentric attainment | ` ```progress ` | ≤4 rings |
+| Side-by-side gauges | ` ```gauge ` | ≤4 dials |
 | KPI big numbers | ` ```kpi ` | ≤4 rows |
+| Commit / ship calendar | ` ```heatmap ` | ≤12 weeks |
 | Funnel | ` ```funnel ` | ≤6 layers |
 | Table / list / cards | ` ```table ` / ` ```list ` / ` ```card ` | |
 | Schedule / composition / flow | gantt / treemap / sankey | |

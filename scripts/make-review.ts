@@ -40,6 +40,9 @@ const EXT: Array<{ file: string; kind: BlockKind; out: string }> = [
   { file: 'task.md', kind: 'task', out: 'ext-task.png' },
   { file: 'progress.md', kind: 'progress', out: 'ext-progress.png' },
   { file: 'swimlane.md', kind: 'swimlane', out: 'ext-swimlane.png' },
+  { file: 'gauge.md', kind: 'gauge', out: 'ext-gauge.png' },
+  { file: 'vs.md', kind: 'vs', out: 'ext-vs.png' },
+  { file: 'heatmap.md', kind: 'heatmap', out: 'ext-heatmap.png' },
 ];
 
 const fence = (file: string, kind: string): string | null => {

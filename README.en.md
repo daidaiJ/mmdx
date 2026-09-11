@@ -5,7 +5,7 @@
 [![Release](https://img.shields.io/github/v/release/daidaiJ/mmdx)](https://github.com/daidaiJ/mmdx/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**A diagram export CLI built for office agents**: batch-render mermaid and office fences (table / chart / kpi / compare / funnel / task / progress / swimlane …) in Markdown into PNG — themes, CJK fonts, layout engine, and padding are all built in. No MCP server, no browser extension, and the machine producing the output doesn't need Node.
+**A diagram export CLI built for office agents**: batch-render mermaid and office fences (table / chart / kpi / compare / vs / funnel / task / progress / gauge / heatmap / swimlane …) in Markdown into PNG — themes, CJK fonts, layout engine, and padding are all built in. No MCP server, no browser extension, and the machine producing the output doesn't need Node.
 
 ![Rendering samples for twenty diagram types](tests/contact-sheet.png)
 
@@ -26,7 +26,7 @@ Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 - **Bundled CJK font**: Noto Sans SC subset (full GB2312 + Latin, only 1.9 MB) — identical rendering on any machine, correct wrapping for Chinese labels
 - **ELK layout engine**: official `@mermaid-js/layout-elk`, lazily loaded for flowcharts only; edge avoidance and long-label wrapping out of the box
 - **Pixel-level even padding**: every image is re-cropped to its ink bounding box; symmetric margins are a construction guarantee, not mermaid's unreliable viewBox
-- **Extension blocks**: ```table / ```list / ```card / ```chart / ```kpi / ```compare / ```funnel / ```task / ```progress / ```swimlane straight to PNG
+- **Extension blocks**: ```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane straight to PNG
 - **Office delivery**: `--preset slide|a4|square`, title/source/unit chrome, `--brand` accent; agent-friendly `--json` (including `warnings`)
 
 ## 🚀 Quick start
@@ -66,7 +66,7 @@ mmdx report.md --index 2 --title "Architecture" --title-pos bottom
 mmdx doc.md -t mocha --background transparent -f png --json
 ```
 
-Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` / `kpi` / `compare` / `funnel` / `task` / `progress` / `swimlane` (extension blocks, PNG only). For slides: `mmdx doc.md --preset slide --title "…" --source "…"`.
+Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` / `kpi` / `compare` / `vs` / `funnel` / `task` / `progress` / `gauge` / `heatmap` / `swimlane` (extension blocks, PNG only). For slides: `mmdx doc.md --preset slide --title "…" --source "…"`.
 
 **Card wall** — a ```card fence, one card per line: `emoji | title | description` (emoji and description optional):
 

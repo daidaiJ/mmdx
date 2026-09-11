@@ -6,13 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-11
+
 ### Office export
 
 - New `--preset slide|a4|square` (defaults to PNG unless `-f` is explicit; `slide` enlarges node type/spacing and reserves a footer safe area)
 - New caption chrome `--title` / `--subtitle` / `--source` / `--unit` on PNG (shared by mermaid and extension blocks). **Breaking:** `--title` is no longer injected as mermaid frontmatter
 - New `--brand <hex>`: remaps extension-block accent only; flowchart shape coding stays; low-contrast warns without blocking
 - New `--strict-chart` and `--json.warnings`: soft budget gate for pie / xychart / radar / flowchart / sequence
-- New fences: ```chart ```kpi ```compare ```funnel ```task ```progress ```swimlane
+- New fences: ```chart ```kpi ```compare ```funnel ```task ```progress ```swimlane ```gauge ```vs ```heatmap
 - `--help` now documents `--preset`, `--index`, and the flags above
 - skill / AGENT_GUIDE rewritten around office intent: overview ≤9 nodes, when not to draw, degradation ladder, PNG default
 - tech theme tightened: drop neo gradient/shadow, shape-coding as pale fill + hairline, quieter grays; extension blocks unify on 8px radius / no shadow, kpi accents only the first metric
@@ -50,4 +52,5 @@ First stable release.
 
 - `mmdx-windows-x64.exe` — windows x64 single file (no Node; needs system Edge/Chrome)
 
+[1.1.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.1.0
 [1.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.0.0

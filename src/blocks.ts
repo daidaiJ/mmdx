@@ -7,10 +7,12 @@ export type BlockKind =
   | 'mermaid' | 'table' | 'list' | 'card'
   | 'chart' | 'kpi' | 'compare' | 'funnel'
   | 'task' | 'progress' | 'swimlane'
+  | 'gauge' | 'vs' | 'heatmap'
   | 'unknown';
 
 export const HTML_KINDS: ReadonlySet<BlockKind> = new Set([
   'table', 'list', 'card', 'kpi', 'compare', 'funnel', 'task', 'progress', 'swimlane',
+  'gauge', 'vs', 'heatmap',
 ]);
 
 export function fenceKind(lang: string): BlockKind {
@@ -26,6 +28,9 @@ export function fenceKind(lang: string): BlockKind {
   if (l === 'task') return 'task';
   if (l === 'progress') return 'progress';
   if (l === 'swimlane') return 'swimlane';
+  if (l === 'gauge') return 'gauge';
+  if (l === 'vs') return 'vs';
+  if (l === 'heatmap') return 'heatmap';
   return 'unknown';
 }
 
@@ -360,33 +365,33 @@ interface Ring {
   label: string;
 }
 
-function parseProgress(src: string): Ring[] {
+function parseProgress(src: string, kind = 'progress'): Ring[] {
   const rings: Ring[] = [];
   for (const line of nonemptyLines(src)) {
     const p = splitCsvish(line);
-    if (p.length < 2) throw new Error('progress line must be "name, percent" or "name, value, target"');
+    if (p.length < 2) throw new Error(`${kind} line must be "name, percent" or "name, value, target"`);
     const name = p[0];
     if (p.length >= 3) {
       const value = Number(p[1].replace(/,/g, ''));
       const target = Number(p[2].replace(/,/g, ''));
       if (!Number.isFinite(value) || !Number.isFinite(target)) {
-        throw new Error(`progress numbers unreadable: "${line}"`);
+        throw new Error(`${kind} numbers unreadable: "${line}"`);
       }
       if (value < 0 || target <= 0 || value > target) {
-        throw new Error(`progress value/target out of range (0 ≤ value ≤ target): "${line}"`);
+        throw new Error(`${kind} value/target out of range (0 ≤ value ≤ target): "${line}"`);
       }
       const pct = (value / target) * 100;
       rings.push({ name, pct, label: `${p[1]} / ${p[2]}` });
     } else {
       const pct = Number(p[1].replace(/%$/, '').replace(/,/g, ''));
       if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
-        throw new Error(`progress percent must be 0–100: "${p[1]}"`);
+        throw new Error(`${kind} percent must be 0–100: "${p[1]}"`);
       }
       rings.push({ name, pct, label: `${Math.round(pct)}%` });
     }
   }
-  if (!rings.length) throw new Error('progress block has no rows');
-  if (rings.length > 4) throw new Error('progress block allows at most 4 rings');
+  if (!rings.length) throw new Error(`${kind} block has no rows`);
+  if (rings.length > 4) throw new Error(`${kind} block allows at most 4 rings`);
   return rings;
 }
 
@@ -425,6 +430,173 @@ export function progressToHtml(src: string): string {
     `<div class="pr">` +
     `<svg class="pr-svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${arcs}${center}</svg>` +
     `<div class="pr-legend">${legend}</div>` +
+    `</div>`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// gauge — side-by-side semicircle dials (watch-style)
+// ---------------------------------------------------------------------------
+
+export function gaugeToHtml(src: string): string {
+  const rings = parseProgress(src, 'gauge');
+  const items = rings.map((r, i) => {
+    const pct = Math.min(100, Math.max(0, r.pct));
+    const color = i === 0 ? 'var(--accent)' : RING_COLORS[i % RING_COLORS.length];
+    const w = 132;
+    const h = 100;
+    const cx = 66;
+    const cy = 74;
+    const rad = 50;
+    const d = `M ${cx - rad} ${cy} A ${rad} ${rad} 0 0 1 ${cx + rad} ${cy}`;
+    return (
+      `<div class="gg-item">` +
+      `<svg class="gg-svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+      `<path class="gg-track" d="${d}" pathLength="100" fill="none"/>` +
+      (pct > 0
+        ? `<path class="gg-arc" d="${d}" pathLength="100" fill="none" stroke="${color}" ` +
+          `stroke-dasharray="${pct} 100"/>`
+        : '') +
+      `<text class="gg-num" x="${cx}" y="${cy - 14}" text-anchor="middle">${Math.round(pct)}</text>` +
+      `</svg>` +
+      `<div class="gg-name">${esc(r.name)}</div>` +
+      `<div class="gg-sub">${esc(r.label)}</div>` +
+      `</div>`
+    );
+  });
+  return `<div class="gg">${items.join('')}</div>`;
+}
+
+// ---------------------------------------------------------------------------
+// vs — two-column numeric before/after
+// ---------------------------------------------------------------------------
+
+function parsePlainNumber(s: string, ctx: string): number {
+  const n = Number(s.replace(/,/g, '').replace(/%$/, ''));
+  if (!Number.isFinite(n) || n < 0) throw new Error(`${ctx}: "${s}" is not a non-negative number`);
+  return n;
+}
+
+function looksPlainNumber(s: string): boolean {
+  return Number.isFinite(Number(s.replace(/,/g, '').replace(/%$/, '')));
+}
+
+export function vsToHtml(src: string): string {
+  const lines = nonemptyLines(src);
+  if (!lines.length) throw new Error('vs block has no rows');
+  let leftName = 'A';
+  let rightName = 'B';
+  let body = lines;
+  const first = splitCsvish(lines[0]);
+  if (first.length >= 3 && (!first[0] || (!looksPlainNumber(first[1]) && !looksPlainNumber(first[2])))) {
+    leftName = first[1] || leftName;
+    rightName = first[2] || rightName;
+    body = lines.slice(1);
+  }
+  const rows = body.map((line) => {
+    const p = splitCsvish(line);
+    if (p.length !== 3) throw new Error('vs line must be "name, left, right" (optional header ", left, right")');
+    return { name: p[0], left: parsePlainNumber(p[1], p[0]), right: parsePlainNumber(p[2], p[0]), lRaw: p[1], rRaw: p[2] };
+  });
+  if (!rows.length) throw new Error('vs block has no data rows');
+  if (rows.length > 6) throw new Error('vs block allows at most 6 rows; split the comparison');
+  const head =
+    `<div class="vs-row vs-head"><div></div>` +
+    `<div class="vs-lab">${esc(leftName)}</div>` +
+    `<div class="vs-lab">${esc(rightName)}</div></div>`;
+  const items = rows.map((r) => {
+    const max = Math.max(r.left, r.right, 0.0001);
+    const lw = Math.max(4, Math.round((r.left / max) * 100));
+    const rw = Math.max(4, Math.round((r.right / max) * 100));
+    return (
+      `<div class="vs-row">` +
+      `<div class="vs-name">${esc(r.name)}</div>` +
+      `<div class="vs-cell"><div class="vs-track"><div class="vs-bar vs-a" style="width:${lw}%"></div></div><span class="vs-val">${esc(r.lRaw)}</span></div>` +
+      `<div class="vs-cell"><div class="vs-track"><div class="vs-bar vs-b" style="width:${rw}%"></div></div><span class="vs-val">${esc(r.rRaw)}</span></div>` +
+      `</div>`
+    );
+  });
+  return `<div class="vs">${head}${items.join('')}</div>`;
+}
+
+// ---------------------------------------------------------------------------
+// heatmap — GitHub-style calendar from ISO dates
+// ---------------------------------------------------------------------------
+
+const DAY_MS = 86_400_000;
+const HEATMAP_WEEKS = 12;
+const WDAY = ['一', '二', '三', '四', '五', '六', '日'];
+
+function parseIsoDay(s: string): number {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim());
+  if (!m) throw new Error(`heatmap date must be YYYY-MM-DD, got "${s}"`);
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  const t = Date.UTC(y, mo - 1, d);
+  const dt = new Date(t);
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) {
+    throw new Error(`heatmap invalid date "${s}"`);
+  }
+  return t;
+}
+
+function mondayOf(t: number): number {
+  const wd = (new Date(t).getUTCDay() + 6) % 7; // Mon=0
+  return t - wd * DAY_MS;
+}
+
+export function heatmapToHtml(src: string): string {
+  const map = new Map<number, number>();
+  for (const line of nonemptyLines(src)) {
+    const p = splitCsvish(line);
+    if (p.length < 2) throw new Error('heatmap line must be "YYYY-MM-DD, value"');
+    const t = parseIsoDay(p[0]);
+    const v = parsePlainNumber(p[1], p[0]);
+    map.set(t, v);
+  }
+  if (!map.size) throw new Error('heatmap block has no rows');
+  const times = [...map.keys()].sort((a, b) => a - b);
+  const t0 = mondayOf(times[0]);
+  let t1 = times[times.length - 1];
+  const sun = (new Date(t1).getUTCDay() + 6) % 7; // Mon=0 … Sun=6
+  t1 += (6 - sun) * DAY_MS;
+  const weeks = Math.round((t1 - t0) / DAY_MS / 7) + 1;
+  if (weeks > HEATMAP_WEEKS) {
+    throw new Error(
+      `heatmap spans ${weeks} weeks (max ${HEATMAP_WEEKS}); split by month or use AntV mcp-server-chart`,
+    );
+  }
+  let max = 0;
+  for (const v of map.values()) if (v > max) max = v;
+  const level = (v: number): number => {
+    if (v <= 0 || max <= 0) return 0;
+    const t = v / max;
+    return t <= 0.25 ? 1 : t <= 0.5 ? 2 : t <= 0.75 ? 3 : 4;
+  };
+  const cols: string[] = [];
+  for (let w = 0; w < weeks; w++) {
+    const cells: string[] = [];
+    const colStart = t0 + w * 7 * DAY_MS;
+    for (let d = 0; d < 7; d++) {
+      const t = colStart + d * DAY_MS;
+      const v = map.get(t) ?? 0;
+      const lv = level(v);
+      const iso = new Date(t).toISOString().slice(0, 10);
+      cells.push(`<div class="hm-cell lv${lv}" title="${iso}: ${v}"></div>`);
+    }
+    cols.push(`<div class="hm-col">${cells.join('')}</div>`);
+  }
+  const wdays = WDAY.map((n) => `<div class="hm-wday">${n}</div>`).join('');
+  const legend = [0, 1, 2, 3, 4].map((i) => `<div class="hm-cell lv${i}"></div>`).join('');
+  const from = new Date(times[0]).toISOString().slice(0, 10);
+  const to = new Date(times[times.length - 1]).toISOString().slice(0, 10);
+  const range = from === to ? from : `${from} — ${to}`;
+  return (
+    `<div class="hm">` +
+    `<div class="hm-range">${esc(range)}</div>` +
+    `<div class="hm-body"><div class="hm-wdays">${wdays}</div><div class="hm-cols">${cols.join('')}</div></div>` +
+    `<div class="hm-legend"><span>少</span>${legend}<span>多</span></div>` +
     `</div>`
   );
 }
@@ -580,6 +752,9 @@ export function htmlKindToInner(kind: BlockKind, code: string): string {
     case 'task': return taskToHtml(code);
     case 'progress': return progressToHtml(code);
     case 'swimlane': return swimlaneToHtml(code);
+    case 'gauge': return gaugeToHtml(code);
+    case 'vs': return vsToHtml(code);
+    case 'heatmap': return heatmapToHtml(code);
     default: throw new Error(`not an HTML block: ${kind}`);
   }
 }
@@ -712,6 +887,42 @@ strong { font-weight: 600; }
 .sw-step text { font-size: 13px; fill: var(--ink); font-family: "Noto Sans SC", sans-serif; }
 .sw-edge { fill: none; stroke: #8A9199; stroke-width: 1.25; }
 .sw-edge.accent { stroke: var(--accent); stroke-width: 1.5; }
+
+.gg { display: flex; gap: 16px; align-items: flex-end; }
+.gg-item { width: 132px; text-align: center; }
+.gg-svg { display: block; }
+.gg-track { stroke: var(--rule); stroke-width: 10; stroke-linecap: round; }
+.gg-arc { stroke-width: 10; stroke-linecap: round; }
+.gg-num { font-size: 22px; font-weight: 600; fill: var(--ink); font-family: "Noto Sans SC", sans-serif; font-variant-numeric: tabular-nums; }
+.gg-name { font-size: 13px; font-weight: 600; margin-top: 2px; }
+.gg-sub { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.vs { display: flex; flex-direction: column; gap: 10px; min-width: 520px; border: 1px solid var(--rule); border-radius: 8px; padding: 16px 20px; background: var(--paper); }
+.vs-row { display: grid; grid-template-columns: 88px 1fr 1fr; gap: 16px; align-items: center; }
+.vs-head { margin-bottom: 2px; }
+.vs-lab, .vs-name { font-size: 13px; }
+.vs-lab { color: var(--muted); }
+.vs-name { font-weight: 600; }
+.vs-cell { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; min-width: 0; }
+.vs-track { height: 12px; min-width: 0; }
+.vs-bar { height: 12px; border-radius: 4px; }
+.vs-a { background: color-mix(in srgb, var(--ink) 16%, white); }
+.vs-b { background: color-mix(in srgb, var(--accent) 42%, white); }
+.vs-val { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 2.4em; }
+
+.hm { display: flex; flex-direction: column; gap: 6px; }
+.hm-range { font-size: 12px; color: var(--muted); }
+.hm-body { display: flex; gap: 6px; }
+.hm-wdays { display: flex; flex-direction: column; gap: 3px; width: 14px; }
+.hm-wday { height: 12px; font-size: 10px; line-height: 12px; color: var(--muted); }
+.hm-cols, .hm-legend { display: flex; gap: 3px; }
+.hm-col { display: flex; flex-direction: column; gap: 3px; }
+.hm-cell { width: 12px; height: 12px; border-radius: 2px; background: var(--paper-2); }
+.hm-cell.lv1 { background: color-mix(in srgb, var(--accent) 22%, white); }
+.hm-cell.lv2 { background: color-mix(in srgb, var(--accent) 42%, white); }
+.hm-cell.lv3 { background: color-mix(in srgb, var(--accent) 62%, white); }
+.hm-cell.lv4 { background: var(--accent); }
+.hm-legend { align-items: center; gap: 4px; margin-top: 6px; font-size: 12px; color: var(--muted); }
 `;
 
 export function blockPage(inner: string, opts: PageOpts = {}): string {

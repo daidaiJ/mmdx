@@ -65,6 +65,30 @@ const record = (name: string, ok: boolean, detail: string): void => {
   record('unit/brand-bad', normalizeHex('nope') === null, 'null');
   const pale = applyBrand('#EEEEEE');
   record('unit/brand-contrast-warn', !!pale.warning, pale.warning || 'no warn');
+  try {
+    htmlKindToInner('vs', '构建, 42, 11, 3');
+    record('unit/vs-cols', false, 'did not throw');
+  } catch (e) {
+    record('unit/vs-cols', /left, right/.test((e as Error).message), (e as Error).message.slice(0, 80));
+  }
+  try {
+    htmlKindToInner('heatmap', '2026-01-01, 1\n2026-06-01, 1');
+    record('unit/heatmap-span', false, 'did not throw');
+  } catch (e) {
+    record('unit/heatmap-span', /max 12/.test((e as Error).message), (e as Error).message.slice(0, 80));
+  }
+  try {
+    htmlKindToInner('heatmap', '09-01, 2');
+    record('unit/heatmap-date', false, 'did not throw');
+  } catch (e) {
+    record('unit/heatmap-date', /YYYY-MM-DD/.test((e as Error).message), (e as Error).message.slice(0, 80));
+  }
+  try {
+    htmlKindToInner('gauge', 'A, 10\nB, 20\nC, 30\nD, 40\nE, 50');
+    record('unit/gauge-over', false, 'did not throw');
+  } catch (e) {
+    record('unit/gauge-over', /at most 4/.test((e as Error).message), (e as Error).message.slice(0, 80));
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -165,6 +189,9 @@ await screenBlock('task', 'task', 'task.md', 16);
 await screenBlock('progress', 'progress', 'progress.md', 16);
 await screenBlock('progress-one', 'progress', 'progress-one.md', 16);
 await screenBlock('swimlane', 'swimlane', 'swimlane.md', 16);
+await screenBlock('gauge', 'gauge', 'gauge.md', 16);
+await screenBlock('vs', 'vs', 'vs.md', 16);
+await screenBlock('heatmap', 'heatmap', 'heatmap.md', 16);
 
 {
   const spec = parseChart(fenceSrc('chart-bar.md', 'chart'));
@@ -349,6 +376,12 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
   record('cli/task-bad-status', b.code === 1 && /未开始/.test(bj.errors[0]?.error || ''), (bj.errors[0]?.error || '').slice(0, 80));
   const bar = runCli([path.join('tests', 'edge', 'chart-bar.md'), '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'bar')]);
   record('cli/chart-bar', bar.code === 0, `exit=${bar.code}`);
+  const g = runCli([path.join('tests', 'edge', 'gauge-over.md'), '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'go')]);
+  const gj = JSON.parse(g.stdout) as { rendered: number; failed: number };
+  record('cli/gauge-over-isolated', g.code === 1 && gj.rendered === 1 && gj.failed === 1, `exit=${g.code} ok=${gj.rendered} fail=${gj.failed}`);
+  const hm = runCli([path.join('tests', 'edge', 'heatmap-over.md'), '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'ho')]);
+  const hmj = JSON.parse(hm.stdout) as { rendered: number; failed: number };
+  record('cli/heatmap-over-isolated', hm.code === 1 && hmj.rendered === 1 && hmj.failed === 1, `exit=${hm.code} ok=${hmj.rendered} fail=${hmj.failed}`);
   fs.rmSync(outDir, { recursive: true, force: true });
 }
 

@@ -40,9 +40,9 @@ export async function getBuildVersion(): Promise<string> {
   if (cachedVersion) return cachedVersion;
   try {
     const g = (await import('./embed.generated.js')) as { BUILD_VERSION?: string | null };
-    cachedVersion = g.BUILD_VERSION || '1.0.0';
+    cachedVersion = g.BUILD_VERSION || '1.1.0';
   } catch {
-    cachedVersion = '1.0.0';
+    cachedVersion = '1.1.0';
   }
   return cachedVersion;
 }

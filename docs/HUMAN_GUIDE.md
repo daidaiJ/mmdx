@@ -79,7 +79,7 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 
 | 输入 | 行为 |
 |---|---|
-| `.md` 文件 | 渲染其中所有 ```mermaid 与扩展围栏（table/list/card/chart/kpi/compare/funnel/task/progress/swimlane） |
+| `.md` 文件 | 渲染其中所有 ```mermaid 与扩展围栏（table/list/card/chart/kpi/compare/funnel/task/progress/swimlane/gauge/vs/heatmap） |
 | `.mmd` 文件 | 渲染单个 mermaid 图 |
 | `-`（stdin） | 从标准输入读单个 mermaid 图 |
 
