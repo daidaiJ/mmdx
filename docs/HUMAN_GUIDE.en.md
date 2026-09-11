@@ -92,7 +92,7 @@ Output naming: by default next to the input, `<name>-m<N>.svg/.png` numbered by 
 | `-o, --out <path>` | Output directory; exact filename when input has one diagram (default: next to input) |
 | `-f, --format <fmt>` | `svg` \| `png` \| `both` (default both; `--preset` defaults to png unless `-f` is explicit) |
 | `-t, --theme <name>` | `tech` (default) · `openai` · `openai-dark` · `minimal` · `latte` · `mocha` · `sketch` |
-| `--preset <name>` | `slide` (1600px@2, larger type, ~80px footer) \| `a4` (900px@2) \| `square` (1080px@2). Explicit `--width`/`--scale`/`-f` win |
+| `--preset <name>` | `slide` (projection/PPT: 1600px@2, 18px type, heavier strokes, ~80px footer) \| `a4` (900px@2) \| `square` (1080px@2). Explicit `--width`/`--scale`/`-f` win |
 | `--background <color>` | Page background, e.g. `white` \| `transparent` \| `#1A1A1A` (dark themes bake in their own background) |
 | `--layout <engine>` | `elk` (default, loaded for flowcharts only) \| `dagre` |
 | `--scale <n>` | PNG scale factor (default 2) |
@@ -103,7 +103,7 @@ Output naming: by default next to the input, `<name>-m<N>.svg/.png` numbered by 
 | `--unit <text>` | Unit line in the footer |
 | `--title-pos <pos>` | `top` (default) \| `bottom` (chrome title above/below the figure) |
 | `--index <n[,n…]>` | Render only these 1-based block indexes |
-| `--brand <hex>` | Accent for extension blocks (`#4098FC` or `4098FC`); does not recolor flowchart shapes |
+| `--brand <hex>` | Accent for extension blocks (default `#2563EB`; `2563EB` also works); does not recolor flowchart shapes. Use a deep hex on a projector |
 | `--strict-chart` | Promote mermaid pie/xychart/radar/flowchart/sequence budget hits to errors (default: warn) |
 | `--icon <pack>` | Iconify pack for `A@{icon: logos:react}` nodes (repeatable; fetched then cached) |
 | `--config <file.json>` | Native mermaid config, deep-merged over the theme |
@@ -148,7 +148,7 @@ Syntax, limits, and one sample image per fence: **[extension-block gallery](EXTE
 
 | Scenario | `-t` |
 | --- | --- |
-| Design docs / architecture review (default) | `tech` |
+| Design docs / architecture / projection (default) | `tech` (shape-coded tinted fills) |
 | Minimal open-source README | `openai` / `openai-dark` |
 | Obsidian notes | `minimal` |
 | Dark docs site / dark UI | `mocha` (or `openai-dark`) |

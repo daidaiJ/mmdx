@@ -520,7 +520,7 @@ export function vsToHtml(src: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// heatmap — GitHub-style calendar from ISO dates
+// heatmap — week-column calendar (office card, not a GitHub widget)
 // ---------------------------------------------------------------------------
 
 const DAY_MS = 86_400_000;
@@ -546,6 +546,20 @@ function mondayOf(t: number): number {
   return t - wd * DAY_MS;
 }
 
+function utcParts(t: number): { y: number; m: number; d: number } {
+  const dt = new Date(t);
+  return { y: dt.getUTCFullYear(), m: dt.getUTCMonth() + 1, d: dt.getUTCDate() };
+}
+
+function zhDateRange(a: number, b: number): string {
+  const A = utcParts(a);
+  const B = utcParts(b);
+  if (A.y === B.y && A.m === B.m && A.d === B.d) return `${A.y}年${A.m}月${A.d}日`;
+  if (A.y === B.y && A.m === B.m) return `${A.y}年${A.m}月${A.d}日 – ${B.d}日`;
+  if (A.y === B.y) return `${A.y}年${A.m}月${A.d}日 – ${B.m}月${B.d}日`;
+  return `${A.y}年${A.m}月${A.d}日 – ${B.y}年${B.m}月${B.d}日`;
+}
+
 export function heatmapToHtml(src: string): string {
   const map = new Map<number, number>();
   for (const line of nonemptyLines(src)) {
@@ -561,7 +575,7 @@ export function heatmapToHtml(src: string): string {
   let t1 = times[times.length - 1];
   const sun = (new Date(t1).getUTCDay() + 6) % 7; // Mon=0 … Sun=6
   t1 += (6 - sun) * DAY_MS;
-  const weeks = Math.round((t1 - t0) / DAY_MS / 7) + 1;
+  const weeks = Math.floor((t1 - t0) / (7 * DAY_MS)) + 1;
   if (weeks > HEATMAP_WEEKS) {
     throw new Error(
       `heatmap spans ${weeks} weeks (max ${HEATMAP_WEEKS}); split by month or use AntV mcp-server-chart`,
@@ -574,6 +588,21 @@ export function heatmapToHtml(src: string): string {
     const t = v / max;
     return t <= 0.25 ? 1 : t <= 0.5 ? 2 : t <= 0.75 ? 3 : 4;
   };
+  const months: string[] = [];
+  let prevM = -1;
+  for (let w = 0; w < weeks; w++) {
+    const colStart = t0 + w * 7 * DAY_MS;
+    let m = 0;
+    for (let d = 0; d < 7; d++) {
+      const t = colStart + d * DAY_MS;
+      if (t >= times[0] && t <= times[times.length - 1]) {
+        m = utcParts(t).m;
+        break;
+      }
+    }
+    months.push(m && m !== prevM ? `<div class="hm-ml">${m}月</div>` : `<div class="hm-ml"></div>`);
+    if (m) prevM = m;
+  }
   const cols: string[] = [];
   for (let w = 0; w < weeks; w++) {
     const cells: string[] = [];
@@ -583,19 +612,20 @@ export function heatmapToHtml(src: string): string {
       const v = map.get(t) ?? 0;
       const lv = level(v);
       const iso = new Date(t).toISOString().slice(0, 10);
-      cells.push(`<div class="hm-cell lv${lv}" title="${iso}: ${v}"></div>`);
+      const label = v > 0 ? `<span>${v > 99 ? '99+' : String(Math.round(v))}</span>` : '';
+      cells.push(`<div class="hm-cell lv${lv}" title="${iso}: ${v}">${label}</div>`);
     }
     cols.push(`<div class="hm-col">${cells.join('')}</div>`);
   }
   const wdays = WDAY.map((n) => `<div class="hm-wday">${n}</div>`).join('');
   const legend = [0, 1, 2, 3, 4].map((i) => `<div class="hm-cell lv${i}"></div>`).join('');
-  const from = new Date(times[0]).toISOString().slice(0, 10);
-  const to = new Date(times[times.length - 1]).toISOString().slice(0, 10);
-  const range = from === to ? from : `${from} — ${to}`;
   return (
-    `<div class="hm">` +
-    `<div class="hm-range">${esc(range)}</div>` +
-    `<div class="hm-body"><div class="hm-wdays">${wdays}</div><div class="hm-cols">${cols.join('')}</div></div>` +
+    `<div class="hm hm-n${weeks}">` +
+    `<div class="hm-range">${esc(zhDateRange(times[0], times[times.length - 1]))}</div>` +
+    `<div class="hm-body">` +
+    `<div class="hm-side"><div class="hm-ml"></div><div class="hm-wdays">${wdays}</div></div>` +
+    `<div class="hm-main"><div class="hm-months">${months.join('')}</div><div class="hm-cols">${cols.join('')}</div></div>` +
+    `</div>` +
     `<div class="hm-legend"><span>少</span>${legend}<span>多</span></div>` +
     `</div>`
   );
@@ -783,7 +813,7 @@ body { margin: 0; background: var(--paper, #ffffff); }
   -webkit-font-smoothing: antialiased;
 }
 .wrap.fixed { display: block; }
-.wrap.slide { padding: 20px 24px 80px; }
+.wrap.slide { padding: 20px 24px 80px; font-size: 16px; }
 .fig { display: flex; justify-content: center; }
 .fig svg { display: block; max-width: 100%; height: auto; }
 .caption-head { margin: 0 0 12px; }
@@ -804,13 +834,14 @@ code { font-family: "Cascadia Code", Consolas, monospace; font-size: 12.5px; bac
 
 .cards { display: grid; grid-template-columns: repeat(2, 268px); gap: 12px; }
 .card { box-sizing: border-box; background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 16px 16px 20px; position: relative; }
-.card::before { content: ""; position: absolute; left: 0; top: 16px; bottom: 16px; width: 2px; border-radius: 1px; background: var(--accent); }
+.card::before { content: ""; position: absolute; left: 0; top: 16px; bottom: 16px; width: 3px; border-radius: 1px; background: var(--accent); }
 .card-icon { font-size: 18px; line-height: 1.2; margin-bottom: 8px; }
 .card-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
 .card-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
 .cards code { font-size: 12px; }
 .wrap.slide .cards { grid-template-columns: repeat(2, 300px); gap: 16px; }
 .wrap.slide .card-title { font-size: 16px; }
+.wrap.slide .card-desc { font-size: 14px; color: var(--ink); }
 
 ul, ol { margin: 0; padding-left: 22px; font-size: 14px; line-height: 1.7; }
 ul { list-style: none; padding-left: 4px; }
@@ -841,7 +872,7 @@ strong { font-weight: 600; }
 .fn { display: flex; flex-direction: column; gap: 8px; min-width: 420px; }
 .fn-row { display: grid; grid-template-columns: 64px 1fr 64px; gap: 12px; align-items: center; }
 .fn-track { height: 20px; background: var(--paper-2); border-radius: 4px; overflow: hidden; }
-.fn-bar { height: 100%; border-radius: 4px; background: color-mix(in srgb, var(--accent) 42%, white); }
+.fn-bar { height: 100%; border-radius: 4px; background: color-mix(in srgb, var(--accent) 68%, white); }
 .fn-name, .fn-val { font-size: 13px; color: var(--ink); }
 .fn-val { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
 
@@ -885,8 +916,8 @@ strong { font-weight: 600; }
 .sw-lane { font-size: 12px; fill: var(--muted); font-family: "Noto Sans SC", sans-serif; }
 .sw-step rect { fill: var(--paper); stroke: var(--rule); stroke-width: 1; }
 .sw-step text { font-size: 13px; fill: var(--ink); font-family: "Noto Sans SC", sans-serif; }
-.sw-edge { fill: none; stroke: #8A9199; stroke-width: 1.25; }
-.sw-edge.accent { stroke: var(--accent); stroke-width: 1.5; }
+.sw-edge { fill: none; stroke: #5B6570; stroke-width: 1.5; }
+.sw-edge.accent { stroke: var(--accent); stroke-width: 2; }
 
 .gg { display: flex; gap: 16px; align-items: flex-end; }
 .gg-item { width: 132px; text-align: center; }
@@ -906,23 +937,44 @@ strong { font-weight: 600; }
 .vs-cell { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; min-width: 0; }
 .vs-track { height: 12px; min-width: 0; }
 .vs-bar { height: 12px; border-radius: 4px; }
-.vs-a { background: color-mix(in srgb, var(--ink) 16%, white); }
-.vs-b { background: color-mix(in srgb, var(--accent) 42%, white); }
+.vs-a { background: color-mix(in srgb, var(--ink) 22%, white); }
+.vs-b { background: color-mix(in srgb, var(--accent) 72%, white); }
 .vs-val { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 2.4em; }
 
-.hm { display: flex; flex-direction: column; gap: 6px; }
-.hm-range { font-size: 12px; color: var(--muted); }
-.hm-body { display: flex; gap: 6px; }
-.hm-wdays { display: flex; flex-direction: column; gap: 3px; width: 14px; }
-.hm-wday { height: 12px; font-size: 10px; line-height: 12px; color: var(--muted); }
-.hm-cols, .hm-legend { display: flex; gap: 3px; }
-.hm-col { display: flex; flex-direction: column; gap: 3px; }
-.hm-cell { width: 12px; height: 12px; border-radius: 2px; background: var(--paper-2); }
-.hm-cell.lv1 { background: color-mix(in srgb, var(--accent) 22%, white); }
-.hm-cell.lv2 { background: color-mix(in srgb, var(--accent) 42%, white); }
-.hm-cell.lv3 { background: color-mix(in srgb, var(--accent) 62%, white); }
-.hm-cell.lv4 { background: var(--accent); }
-.hm-legend { align-items: center; gap: 4px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.hm { --hm: 28px; --hm-gap: 5px; display: flex; flex-direction: column; gap: 10px; width: max-content; border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px 12px; background: var(--paper); }
+.hm-n1, .hm-n2, .hm-n3, .hm-n4 { --hm: 32px; }
+.hm-n5, .hm-n6 { --hm: 28px; }
+.hm-n7, .hm-n8 { --hm: 24px; }
+.hm-n9, .hm-n10, .hm-n11, .hm-n12 { --hm: 20px; }
+.hm-range { font-size: 13px; font-weight: 600; color: var(--ink); }
+.hm-body { display: flex; gap: 8px; align-items: flex-start; }
+.hm-side { display: flex; flex-direction: column; }
+.hm-wdays { display: flex; flex-direction: column; gap: var(--hm-gap); }
+.hm-wday { width: 18px; height: var(--hm); font-size: 12px; line-height: var(--hm); color: var(--muted); text-align: right; }
+.hm-main { display: flex; flex-direction: column; }
+.hm-months, .hm-cols, .hm-legend { display: flex; gap: var(--hm-gap); }
+.hm-ml { width: var(--hm); height: 16px; font-size: 11px; line-height: 16px; color: var(--muted); white-space: nowrap; overflow: visible; }
+.hm-col { display: flex; flex-direction: column; gap: var(--hm-gap); }
+.hm-cell { box-sizing: border-box; width: var(--hm); height: var(--hm); border-radius: 4px; background: #E2E6EC; display: flex; align-items: center; justify-content: center; font-size: clamp(9px, calc(var(--hm) * 0.36), 13px); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); line-height: 1; }
+.hm-cell.lv1 { background: color-mix(in srgb, var(--accent) 42%, white); }
+.hm-cell.lv2 { background: color-mix(in srgb, var(--accent) 62%, white); }
+.hm-cell.lv3 { background: color-mix(in srgb, var(--accent) 82%, white); }
+.hm-cell.lv4 { background: color-mix(in srgb, var(--accent) 72%, #123A6B); color: #fff; }
+.hm-legend { align-items: center; justify-content: flex-end; gap: 4px; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.hm-legend .hm-cell { width: 12px; height: 12px; border-radius: 2px; font-size: 0; }
+.wrap.slide .hm { --hm: 32px; padding: 18px 20px 16px; }
+.wrap.slide .hm-range { font-size: 16px; }
+.wrap.slide table { font-size: 16px; }
+.wrap.slide th, .wrap.slide td { padding: 12px 18px; }
+.wrap.slide .kpi-value { font-size: 28px; }
+.wrap.slide .kpi-name { font-size: 14px; }
+.wrap.slide .cmp-name { font-size: 17px; }
+.wrap.slide .cmp-pts { font-size: 14px; }
+.wrap.slide .vs-bar, .wrap.slide .vs-track { height: 16px; }
+.wrap.slide .fn-track { height: 24px; }
+.wrap.slide .sw-step text { font-size: 15px; }
+.wrap.slide .sw-step rect { stroke-width: 1.5; }
+.wrap.slide .gg-num { font-size: 26px; }
 `;
 
 export function blockPage(inner: string, opts: PageOpts = {}): string {

@@ -1,6 +1,6 @@
 ---
 name: mermaid
-description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 流程 flowchart, KPI/表格/卡片, 审批与泳道, 半环进度 gauge, 日历热力 heatmap. Use when the user wants 图/图表/流程图/构成图/对比卡/周报贴图/渲染/导出图片. NOT for AI image generation (文生图/照片级插画) and NOT for analysis-grade stats (grouped bar, dual axis → AntV).
+description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 流程 flowchart, KPI/表格/卡片, 审批与泳道, 半环进度 gauge, 日历热力 heatmap. Use when the user wants 图/图表/流程图/构成图/对比卡/周报贴图/投屏/PPT/上会/渲染/导出图片. NOT for AI image generation (文生图/照片级插画) and NOT for analysis-grade stats (grouped bar, dual axis → AntV).
 ---
 
 # mmdx — 办公出图（结构图 + 轻量数据图 + 版式块 → PNG）
@@ -63,7 +63,7 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 | 多指标达成率（同心） | ` ```progress ` | ≤4 环 | 绝对值用 kpi |
 | 并排半环进度 | ` ```gauge ` | ≤4 个 | 覆盖率 / SLO / 冲刺完成；中文在环下 |
 | KPI 大数字 | ` ```kpi ` | ≤4 行 | |
-| 提交/发布日历 | ` ```heatmap ` | ≤12 周 | `YYYY-MM-DD, n`；全年交给 AntV |
+| 提交/发布日历 | ` ```heatmap ` | ≤12 周 | `YYYY-MM-DD, n`；格子写次数；全年交给 AntV |
 | 表格截图 | ` ```table ` | | GFM 表原文 |
 | 要点列表 | ` ```list ` | | |
 | 要点卡 | ` ```card ` | | `emoji \| 标题 \| 描述` |
@@ -86,11 +86,11 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 7. emoji 每图 ≤ 3；品牌图标 `A@{icon: logos:react}` + `--icon logos`
 8. 中文标签 ≥ 12px；细环/细箭头里只放数字，名称放图例
 9. 标题/来源/单位用 `--title` / `--subtitle` / `--source` / `--unit`（印在 PNG 上），不手写 mermaid frontmatter
-10. 跟 VI 用 `--brand #RRGGBB`（只改强调色，不重涂 flowchart 形状分色）
+10. 跟 VI 用 `--brand #RRGGBB`（只改强调色，不重涂 flowchart 形状分色）。投屏请用深色 hex，默认 accent 已是 `#2563EB`
 
 ### 1c. 渲染
 
-聊天 / 幻灯片默认 **PNG**。贴 PPT 加 `--preset slide`（1600px 宽、字号加大）。Word/PDF 用 `--preset a4`，飞书卡片用 `--preset square`。`both`（SVG+PNG）仅开发者把图嵌进 Markdown。
+聊天 / 幻灯片默认 **PNG**。贴 PPT / 投屏必须 `--preset slide`（1600px、字号 18、描边加粗）。Word/PDF 用 `--preset a4`，飞书卡片用 `--preset square`。`both`（SVG+PNG）仅开发者把图嵌进 Markdown。
 
 ```bash
 # L0 办公默认
@@ -104,6 +104,29 @@ echo "graph LR; A-->B" | mmdx - -f png
 ```
 
 覆盖关系：显式 `--width` / `--scale` / `-f` 覆盖 preset 默认值。叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。
+
+### 1c-2. 投屏 / PPT（看到这些词必须走这条，不要用默认画幅）
+
+触发词：**投屏、投影、PPT、幻灯片、上会、周会、分享会、大屏、会议室、贴进 PPT**。  
+飞书卡片 → `--preset square`；Word/PDF → `--preset a4`。不要用 `--css` 手调投影对比度——preset 已经加粗描边和字号。
+
+**导出命令（复制改标题即可）：**
+
+```bash
+mmdx doc.md --preset slide --title "一句话结论" --source "出处" --unit "单位" --json --quiet
+```
+
+有品牌色再加 `--brand #RRGGBB`（要够深，白字能看清；不要用浅蓝 `#4098FC` 这类投影会漂的色）。没有 VI 就用默认 `tech`（`#2563EB`）。
+
+**写图时额外收一档（投影比文档更苛刻）：**
+
+1. 总览 ≤7 节点 / pie 3–5 扇区；宁拆两张，不要缩字硬塞
+2. 标签短、对比强：判定用菱形、状态用圆，靠形状+填色分，不靠 1px 细线
+3. 必带 `--title`；来源/单位有就写，方便会后截图还能读
+4. 不要 `openai-dark` / `mocha` 投会议室（灯光一打全糊）；投屏默认 `-t tech`
+5. 贴 PPT：图拉满内容区，不要缩成角落缩略图；底栏安全区已预留，不要再往 PNG 里垫大空白
+
+**渲染后自检（Read PNG，5 米测试）：** 眯眼仍能分清蓝流程 / 琥珀判定 / 绿状态；图题在；字不截断。通不过 → 砍节点或拆图，不要加 `--css`。
 
 ### 1d. 自检闭环（渲染后必做）
 
@@ -174,7 +197,7 @@ SLO, 99
 ```
 ````
 
-kpi 变化列默认**红涨绿跌**（可用 `--css` 覆盖）。progress 第一行 = 最外环。gauge 是并排半环，第一项用强调色。vs 只接受两列非负数字。heatmap 只接受 `YYYY-MM-DD`，缺天当 0，跨度 >12 周直接失败。task 不接受「进行中」，必须写具体相位。swimlane 不做并行/判定（有判定用 flowchart）。
+kpi 变化列默认**红涨绿跌**（可用 `--css` 覆盖）。progress 第一行 = 最外环。gauge 是并排半环，第一项用强调色。vs 只接受两列非负数字。heatmap 只接受 `YYYY-MM-DD`，缺天当 0，格内写次数，跨度 >12 周直接失败。task 不接受「进行中」，必须写具体相位。swimlane 不做并行/判定（有判定用 flowchart）。
 
 ## 3. 能上会 / 不能上会
 
@@ -204,7 +227,7 @@ kpi 变化列默认**红涨绿跌**（可用 `--css` 覆盖）。progress 第一
 
 | 场景 | `-t` |
 | --- | --- |
-| 技术方案/周报（默认） | `tech`（形状分色：蓝流程 / 琥珀判定 / 绿状态 / 紫存储） |
+| 技术方案/周报/投屏（默认） | `tech`（形状分色：蓝流程 / 琥珀判定 / 绿状态 / 紫存储；填色可见，不是发丝描边） |
 | 开源 README | `openai` / `openai-dark` |
 | 暗色文档 | `mocha` |
 | 轻松分享 | `sketch` |

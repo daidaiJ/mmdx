@@ -22,7 +22,7 @@ Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 
 ## ✨ Highlights
 
-- **`tech` default theme**: big-tech design-doc look — white background, shape-coded colors (blue = process, amber = decision, green = state, purple = storage), orthogonal edges, plus 6 more presets; all 20 mermaid diagram types covered
+- **`tech` default theme**: white canvas, shape-coded tinted fills (blue = process, amber = decision, green = state, purple = storage); `--preset slide` thickens strokes and type for projection; 6 more presets; all 20 mermaid diagram types
 - **Bundled CJK font**: Noto Sans SC subset (full GB2312 + Latin, only 1.9 MB) — identical rendering on any machine, correct wrapping for Chinese labels
 - **ELK layout engine**: official `@mermaid-js/layout-elk`, lazily loaded for flowcharts only; edge avoidance and long-label wrapping out of the box
 - **Pixel-level even padding**: every image is re-cropped to its ink bounding box; symmetric margins are a construction guarantee, not mermaid's unreliable viewBox

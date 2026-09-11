@@ -18,7 +18,7 @@ import { chartToMermaid, parseChart } from '../src/chart.ts';
 import { loadAssets } from '../src/embed.ts';
 import { scanLimits } from '../src/limits.ts';
 import { Renderer } from '../src/render.ts';
-import { DEFAULT_THEME, PRESETS } from '../src/themes.ts';
+import { applySlideDensity, DEFAULT_THEME, PRESETS } from '../src/themes.ts';
 import { applyBrand, normalizeHex } from '../src/tokens.ts';
 
 const ROOT = path.dirname(import.meta.dir);
@@ -62,6 +62,16 @@ const record = (name: string, ok: boolean, detail: string): void => {
   const spec = parseChart('type: bar\n华东, 120\n华南, 86');
   record('unit/chart-bar', spec.categories.length === 2 && /y-axis 0 -->/.test(chartToMermaid(spec)), spec.type);
   record('unit/brand-hex', normalizeHex('4098fc') === '#4098FC', String(normalizeHex('4098fc')));
+  {
+    const c = JSON.parse(JSON.stringify(PRESETS.tech.config)) as Record<string, unknown>;
+    applySlideDensity(c);
+    const css = String(c.themeCSS ?? '');
+    record(
+      'unit/slide-density',
+      c.fontSize === 18 && /stroke-width: 2px/.test(css),
+      `fontSize=${String(c.fontSize)} css=${/stroke-width: 2px/.test(css)}`,
+    );
+  }
   record('unit/brand-bad', normalizeHex('nope') === null, 'null');
   const pale = applyBrand('#EEEEEE');
   record('unit/brand-contrast-warn', !!pale.warning, pale.warning || 'no warn');
@@ -82,6 +92,10 @@ const record = (name: string, ok: boolean, detail: string): void => {
     record('unit/heatmap-date', false, 'did not throw');
   } catch (e) {
     record('unit/heatmap-date', /YYYY-MM-DD/.test((e as Error).message), (e as Error).message.slice(0, 80));
+  }
+  {
+    const html = htmlKindToInner('heatmap', '2026-09-01, 2\n2026-09-08, 12');
+    record('unit/heatmap-zh-range', /2026年9月1日/.test(html) && /hm-n2/.test(html), html.slice(0, 80));
   }
   try {
     htmlKindToInner('gauge', 'A, 10\nB, 20\nC, 30\nD, 40\nE, 50');
@@ -160,7 +174,7 @@ for (const f of diagramFiles) {
 }
 
 const fenceSrc = (file: string, lang: string): string =>
-  fs.readFileSync(path.join(ROOT, 'tests', 'edge', file), 'utf8').match(new RegExp('```' + lang + '\\n([\\s\\S]*?)```'))![1];
+  fs.readFileSync(path.join(ROOT, 'tests', 'edge', file), 'utf8').match(new RegExp('```' + lang + '\\r?\\n([\\s\\S]*?)```'))![1];
 
 async function screenBlock(name: string, lang: BlockKind, file: string, lrMax = 8): Promise<void> {
   const inner = htmlKindToInner(lang, fenceSrc(file, lang));

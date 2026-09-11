@@ -47,7 +47,7 @@ mmdx doc.md --index 2 -f png
 echo "graph LR; A-->B" | mmdx - -f png
 ```
 
-聊天/幻灯片 `-f png` 或 `--preset slide|a4|square`（preset 未显式 `-f` 时默认 png）。`both` 仅开发者嵌 Markdown。显式 `--width`/`--scale`/`-f` 覆盖 preset。跟 VI：`--brand #4098FC`（只改强调色）。
+聊天/幻灯片 `-f png` 或 `--preset slide|a4|square`（preset 未显式 `-f` 时默认 png）。**投屏 / PPT / 上会 / 周会 / 大屏** 必须 `--preset slide`（字号 18 + 加粗描边），并带 `--title`；不要用 `--css` 手调对比度，不要用暗色主题投会议室。飞书卡片 `square`，Word `a4`。`both` 仅开发者嵌 Markdown。显式 `--width`/`--scale`/`-f` 覆盖 preset。跟 VI：`--brand #2563EB`（只改强调色；投影不要用过浅的蓝）。
 
 ## 选型速查
 
@@ -79,6 +79,7 @@ echo "graph LR; A-->B" | mmdx - -f png
 4. `subgraph` 要命名；跨部门交接优先 swimlane
 5. 标题/来源/单位用 `--title`/`--subtitle`/`--source`/`--unit`，不手写 frontmatter
 6. 中文 ≥ 12px；细环/细箭头里只放数字
+7. **投屏 5 米测试**（Read PNG）：眯眼能分清形状分色、图题在、字不截断。失败则砍节点，不加 `--css`
 
 ## 自检闭环
 
@@ -107,8 +108,8 @@ stdout 单份 JSON：`theme/layout/format/background/preset?/brand?/caption?/blo
 
 ## 主题速记
 
-`-t`：`tech`（默认，形状分色）· `openai`/`openai-dark` · `minimal` · `latte`/`mocha` · `sketch`。
-叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。`--brand` 不重涂 flowchart 判定菱形。
+`-t`：`tech`（默认，形状分色 + 可见填色，适合文档和投屏）· `openai`/`openai-dark` · `minimal` · `latte`/`mocha` · `sketch`。
+叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。`--brand` 不重涂 flowchart 判定菱形。投屏不要换 `mocha`/`openai-dark`。
 
 ## 退出码
 

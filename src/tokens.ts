@@ -15,11 +15,11 @@ export interface Tokens {
 export const DEFAULT_TOKENS: Tokens = {
   paper: '#FFFFFF',
   ink: '#1B1F26',
-  muted: '#6B7280',
-  rule: '#E6E7EC',
-  accent: '#4098FC',
-  accentTint: '#EEF3F8',
-  paper2: '#F5F6F8',
+  muted: '#5B6470',
+  rule: '#D0D4DC',
+  accent: '#2563EB',
+  accentTint: '#E5ECFD',
+  paper2: '#EEF1F5',
 };
 
 const HEX = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;

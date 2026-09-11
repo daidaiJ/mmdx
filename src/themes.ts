@@ -50,7 +50,7 @@ function baseConfig(bg: string, extra?: Record<string, unknown>): Record<string,
 .node rect, .node circle, .node ellipse, .node polygon, .node path { stroke-width: 1px; }
 .node rect { rx: 6px; ry: 6px; }
 .cluster rect { rx: 8px; ry: 8px; stroke-width: 1px; }
-.edgePath .path { stroke-width: 1px; }
+.edgePath .path { stroke-width: 1.5px; }
 .edgeLabel .label { padding: 2px 8px; }
 .nodeLabel div, .nodeLabel span, .nodeLabel p { padding: 2px 6px; }
 .nodeLabel { font-weight: 500; }
@@ -65,217 +65,215 @@ foreignObject { overflow: visible; }
 }
 
 // ---------------------------------------------------------------------------
-// tech — default. Big-tech design-doc style: white canvas, ink text, hairline
-// gray containers, one hue per diagram role (blue process / amber decision /
-// green state / purple store). Palette follows ByteDance Arco.
+// tech — default. Office-readable on a laptop and a meeting-room screen:
+// white canvas, ink text, tinted fills (not hairline-only), one hue per
+// role (blue process / amber decision / green state / purple store).
 // ---------------------------------------------------------------------------
 
 const TECH_CSS = `
-.node rect, .node circle, .node ellipse, .node polygon, .node path { stroke-width: 1px; }
+.node rect, .node circle, .node ellipse, .node polygon, .node path { stroke-width: 1.5px; }
 .node rect { rx: 6px; ry: 6px; }
-/* shape-coding kept, fills almost paper — hue lives on the hairline */
-.node rect { fill: #F4F7FA; stroke: #5A8BB5; }
-.node polygon { fill: #FBF7F1; stroke: #C4924A; }
-.node circle, .node ellipse { fill: #F3F8F4; stroke: #5A9A68; }
-.node path { fill: #F6F4F9; stroke: #7A6B9E; }
-.cluster rect { fill: #F5F6F8; stroke: #D8DCE3; }
-.cluster-label { color: #6B7280; }
-.node .outer-path path { fill: #F4F7FA; stroke: #5A8BB5; }
+.node rect { fill: #D7E4F4; stroke: #3A6F9C; }
+.node polygon { fill: #F3E4C8; stroke: #A87428; }
+.node circle, .node ellipse { fill: #D4E8DA; stroke: #3B7A4C; }
+.node path { fill: #E3DCEC; stroke: #5A4E82; }
+.cluster rect { fill: #EEF1F5; stroke: #C3C8D1; }
+.cluster-label { color: #5B6470; }
+.node .outer-path path { fill: #D7E4F4; stroke: #3A6F9C; }
 .node .outer-path path[fill="none"] { fill: none; }
-.node .row-rect-odd path { fill: #FFFFFF; stroke: #5A8BB5; }
+.node .row-rect-odd path { fill: #FFFFFF; stroke: #3A6F9C; }
 .node .row-rect-odd path[fill="none"] { fill: none; }
-.node .row-rect-even path { fill: #F5F6F8; stroke: #5A8BB5; }
+.node .row-rect-even path { fill: #EEF1F5; stroke: #3A6F9C; }
 .node .row-rect-even path[fill="none"] { fill: none; }
-.divider path { stroke: #5A8BB5; }
+.divider path { stroke: #3A6F9C; }
 .mindmap-node .label, .mindmap-node .label div { color: #1B1F26 !important; }
 .mindmap-node .label, .mindmap-node .label div, .mindmap-node .label span, .mindmap-node .label p, .mindmap-node .text-inner-tspan { color: #1B1F26 !important; fill: #1B1F26 !important; }
-.mindmap-node.section--1 rect, .mindmap-node.section--1 path, .mindmap-node.section--1 circle { fill: #F4F7FA !important; stroke: #5A8BB5 !important; stroke-width: 1.5px !important; }
-.mindmap-node.section-0 rect, .mindmap-node.section-0 path, .mindmap-node.section-0 circle { fill: #F3F8F4 !important; stroke: #7F9E88 !important; }
-.mindmap-node.section-1 rect, .mindmap-node.section-1 path, .mindmap-node.section-1 circle { fill: #FBF7F1 !important; stroke: #C4A06C !important; }
-.mindmap-node.section-2 rect, .mindmap-node.section-2 path, .mindmap-node.section-2 circle { fill: #F6F4F9 !important; stroke: #8A7EAA !important; }
-.mindmap-node.section-3 rect, .mindmap-node.section-3 path, .mindmap-node.section-3 circle { fill: #F3F8F7 !important; stroke: #6A9A96 !important; }
-.mindmap-node.section-4 rect, .mindmap-node.section-4 path, .mindmap-node.section-4 circle { fill: #FBF6F3 !important; stroke: #B08A9A !important; }
-.mindmap-node.section-5 rect, .mindmap-node.section-5 path, .mindmap-node.section-5 circle { fill: #F5F6F8 !important; stroke: #8B9199 !important; }
-.radarCurve-0 { color: #5C8EC4 !important; fill: #5C8EC4 !important; }
-.radarCurve-1 { color: #6BAF8E !important; fill: #6BAF8E !important; }
-.radarCurve-2 { color: #6D7686 !important; fill: #6D7686 !important; }
-.radarCurve-3 { color: #C9A84C !important; fill: #C9A84C !important; }
-.radarCurve-4 { color: #C46B5A !important; fill: #C46B5A !important; }
-.radarCurve-5 { color: #6BA8C4 !important; fill: #6BA8C4 !important; }
-.radarCurve-6 { color: #8A7EAA !important; fill: #8A7EAA !important; }
-.radarCurve-7 { color: #C4924A !important; fill: #C4924A !important; }
-.radarCurve-8 { color: #5A9A68 !important; fill: #5A9A68 !important; }
-.radarCurve-9 { color: #B08A9A !important; fill: #B08A9A !important; }
-.radarCurve-10 { color: #8B9199 !important; fill: #8B9199 !important; }
-.radarCurve-11 { color: #7A6B9E !important; fill: #7A6B9E !important; }
-.timeline-node .node-bkg { stroke: #D8DCE3 !important; stroke-width: 1px !important; }
-.treemapSection.section1, .treemapSection.section1 .treemapLeaf { fill: #C5D6E8 !important; stroke: #FFFFFF !important; }
-.treemapSection.section2, .treemapSection.section2 .treemapLeaf { fill: #C5DDD0 !important; stroke: #FFFFFF !important; }
-.treemapSection.section3, .treemapSection.section3 .treemapLeaf { fill: #D0D4DB !important; stroke: #FFFFFF !important; }
-.treemapSection.section4, .treemapSection.section4 .treemapLeaf { fill: #E6D9B8 !important; stroke: #FFFFFF !important; }
-.treemapSection.section5, .treemapSection.section5 .treemapLeaf { fill: #E4C9C3 !important; stroke: #FFFFFF !important; }
-.treemapSection.section6, .treemapSection.section6 .treemapLeaf { fill: #C5DCE6 !important; stroke: #FFFFFF !important; }
-.treemapSectionHeader { stroke: #D8DCE3 !important; }
-.face { fill: #FBF7F1; stroke: #D8DCE3; }
+.mindmap-node.section--1 rect, .mindmap-node.section--1 path, .mindmap-node.section--1 circle { fill: #D7E4F4 !important; stroke: #3A6F9C !important; stroke-width: 1.5px !important; }
+.mindmap-node.section-0 rect, .mindmap-node.section-0 path, .mindmap-node.section-0 circle { fill: #D4E8DA !important; stroke: #3B7A4C !important; }
+.mindmap-node.section-1 rect, .mindmap-node.section-1 path, .mindmap-node.section-1 circle { fill: #F3E4C8 !important; stroke: #A87428 !important; }
+.mindmap-node.section-2 rect, .mindmap-node.section-2 path, .mindmap-node.section-2 circle { fill: #E3DCEC !important; stroke: #5A4E82 !important; }
+.mindmap-node.section-3 rect, .mindmap-node.section-3 path, .mindmap-node.section-3 circle { fill: #D4E8E4 !important; stroke: #3A7A74 !important; }
+.mindmap-node.section-4 rect, .mindmap-node.section-4 path, .mindmap-node.section-4 circle { fill: #F3E0E6 !important; stroke: #A05A72 !important; }
+.mindmap-node.section-5 rect, .mindmap-node.section-5 path, .mindmap-node.section-5 circle { fill: #EEF1F5 !important; stroke: #5B6570 !important; }
+.radarCurve-0 { color: #3B7FC4 !important; fill: #3B7FC4 !important; }
+.radarCurve-1 { color: #3D9A6A !important; fill: #3D9A6A !important; }
+.radarCurve-2 { color: #5C6570 !important; fill: #5C6570 !important; }
+.radarCurve-3 { color: #C9A227 !important; fill: #C9A227 !important; }
+.radarCurve-4 { color: #C45C4A !important; fill: #C45C4A !important; }
+.radarCurve-5 { color: #4A9BB8 !important; fill: #4A9BB8 !important; }
+.radarCurve-6 { color: #7A6BA8 !important; fill: #7A6BA8 !important; }
+.radarCurve-7 { color: #C4842A !important; fill: #C4842A !important; }
+.radarCurve-8 { color: #3D9A6A !important; fill: #3D9A6A !important; }
+.radarCurve-9 { color: #A05A72 !important; fill: #A05A72 !important; }
+.radarCurve-10 { color: #5C6570 !important; fill: #5C6570 !important; }
+.radarCurve-11 { color: #5A4E82 !important; fill: #5A4E82 !important; }
+.timeline-node .node-bkg { stroke: #C3C8D1 !important; stroke-width: 1.5px !important; }
+.treemapSection.section1, .treemapSection.section1 .treemapLeaf { fill: #A8C4E0 !important; stroke: #FFFFFF !important; }
+.treemapSection.section2, .treemapSection.section2 .treemapLeaf { fill: #A8D4B8 !important; stroke: #FFFFFF !important; }
+.treemapSection.section3, .treemapSection.section3 .treemapLeaf { fill: #C3C8D1 !important; stroke: #FFFFFF !important; }
+.treemapSection.section4, .treemapSection.section4 .treemapLeaf { fill: #E0C888 !important; stroke: #FFFFFF !important; }
+.treemapSection.section5, .treemapSection.section5 .treemapLeaf { fill: #E0B0A8 !important; stroke: #FFFFFF !important; }
+.treemapSection.section6, .treemapSection.section6 .treemapLeaf { fill: #A8D0DC !important; stroke: #FFFFFF !important; }
+.treemapSectionHeader { stroke: #C3C8D1 !important; }
+.face { fill: #F3E4C8; stroke: #C3C8D1; }
 .pieCircle, .legend, g.legend { overflow: visible; }
 .slice { overflow: visible; }
-.xAxis .tick text, .yAxis .tick text { font-size: 12px; fill: #6B7280; }
-.actor-0 { fill: #6E8AAA; stroke: #FFFFFF; }
-.actor-1 { fill: #7F9E88; stroke: #FFFFFF; }
-.actor-2 { fill: #6A9A96; stroke: #FFFFFF; }
-.actor-3 { fill: #C4A06C; stroke: #FFFFFF; }
-.actor-4 { fill: #8B9199; stroke: #FFFFFF; }
-.actor-5 { fill: #B08A9A; stroke: #FFFFFF; }
+.xAxis .tick text, .yAxis .tick text { font-size: 12px; fill: #5B6470; }
+.actor-0 { fill: #3A6F9C; stroke: #FFFFFF; }
+.actor-1 { fill: #3B7A4C; stroke: #FFFFFF; }
+.actor-2 { fill: #3A7A74; stroke: #FFFFFF; }
+.actor-3 { fill: #A87428; stroke: #FFFFFF; }
+.actor-4 { fill: #5C6570; stroke: #FFFFFF; }
+.actor-5 { fill: #A05A72; stroke: #FFFFFF; }
 `;
 
 const tech: ThemePreset = {
   config: {
     ...baseConfig('#FFFFFF'),
     theme: 'base',
-    // classic + hairline CSS: neo's gradient/shadow reads as stock mermaid
+    // classic look: no neo gradient/shadow. Fills carry the hue so
+    // shape-coding survives projection; strokes are 1.5px in TECH_CSS.
     block: { padding: 16 },
-    radar: { curveOpacity: 0.28, curveStrokeWidth: 2, graticuleColor: '#D8DCE3', graticuleOpacity: 0.7 },
+    radar: { curveOpacity: 0.32, curveStrokeWidth: 2.5, graticuleColor: '#C3C8D1', graticuleOpacity: 0.75 },
     themeVariables: {
       ...((baseConfig('#FFFFFF').themeVariables as Record<string, unknown>) ?? {}),
       // ---- core derivation chain: every diagram inherits from these.
       // primaryColor in particular must be set — its default (#fff4dd cream)
       // is the "native mermaid" look leaking through every unset corner.
-      primaryColor: '#F4F7FA',
+      primaryColor: '#D7E4F4',
       primaryTextColor: '#1B1F26',
-      primaryBorderColor: '#5A8BB5',
-      secondaryColor: '#F5F6F8',
+      primaryBorderColor: '#3A6F9C',
+      secondaryColor: '#EEF1F5',
       secondaryTextColor: '#1B1F26',
-      secondaryBorderColor: '#D8DCE3',
-      tertiaryColor: '#F5F6F8',
-      tertiaryTextColor: '#6B7280',
-      tertiaryBorderColor: '#D8DCE3',
+      secondaryBorderColor: '#C3C8D1',
+      tertiaryColor: '#EEF1F5',
+      tertiaryTextColor: '#5B6470',
+      tertiaryBorderColor: '#C3C8D1',
       background: '#FFFFFF',
       fontFamily: FONT_STACK,
       fontSize: '15px',
       textColor: '#1B1F26',
-      lineColor: '#8A9199',
-      defaultLinkColor: '#8A9199',
-      arrowheadColor: '#8A9199',
-      gradientStart: '#F4F7FA',
+      lineColor: '#5B6570',
+      defaultLinkColor: '#5B6570',
+      arrowheadColor: '#5B6570',
+      gradientStart: '#D7E4F4',
       gradientStop: '#FFFFFF',
-      mainBkg: '#F4F7FA',
-      nodeBkg: '#F4F7FA',
-      nodeBorder: '#5A8BB5',
+      mainBkg: '#D7E4F4',
+      nodeBkg: '#D7E4F4',
+      nodeBorder: '#3A6F9C',
       nodeTextColor: '#1B1F26',
       classText: '#1B1F26',
-      clusterBkg: '#F5F6F8',
-      clusterBorder: '#D8DCE3',
+      clusterBkg: '#EEF1F5',
+      clusterBorder: '#C3C8D1',
       titleColor: '#1B1F26',
       edgeLabelBackground: '#FFFFFF',
       labelBackgroundColor: '#FFFFFF',
       actorBkg: '#FFFFFF',
-      actorBorder: '#8A9199',
+      actorBorder: '#5B6570',
       actorTextColor: '#1B1F26',
-      actorLineColor: '#D8DCE3',
-      signalColor: '#8A9199',
+      actorLineColor: '#C3C8D1',
+      signalColor: '#5B6570',
       signalTextColor: '#1B1F26',
-      labelBoxBkgColor: '#F4F7FA',
-      labelBoxBorderColor: '#5A8BB5',
+      labelBoxBkgColor: '#D7E4F4',
+      labelBoxBorderColor: '#3A6F9C',
       labelTextColor: '#1B1F26',
-      loopTextColor: '#6B7280',
-      activationBkgColor: '#F4F7FA',
-      activationBorderColor: '#5A8BB5',
-      sequenceNumberColor: '#6B7280',
-      noteBkgColor: '#FBF7F1',
+      loopTextColor: '#5B6470',
+      activationBkgColor: '#D7E4F4',
+      activationBorderColor: '#3A6F9C',
+      sequenceNumberColor: '#5B6470',
+      noteBkgColor: '#F3E4C8',
       noteTextColor: '#1B1F26',
-      noteBorderColor: '#C4924A',
-      stateBkg: '#F4F7FA',
-      stateBorder: '#5A8BB5',
+      noteBorderColor: '#A87428',
+      stateBkg: '#D4E8DA',
+      stateBorder: '#3B7A4C',
       stateLabelColor: '#1B1F26',
       specialStateColor: '#1B1F26',
-      compositeBackground: '#F5F6F8',
-      compositeBorder: '#D8DCE3',
-      compositeTitleBackground: '#F5F6F8',
-      transitionColor: '#8A9199',
-      transitionLabelColor: '#6B7280',
+      compositeBackground: '#EEF1F5',
+      compositeBorder: '#C3C8D1',
+      compositeTitleBackground: '#EEF1F5',
+      transitionColor: '#5B6570',
+      transitionLabelColor: '#5B6470',
       labelColor: '#1B1F26',
       altBackground: '#FFFFFF',
       // ---- ER ----
       rowOdd: '#FFFFFF',
-      rowEven: '#F5F6F8',
-      relationColor: '#8A9199',
+      rowEven: '#EEF1F5',
+      relationColor: '#5B6570',
       relationLabelColor: '#1B1F26',
       relationLabelBackground: '#FFFFFF',
       attributeBackgroundColorOdd: '#FFFFFF',
-      attributeBackgroundColorEven: '#F5F6F8',
-      requirementBackground: '#F4F7FA',
-      requirementBorderColor: '#5A8BB5',
-      requirementBorderSize: '1px',
+      attributeBackgroundColorEven: '#EEF1F5',
+      requirementBackground: '#D7E4F4',
+      requirementBorderColor: '#3A6F9C',
+      requirementBorderSize: '1.5px',
       requirementTextColor: '#1B1F26',
       requirementEdgeLabelBackground: '#FFFFFF',
       sectionBkgColor: '#FFFFFF',
-      altSectionBkgColor: '#F5F6F8',
+      altSectionBkgColor: '#EEF1F5',
       sectionBkgColor2: '#FFFFFF',
-      taskBkgColor: '#F4F7FA',
-      taskBorderColor: '#5A8BB5',
+      taskBkgColor: '#D7E4F4',
+      taskBorderColor: '#3A6F9C',
       taskTextColor: '#1B1F26',
       taskTextDarkColor: '#1B1F26',
       taskTextOutsideColor: '#1B1F26',
       taskTextClickableColor: '#1B1F26',
-      activeTaskBkgColor: '#FBF7F1',
-      activeTaskBorderColor: '#C4924A',
-      doneTaskBkgColor: '#F5F6F8',
-      doneTaskBorderColor: '#C5C8D0',
-      critBkgColor: '#F6F4F9',
-      critBorderColor: '#7A6B9E',
-      gridColor: '#E6E7EC',
-      todayLineColor: '#C4924A',
-      vertLineColor: '#D8DCE3',
-      excludeBkgColor: '#F5F6F8',
-      cScale0: '#F4F7FA', cScale1: '#F3F8F4', cScale2: '#FBF7F1', cScale3: '#F6F4F9',
-      cScale4: '#F3F8F7', cScale5: '#FBF6F3', cScale6: '#F5F6F8', cScale7: '#F4F7FA',
-      cScale8: '#F3F8F4', cScale9: '#FBF7F1', cScale10: '#F6F4F9', cScale11: '#F3F8F7',
+      activeTaskBkgColor: '#F3E4C8',
+      activeTaskBorderColor: '#A87428',
+      doneTaskBkgColor: '#EEF1F5',
+      doneTaskBorderColor: '#C3C8D1',
+      critBkgColor: '#E3DCEC',
+      critBorderColor: '#5A4E82',
+      gridColor: '#D0D4DC',
+      todayLineColor: '#A87428',
+      vertLineColor: '#C3C8D1',
+      excludeBkgColor: '#EEF1F5',
+      cScale0: '#D7E4F4', cScale1: '#D4E8DA', cScale2: '#F3E4C8', cScale3: '#E3DCEC',
+      cScale4: '#D4E8E4', cScale5: '#F3E0E6', cScale6: '#EEF1F5', cScale7: '#D7E4F4',
+      cScale8: '#D4E8DA', cScale9: '#F3E4C8', cScale10: '#E3DCEC', cScale11: '#D4E8E4',
       cScale12: '#1B1F26',
       cScaleLabel0: '#1B1F26', cScaleLabel1: '#1B1F26', cScaleLabel2: '#1B1F26',
       cScaleLabel3: '#1B1F26', cScaleLabel4: '#1B1F26', cScaleLabel5: '#1B1F26',
       cScaleLabel6: '#1B1F26', cScaleLabel7: '#1B1F26', cScaleLabel8: '#1B1F26',
       cScaleLabel9: '#1B1F26', cScaleLabel10: '#1B1F26', cScaleLabel11: '#1B1F26',
-      cScaleInv0: '#6E94BB', cScaleInv1: '#7FB08A', cScaleInv2: '#D2A36C', cScaleInv3: '#9A8CC0',
-      cScaleInv4: '#63A8A4', cScaleInv5: '#C48BA6', cScaleInv6: '#8B99A8', cScaleInv7: '#C9B06A',
-      cScaleInv8: '#6E94BB', cScaleInv9: '#7FB08A', cScaleInv10: '#D2A36C', cScaleInv11: '#9A8CC0',
+      cScaleInv0: '#3A6F9C', cScaleInv1: '#3B7A4C', cScaleInv2: '#A87428', cScaleInv3: '#5A4E82',
+      cScaleInv4: '#3A7A74', cScaleInv5: '#A05A72', cScaleInv6: '#5C6570', cScaleInv7: '#C9A227',
+      cScaleInv8: '#3A6F9C', cScaleInv9: '#3B7A4C', cScaleInv10: '#A87428', cScaleInv11: '#5A4E82',
       // ---- user journey: official section fills (themes) — actor dot
       // colours live in the journey CONFIG section below
-      fillType0: '#F4F7FA', fillType1: '#F3F8F4', fillType2: '#FBF7F1', fillType3: '#F6F4F9',
-      fillType4: '#F3F8F7', fillType5: '#FBF6F3', fillType6: '#F5F6F8', fillType7: '#F4F7FA',
-      // ---- gitgraph: desaturated slate/sage/sand branches
-      git0: '#6E94BB', git1: '#7FB08A', git2: '#D2A36C', git3: '#9A8CC0',
-      git4: '#63A8A4', git5: '#C48BA6', git6: '#8B99A8', git7: '#C9B06A',
+      fillType0: '#D7E4F4', fillType1: '#D4E8DA', fillType2: '#F3E4C8', fillType3: '#E3DCEC',
+      fillType4: '#D4E8E4', fillType5: '#F3E0E6', fillType6: '#EEF1F5', fillType7: '#D7E4F4',
+      // ---- gitgraph
+      git0: '#3A6F9C', git1: '#3B7A4C', git2: '#A87428', git3: '#5A4E82',
+      git4: '#3A7A74', git5: '#A05A72', git6: '#5C6570', git7: '#C9A227',
       gitBranchLabel0: '#FFFFFF', gitBranchLabel1: '#FFFFFF', gitBranchLabel2: '#FFFFFF',
       gitBranchLabel3: '#FFFFFF', gitBranchLabel4: '#FFFFFF', gitBranchLabel5: '#FFFFFF',
       gitBranchLabel6: '#FFFFFF', gitBranchLabel7: '#FFFFFF',
       gitInv0: '#FFFFFF', gitInv1: '#FFFFFF', gitInv2: '#FFFFFF', gitInv3: '#FFFFFF',
       gitInv4: '#FFFFFF', gitInv5: '#FFFFFF', gitInv6: '#FFFFFF', gitInv7: '#FFFFFF',
       commitLabelColor: '#1B1F26',
-      commitLabelBackground: '#F5F6F8',
+      commitLabelBackground: '#EEF1F5',
       tagLabelColor: '#1B1F26',
-      tagLabelBackground: '#F4F7FA',
-      tagLabelBorder: '#5A8BB5',
-      // ---- pie: AntV G2 default categorical palette — modern report style,
-      // harmonised saturation, pairs with the Arco theme family
-      pie1: '#5C8EC4', pie2: '#6BAF8E', pie3: '#6D7686', pie4: '#C9A84C',
-      pie5: '#C46B5A', pie6: '#6BA8C4', pie7: '#8A7EAA', pie8: '#C4924A',
-      pie9: '#5A9A68', pie10: '#B08A9A', pie11: '#8B9199', pie12: '#7A6B9E',
+      tagLabelBackground: '#D7E4F4',
+      tagLabelBorder: '#3A6F9C',
+      pie1: '#3B7FC4', pie2: '#3D9A6A', pie3: '#5C6570', pie4: '#C9A227',
+      pie5: '#C45C4A', pie6: '#4A9BB8', pie7: '#7A6BA8', pie8: '#C4842A',
+      pie9: '#3D9A6A', pie10: '#A05A72', pie11: '#5C6570', pie12: '#5A4E82',
       pieOpacity: '1',
       pieStrokeColor: '#FFFFFF',
-      pieStrokeWidth: '1px',
-      pieOuterStrokeColor: '#D8DCE3',
+      pieStrokeWidth: '1.5px',
+      pieOuterStrokeColor: '#C3C8D1',
       pieOuterStrokeWidth: '1px',
       pieTitleTextColor: '#1B1F26',
       pieSectionTextColor: '#1B1F26',
       pieLegendTextColor: '#1B1F26',
-      quadrant1Fill: '#F5F6F8', quadrant2Fill: '#F5F6F8',
-      quadrant3Fill: '#F5F6F8', quadrant4Fill: '#F5F6F8',
-      quadrantPointFill: '#5A8BB5',
+      quadrant1Fill: '#EEF1F5', quadrant2Fill: '#EEF1F5',
+      quadrant3Fill: '#EEF1F5', quadrant4Fill: '#EEF1F5',
+      quadrantPointFill: '#3A6F9C',
       quadrantPointTextFill: '#1B1F26',
-      quadrantXAxisTextFill: '#6B7280',
-      quadrantYAxisTextFill: '#6B7280',
-      quadrantInternalBorderStrokeFill: '#D8DCE3',
-      quadrantExternalBorderStrokeFill: '#D8DCE3',
+      quadrantXAxisTextFill: '#5B6470',
+      quadrantYAxisTextFill: '#5B6470',
+      quadrantInternalBorderStrokeFill: '#C3C8D1',
+      quadrantExternalBorderStrokeFill: '#C3C8D1',
       quadrantTitleFill: '#1B1F26',
       xyChart: {
         backgroundColor: '#FFFFFF',
@@ -284,11 +282,11 @@ const tech: ThemePreset = {
         yAxisLabelColor: '#1B1F26',
         xAxisTitleColor: '#1B1F26',
         yAxisTitleColor: '#1B1F26',
-        xAxisTickColor: '#D8DCE3',
-        yAxisTickColor: '#D8DCE3',
-        xAxisLineColor: '#D8DCE3',
-        yAxisLineColor: '#D8DCE3',
-        plotColorPalette: '#5C8EC4,#C9A84C,#6BAF8E,#8A7EAA,#C46B5A,#6BA8C4',
+        xAxisTickColor: '#C3C8D1',
+        yAxisTickColor: '#C3C8D1',
+        xAxisLineColor: '#C3C8D1',
+        yAxisLineColor: '#C3C8D1',
+        plotColorPalette: '#3B7FC4,#C9A227,#3D9A6A,#7A6BA8,#C45C4A,#4A9BB8',
       },
     },
     themeCSS: (baseConfig('#FFFFFF').themeCSS as string) + TECH_CSS,
@@ -321,11 +319,10 @@ const tech: ThemePreset = {
   },
   background: '#FFFFFF',
   remap: {
-    // sankey nodes/links default to the tableau10 set (no theme variables)
-    '#4e79a7': '#6E94BB', '#f28e2c': '#D2A36C', '#e15759': '#C48BA6',
-    '#76b7b2': '#63A8A4', '#59a14f': '#7FB08A', '#edc949': '#C9B06A',
-    '#af7aa1': '#9A8CC0', '#ff9da7': '#D2A36C', '#9c755f': '#8B99A8',
-    '#bab0ac': '#C9CDD4',
+    '#4e79a7': '#3A6F9C', '#f28e2c': '#A87428', '#e15759': '#A05A72',
+    '#76b7b2': '#3A7A74', '#59a14f': '#3B7A4C', '#edc949': '#C9A227',
+    '#af7aa1': '#5A4E82', '#ff9da7': '#C4842A', '#9c755f': '#5C6570',
+    '#bab0ac': '#C3C8D1',
   },
 };
 
@@ -626,22 +623,31 @@ export const SIZE_PRESETS = {
 
 export type SizePreset = keyof typeof SIZE_PRESETS;
 
-/** Slide deck density: larger node type and spacing. Mutates the cloned config. */
+/** Slide deck density: larger type, air, and stroke weight for projection. */
+const SLIDE_WEIGHT_CSS = `
+.node rect, .node circle, .node ellipse, .node polygon, .node path { stroke-width: 2px !important; }
+.edgePath .path { stroke-width: 1.75px !important; }
+.cluster rect { stroke-width: 1.5px !important; }
+.nodeLabel { font-weight: 600; }
+.xAxis .tick text, .yAxis .tick text { font-size: 14px; }
+`;
+
 export function applySlideDensity(config: Record<string, unknown>): void {
-  config.fontSize = 16;
+  config.fontSize = 18;
   const tv = (config.themeVariables ?? {}) as Record<string, unknown>;
-  tv.fontSize = '16px';
+  tv.fontSize = '18px';
   config.themeVariables = tv;
   const fc = (config.flowchart ?? {}) as Record<string, unknown>;
-  fc.nodeSpacing = 80;
-  fc.rankSpacing = 80;
-  fc.padding = 20;
-  fc.wrappingWidth = 280;
+  fc.nodeSpacing = 88;
+  fc.rankSpacing = 88;
+  fc.padding = 22;
+  fc.wrappingWidth = 300;
   config.flowchart = fc;
   const seq = (config.sequence ?? {}) as Record<string, unknown>;
   seq.actorMargin = 72;
   seq.messageMargin = 52;
   config.sequence = seq;
+  config.themeCSS = ((config.themeCSS as string) || '') + SLIDE_WEIGHT_CSS;
 }
 
 export function deepMerge<T extends Record<string, unknown>>(base: T, extra: Record<string, unknown>): Record<string, unknown> {

@@ -47,7 +47,7 @@ mmdx doc.md --index 2 -f png
 echo "graph LR; A-->B" | mmdx - -f png
 ```
 
-Chat/slides: `-f png` or `--preset slide|a4|square` (preset defaults to png unless `-f` is explicit). `both` is for developers embedding Markdown. Explicit `--width`/`--scale`/`-f` override the preset. Brand: `--brand #4098FC` (accent only).
+Chat/slides: `-f png` or `--preset slide|a4|square` (preset defaults to png unless `-f` is explicit). **Projection / PPT / all-hands / big screen** must use `--preset slide` (18px type + heavier strokes) plus `--title`. Do not hand-tune contrast with `--css`; do not project `mocha`/`openai-dark`. Feishu cards: `square`. Word: `a4`. `both` is for developers embedding Markdown. Explicit `--width`/`--scale`/`-f` override the preset. Brand: `--brand #2563EB` (accent only; skip washed-out light blues on a projector).
 
 ## Diagram picking
 
@@ -79,6 +79,7 @@ Chat/slides: `-f png` or `--preset slide|a4|square` (preset defaults to png unle
 4. Name your `subgraph`s; cross-team handoff prefers swimlane
 5. Title/source/unit via `--title`/`--subtitle`/`--source`/`--unit`, never hand-written frontmatter
 6. CJK ≥ 12px; thin rings/arrows hold digits only
+7. **5-metre projection check** (Read the PNG): squint — shape coding still reads, title is on the figure, nothing truncated. If not, cut nodes; do not add `--css`
 
 ## Self-check loop
 
@@ -107,8 +108,8 @@ Rule of thumb: **exit 2 = wrong flags; exit 1 = wrong diagram or over limit; loo
 
 ## Theme notes
 
-`-t`: `tech` (default, shape-coded) · `openai`/`openai-dark` · `minimal` · `latte`/`mocha` · `sketch`.
-Layering: theme → `--brand` → `--theme-js` → `--config` → `--css`. `--brand` does not recolor flowchart decision diamonds.
+`-t`: `tech` (default, shape-coded tinted fills — docs and projection) · `openai`/`openai-dark` · `minimal` · `latte`/`mocha` · `sketch`.
+Layering: theme → `--brand` → `--theme-js` → `--config` → `--css`. `--brand` does not recolor flowchart decision diamonds. Do not project `mocha`/`openai-dark`.
 
 ## Exit codes
 

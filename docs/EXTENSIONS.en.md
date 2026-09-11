@@ -183,14 +183,24 @@ CI 分钟, 8, 3
 
 ## heatmap
 
-Calendar heatmap, GitHub-contribution style. `YYYY-MM-DD, count`; missing days are 0; weeks start Monday; span ≤12 weeks. Full-year or hourly heatmaps go to AntV.
+Week-column calendar heatmap (office card, not a GitHub widget). `YYYY-MM-DD, count`; missing days are 0; weeks start Monday; span ≤12 weeks. Cell size grows when the span is short; non-zero days show the count. Full-year or hourly heatmaps go to AntV.
 
 ````markdown
 ```heatmap
 2026-09-01, 2
 2026-09-02, 5
+2026-09-03, 1
+2026-09-05, 8
 2026-09-08, 12
+2026-09-09, 4
+2026-09-10, 7
 2026-09-11, 3
+2026-09-15, 6
+2026-09-16, 9
+2026-09-18, 1
+2026-09-22, 4
+2026-09-23, 2
+2026-09-25, 11
 ```
 ````
 

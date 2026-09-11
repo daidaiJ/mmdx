@@ -92,7 +92,7 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 | `-o, --out <path>` | 输出目录；单图输入时可为精确文件名（默认与输入同目录） |
 | `-f, --format <fmt>` | `svg` \| `png` \| `both`（默认 both；`--preset` 未显式 `-f` 时默认 png） |
 | `-t, --theme <name>` | `tech`（默认）· `openai` · `openai-dark` · `minimal` · `latte` · `mocha` · `sketch` |
-| `--preset <name>` | `slide`（1600px@2，加大字号，底栏预留 ~80px）\| `a4`（900px@2）\| `square`（1080px@2）。显式 `--width`/`--scale`/`-f` 优先 |
+| `--preset <name>` | `slide`（投屏/PPT：1600px@2，字号 18、描边加粗，底栏预留 ~80px）\| `a4`（900px@2）\| `square`（1080px@2）。显式 `--width`/`--scale`/`-f` 优先 |
 | `--background <color>` | 页面背景，如 `white` \| `transparent` \| `#1A1A1A`（dark 主题自带深色背景，无需再传） |
 | `--layout <engine>` | `elk`（默认，仅 flowchart 实际加载）\| `dagre` |
 | `--scale <n>` | PNG 缩放倍数（默认 2） |
@@ -103,7 +103,7 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 | `--unit <text>` | 单位（底栏） |
 | `--title-pos <pos>` | `top`（默认）\| `bottom`（chrome 标题在主图上方/下方） |
 | `--index <n[,n…]>` | 只渲染这些 1-based 块序号 |
-| `--brand <hex>` | 扩展块强调色（`#4098FC` 或 `4098FC`）；不重涂 flowchart 形状分色 |
+| `--brand <hex>` | 扩展块强调色（默认 `#2563EB`；可写 `2563EB`）；不重涂 flowchart 形状分色。投屏请用深色，避免浅蓝 |
 | `--strict-chart` | mermaid pie/xychart/radar/flowchart/sequence 超限当错误（默认只警告） |
 | `--icon <pack>` | iconify 图标包，支持 `A@{icon: logos:react}` 节点（可重复传；拉取后有缓存） |
 | `--config <file.json>` | mermaid 原生配置，深合并到主题之上 |
@@ -148,7 +148,7 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 
 | 场景 | `-t` |
 | --- | --- |
-| 技术方案/架构评审（默认） | `tech` |
+| 技术方案/架构评审/投屏（默认） | `tech`（形状分色 + 可见填色） |
 | 开源 README 极简 | `openai` / `openai-dark` |
 | Obsidian 笔记 | `minimal` |
 | 暗色文档站/深色界面 | `mocha`（或 `openai-dark`） |

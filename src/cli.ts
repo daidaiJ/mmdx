@@ -51,7 +51,8 @@ Options:
                           latte | mocha | sketch                (default: tech)
   --preset <name>         slide | a4 | square  (width+scale+png; explicit
                           --width/--scale/-f win). slide=1600px@2, a4=900px@2,
-                          square=1080px@2; slide also enlarges node type
+                          square=1080px@2; slide also enlarges type, spacing,
+                          and stroke weight for projection
   --background <color>    page background, e.g. white | transparent | #1A1A1A
   --scale <n>             PNG scale factor                     (default: 2)
   --width <px>            layout viewport width                (default: 1200)
@@ -62,7 +63,7 @@ Options:
   --unit <text>           unit line in the footer
   --title-pos <pos>       top (default) | bottom  (chrome title above/below)
   --index <n[,n…]>        render only these 1-based block indexes
-  --brand <hex>           accent color for extension blocks (#4098FC or 4098FC).
+  --brand <hex>           accent color for extension blocks (#2563EB or 2563EB).
                           Does not recolor flowchart shape coding
   --icon <pack>           iconify pack for @{icon: pack:name} nodes (repeatable,
                           fetched from unpkg and cached)
