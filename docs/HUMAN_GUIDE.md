@@ -13,7 +13,7 @@
   - [浏览器依赖](#浏览器依赖)
 - [快速开始](#快速开始)
 - [CLI 全参数参考](#cli-全参数参考)
-- [扩展块：表格 / 列表 / 卡片](#扩展块表格--列表--卡片)
+- [扩展块](#扩展块)
 - [主题定制](#主题定制)
 - [性能调优](#性能调优)
 - [排障](#排障)
@@ -69,8 +69,9 @@ mmdx README.md                              # README-m1.(svg|png), README-m2.(sv
 mmdx a.md b.md other/*.md -o dist/          # 多文件批量，并行
 mmdx diagram.mmd -o out/arch.svg            # 精确命名，同目录附带 .png
 echo "graph LR; A-->B" | mmdx - -f svg      # stdin 单图
-mmdx report.md --index 2 --title "架构总览" --title-pos bottom
+mmdx report.md --preset slide --title "架构总览" --unit 万元 --source 月报
 mmdx doc.md -t mocha --background transparent -f png --json
+mmdx doc.md --brand #E4572E --preset square
 mmdx doc.md --list                          # 只列出找到的围栏块，不渲染
 ```
 
@@ -78,7 +79,7 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 
 | 输入 | 行为 |
 |---|---|
-| `.md` 文件 | 渲染其中所有 ```mermaid / ```table / ```list / ```card 围栏块 |
+| `.md` 文件 | 渲染其中所有 ```mermaid 与扩展围栏（table/list/card/chart/kpi/compare/funnel/task/progress/swimlane） |
 | `.mmd` 文件 | 渲染单个 mermaid 图 |
 | `-`（stdin） | 从标准输入读单个 mermaid 图 |
 
@@ -89,14 +90,21 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 | 参数 | 说明 |
 | --- | --- |
 | `-o, --out <path>` | 输出目录；单图输入时可为精确文件名（默认与输入同目录） |
-| `-f, --format <fmt>` | `svg` \| `png` \| `both`（默认 both） |
+| `-f, --format <fmt>` | `svg` \| `png` \| `both`（默认 both；`--preset` 未显式 `-f` 时默认 png） |
 | `-t, --theme <name>` | `tech`（默认）· `openai` · `openai-dark` · `minimal` · `latte` · `mocha` · `sketch` |
+| `--preset <name>` | `slide`（1600px@2，加大字号，底栏预留 ~80px）\| `a4`（900px@2）\| `square`（1080px@2）。显式 `--width`/`--scale`/`-f` 优先 |
 | `--background <color>` | 页面背景，如 `white` \| `transparent` \| `#1A1A1A`（dark 主题自带深色背景，无需再传） |
 | `--layout <engine>` | `elk`（默认，仅 flowchart 实际加载）\| `dagre` |
 | `--scale <n>` | PNG 缩放倍数（默认 2） |
 | `--width <px>` | 布局视口宽（默认 1200） |
-| `--title <text>` | 给无标题的图注入标题 |
-| `--title-pos <pos>` | `top`（默认）\| `bottom`（标题下置并重算画布） |
+| `--title <text>` | 图题（印在 PNG chrome 上，不再写入 mermaid frontmatter） |
+| `--subtitle <text>` | 副标题 |
+| `--source <text>` | 来源（底栏） |
+| `--unit <text>` | 单位（底栏） |
+| `--title-pos <pos>` | `top`（默认）\| `bottom`（chrome 标题在主图上方/下方） |
+| `--index <n[,n…]>` | 只渲染这些 1-based 块序号 |
+| `--brand <hex>` | 扩展块强调色（`#4098FC` 或 `4098FC`）；不重涂 flowchart 形状分色 |
+| `--strict-chart` | mermaid pie/xychart/radar/flowchart/sequence 超限当错误（默认只警告） |
 | `--icon <pack>` | iconify 图标包，支持 `A@{icon: logos:react}` 节点（可重复传；拉取后有缓存） |
 | `--config <file.json>` | mermaid 原生配置，深合并到主题之上 |
 | `--theme-js <file.js>` | JS 换色函数，文件体是 `(config, ctx) => config` |
@@ -115,36 +123,24 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 
 ```json
 {
-  "theme": "tech", "layout": "elk", "format": "both", "background": "#FFFFFF",
+  "theme": "tech", "layout": "elk", "format": "png", "background": "#FFFFFF",
+  "preset": "slide", "brand": "#E4572E",
+  "caption": { "title": "Q1 销售构成", "subtitle": null, "source": "财务月报", "unit": "万元" },
   "blocks": 3, "rendered": 3, "failed": 0,
-  "files": ["doc-m1.svg", "doc-m1.png", "…"],
+  "files": ["doc-m1.png", "…"],
   "errors": [],
+  "warnings": [{ "input": "doc.md", "index": 1, "code": "pie-sectors", "message": "…" }],
   "profile": { "mermaid-render": { "count": 3, "totalMs": 285, "avgMs": 95, "maxMs": 120, "maxLabel": "doc#2" } }
 }
 ```
 
-（`profile` 仅在同时传 `--profile` 时出现。）
+（`preset`/`brand`/`caption` 仅在使用对应参数时出现；`warnings` 始终为数组；`profile` 仅在同时传 `--profile` 时出现。）
 
-## 扩展块：表格 / 列表 / 卡片
+## 扩展块
 
-除 mermaid 图外，三种常见 Markdown 结构可直接渲染成样式化图片。扩展块**只出 PNG**——HTML 排版没有可移植的 SVG 形态。
+除 mermaid 图外，常见 Markdown 结构可直接渲染成样式化图片。扩展块**只出 PNG**——HTML 排版没有可移植的 SVG 形态。均吃 `--title`/`--subtitle`/`--source`/`--unit` 图题层，配色走 `--brand` 的 accent。
 
-**表格** —— ```table 围栏内写 GFM 管道表格，支持对齐与行内加粗/代码：
-
-![表格渲染示例](ext-table.png)
-
-**列表** —— ```list 围栏内写嵌套 Markdown 列表：
-
-![列表渲染示例](ext-list.png)
-
-**卡片墙** —— ```card 围栏，约定语法：每行一张卡，`emoji | 标题 | 描述`（emoji 与描述可省略）：
-
-```card
-🚀 | 渲染管线 | 单浏览器页池复用，PNG 2x 无损导出
-🎨 | 主题系统 | 七套预设，支持 theme-js 与 css 自定义
-```
-
-![卡片渲染示例](ext-card.png)
+语法、上限与每种一张样图见 **[扩展块图鉴](EXTENSIONS.md)**。
 
 ## 主题定制
 
@@ -192,7 +188,7 @@ export default (config, ctx) => {
 
 更深的需求（换布局参数、关闭镜像参与者等）用 `--config` 深合并原生配置（`flowchart.curve`、`sequence.mirrorActors`…）。
 
-**叠加顺序**：预设 → `--theme-js` → `--config` → `--css`。
+**叠加顺序**：主题 → `--brand` → `--theme-js` → `--config` → `--css`。`--brand` 只映射 accent / accent-tint，flowchart 形状分色保持。低对比 accent 会警告但不改色。
 
 ## 性能调优
 
@@ -231,7 +227,10 @@ page-init       ~1.2s ×页     screenshot      ~90ms ×图（含像素级二次
 
 ## 测试
 
-`bun run tests/run.ts`，两层设计——视觉审查只看脚本标记出的可疑项：
+`bun run tests/run.ts`，三层设计——视觉审查只看脚本标记出的可疑项：
 
-1. **库级筛查**：20 种 mermaid 图型 + 表格/列表/卡片，单浏览器会话渲染后做像素分析（边距对称 ±8px、内容占比、白图检测）
-2. **CLI 行为**：退出码、`--index` 命名、坏块隔离、stdin、JSON 契约、19 文件 4 并发批次
+1. **库级筛查**：20 种 mermaid 图型 + 扩展块，单浏览器会话渲染后做像素分析（边距对称、内容占比、白图检测）
+2. **CLI 行为**：退出码、preset 宽度、caption、brand、超限警告/`--strict-chart`、坏块隔离、stdin、JSON 契约
+3. **性能插桩**：打开 Renderer `profile`，卡住 `page-reset` / `init-mermaid` 次数与各阶段 maxMs；HTML 块后只清 DOM，不得按块重注 mermaid
+
+视觉样图：`bun scripts/make-contact-sheet.ts`（mermaid 拼图）与 `bun scripts/make-review.ts`（`docs/ext-*.png`）。

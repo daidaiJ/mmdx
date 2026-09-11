@@ -199,6 +199,9 @@ export class Renderer {
   /**
    * Render a standalone HTML fragment (tables, lists) to PNG. setContent
    * replaces the document, so the bundled font is re-injected per call.
+   * The mermaid shell is NOT restored here — re-injecting the bundle on every
+   * table/kpi would dominate mixed batches. `render()` lazily calls
+   * `ensureMermaid` before the next diagram.
    */
   async renderHtml(html: string, background: string, label = ''): Promise<Buffer> {
     return this.run((page) => this.mark('block-render', () => screenshotGate(async () => {
@@ -222,6 +225,25 @@ export class Renderer {
         omitBackground: transparent,
       })) as Buffer;
     }), label));
+  }
+
+  /** Drop leftover HTML-block DOM; re-inject mermaid only if the global is gone. */
+  private async ensureMermaid(page: Page): Promise<void> {
+    const state = await page.evaluate(() => {
+      const m = (window as unknown as { mermaid?: { render?: unknown } }).mermaid;
+      return {
+        mermaid: typeof m?.render === 'function',
+        dirty: document.body.childElementCount > 0,
+      };
+    });
+    if (state.dirty) {
+      await this.mark('page-reset', () => page.evaluate(() => {
+        document.body.replaceChildren();
+        document.body.style.cssText = 'margin:0;padding:0;overflow:hidden;background:transparent';
+      }));
+    }
+    if (state.mermaid) return;
+    await this.mark('page-restore', () => this.initPage(page));
   }
 
   private async acquire(): Promise<Page> {
@@ -257,6 +279,7 @@ export class Renderer {
       const label = code.split('\n').find((l) => l.trim())?.trim().slice(0, 30) ?? '';
       const padX = Renderer.PAD_X;
       const padY = Renderer.PAD_Y;
+      await this.ensureMermaid(page);
       const res = (await this.mark('mermaid-render', () => page.evaluate(
         async ([code, config, background, titlePos, titleText, remap]) => {
           const wm = window as unknown as {

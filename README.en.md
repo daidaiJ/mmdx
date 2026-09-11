@@ -5,7 +5,7 @@
 [![Release](https://img.shields.io/github/v/release/daidaiJ/mmdx)](https://github.com/daidaiJ/mmdx/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**A Mermaid diagram export CLI built for AI agents**: batch-render ```mermaid / ```table / ```list / ```card fenced blocks in Markdown into SVG + PNG — themes, CJK fonts, layout engine, and even padding are all built in. No MCP server, no browser extension, and the machine producing the output doesn't need Node.
+**A diagram export CLI built for office agents**: batch-render mermaid and office fences (table / chart / kpi / compare / funnel / task / progress / swimlane …) in Markdown into PNG — themes, CJK fonts, layout engine, and padding are all built in. No MCP server, no browser extension, and the machine producing the output doesn't need Node.
 
 ![Rendering samples for twenty diagram types](tests/contact-sheet.png)
 
@@ -15,6 +15,7 @@
 |---|---|---|
 | 🤖 AI Agent | [docs/AGENT_GUIDE.en.md](docs/AGENT_GUIDE.en.md) | Token-lean: env self-check, diagram picking, flag cheatsheet, JSON contract, error triage |
 | 👤 Human user | [docs/HUMAN_GUIDE.en.md](docs/HUMAN_GUIDE.en.md) | Readable: install & deploy, full CLI reference, theming, performance tuning, troubleshooting |
+| 🖼 Extension blocks | [docs/EXTENSIONS.en.md](docs/EXTENSIONS.en.md) | One tool-rendered PNG + syntax per fence |
 | 📜 Changelog | [CHANGELOG.md](CHANGELOG.md) | Release history |
 
 Every doc is Chinese-first with an English `.en.md` sibling of the same name.
@@ -25,8 +26,8 @@ Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 - **Bundled CJK font**: Noto Sans SC subset (full GB2312 + Latin, only 1.9 MB) — identical rendering on any machine, correct wrapping for Chinese labels
 - **ELK layout engine**: official `@mermaid-js/layout-elk`, lazily loaded for flowcharts only; edge avoidance and long-label wrapping out of the box
 - **Pixel-level even padding**: every image is re-cropped to its ink bounding box; symmetric margins are a construction guarantee, not mermaid's unreliable viewBox
-- **Extension blocks**: ```table / ```list / ```card markdown structures rendered as styled images (usable in chat windows, slides, screenshot notes)
-- **Agent friendly**: `--json` machine output, `--profile` stage timings, per-block failure isolation, automatic retry on transient faults, 60s timeout guard, bounded concurrency
+- **Extension blocks**: ```table / ```list / ```card / ```chart / ```kpi / ```compare / ```funnel / ```task / ```progress / ```swimlane straight to PNG
+- **Office delivery**: `--preset slide|a4|square`, title/source/unit chrome, `--brand` accent; agent-friendly `--json` (including `warnings`)
 
 ## 🚀 Quick start
 
@@ -65,7 +66,7 @@ mmdx report.md --index 2 --title "Architecture" --title-pos bottom
 mmdx doc.md -t mocha --background transparent -f png --json
 ```
 
-Fence languages: `mermaid` (diagrams), `table` / `list` / `card` (extension blocks). Extension blocks render to PNG only — HTML layout has no portable SVG form.
+Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` / `kpi` / `compare` / `funnel` / `task` / `progress` / `swimlane` (extension blocks, PNG only). For slides: `mmdx doc.md --preset slide --title "…" --source "…"`.
 
 **Card wall** — a ```card fence, one card per line: `emoji | title | description` (emoji and description optional):
 

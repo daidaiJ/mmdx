@@ -16,3 +16,8 @@ tests/verify-*.jpg
 
 # per-diagram visual review output
 review/
+
+# planning / local working docs (may be symlinks, e.g. issues -> wiki repo)
+issues
+tasks
+wiki

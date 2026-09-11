@@ -9,8 +9,13 @@ const ROOT = path.join(import.meta.dir, '..');
 const SRC = path.join(ROOT, 'tests', 'artifacts');
 const OUT = path.join(ROOT, 'tests', 'contact-sheet.png');
 
-const EXCLUDE = new Set(['table.png', 'list.png', 'card.png']); // extensions live in docs/ separately
-const files = fs.readdirSync(SRC).filter((f) => f.endsWith('.png') && !f.startsWith('ext-') && !EXCLUDE.has(f)).sort();
+// mermaid types only — extension artifacts live in docs/ separately
+const DIAGRAMS = new Set(
+  fs.readdirSync(path.join(ROOT, 'tests', 'diagrams'))
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => f.replace(/\.md$/, '.png')),
+);
+const files = fs.readdirSync(SRC).filter((f) => DIAGRAMS.has(f)).sort();
 if (files.length === 0) throw new Error('no artifacts — run tests first');
 
 const imgs = files.map((f) => PNG.sync.read(fs.readFileSync(path.join(SRC, f))));

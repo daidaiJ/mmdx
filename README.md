@@ -5,7 +5,7 @@
 [![Release](https://img.shields.io/github/v/release/daidaiJ/mmdx)](https://github.com/daidaiJ/mmdx/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**为 AI agent 打造的 Mermaid 图表导出 CLI**：把 Markdown 里的 ```mermaid / ```table / ```list / ```card 围栏块批量渲染成 SVG + PNG——主题、中文字体、布局引擎、留白全部内置，不需要 MCP server、浏览器插件，产物机器上也不需要 Node。
+**为 AI agent 打造的办公出图 CLI**：把 Markdown 里的 mermaid 与办公围栏（table / chart / kpi / compare / funnel / task / progress / swimlane …）批量渲染成 PNG——主题、中文字体、布局引擎、留白全部内置，不需要 MCP server、浏览器插件，产物机器上也不需要 Node。
 
 ![二十种图型渲染示例](tests/contact-sheet.png)
 
@@ -15,6 +15,7 @@
 |---|---|---|
 | 🤖 AI Agent | [docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md) | 省 token 版：环境自检、选型表、参数速查、JSON 契约、错误速诊 |
 | 👤 人类用户 | [docs/HUMAN_GUIDE.md](docs/HUMAN_GUIDE.md) | 易读版：安装部署、CLI 全参数、主题定制、性能调优、排障 |
+| 🖼 扩展块 | [docs/EXTENSIONS.md](docs/EXTENSIONS.md) | 每种围栏一张工具渲染的 PNG + 语法 |
 | 📜 变更历史 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 
 各文档均为中文默认，同名 `.en.md` 为英文版。
@@ -25,8 +26,8 @@
 - **内置中文字体**：Noto Sans SC 子集（GB2312 全量汉字 + 拉丁，仅 1.9MB），任意机器渲染一致，中文标签换行正确
 - **ELK 布局引擎**：官方 `@mermaid-js/layout-elk`，只对 flowchart 懒加载；连线避让、长文本换行开箱即用
 - **像素级均匀留白**：每张图二次裁切到墨迹包围盒，四边留白对称是构造保证，不靠 mermaid 不可靠的 viewBox
-- **扩展块**：```table / ```list / ```card 三种 Markdown 结构直接渲染成样式化图片（聊天窗口、幻灯片、截图笔记都能用）
-- **agent 友好**：`--json` 机器输出、`--profile` 阶段耗时、失败块隔离、瞬时故障自动重试、60s 超时保护、并发有上限
+- **扩展块**：```table / ```list / ```card / ```chart / ```kpi / ```compare / ```funnel / ```task / ```progress / ```swimlane 直出 PNG
+- **办公交付**：`--preset slide|a4|square`、图题/来源/单位 chrome、`--brand` 强调色；agent 友好的 `--json`（含 `warnings`）
 
 ## 🚀 快速上手
 
@@ -65,7 +66,7 @@ mmdx report.md --index 2 --title "架构总览" --title-pos bottom
 mmdx doc.md -t mocha --background transparent -f png --json
 ```
 
-Markdown 围栏语言：`mermaid`（图表）、`table` / `list` / `card`（扩展块）。扩展块只出 PNG——HTML 排版没有可移植的 SVG 形态。
+Markdown 围栏：`mermaid`（图表）以及 `table` / `list` / `card` / `chart` / `kpi` / `compare` / `funnel` / `task` / `progress` / `swimlane`（扩展块，PNG only）。贴 PPT 用 `mmdx doc.md --preset slide --title "…" --source "…"`。
 
 **卡片墙** —— ```card 围栏，约定语法：每行一张卡，`emoji | 标题 | 描述`（emoji 与描述可省略）：
 

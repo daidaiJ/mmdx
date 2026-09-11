@@ -1,21 +1,24 @@
 #!/usr/bin/env bun
 // mmdx — Mermaid → SVG/PNG exporter tuned for AI agents.
-// Reads ```mermaid blocks from Markdown (or .mmd / stdin), renders via a
+// Reads fenced blocks from Markdown (or .mmd / stdin), renders via a
 // shared Chromium pipeline with themed output.
 
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { blockPage, cardToHtml, fenceKind, listToHtml, tableToHtml, type BlockKind } from './blocks.ts';
+import {
+  blockPage, captionPresent, fenceKind, htmlKindToInner, HTML_KINDS,
+  mergeCaption, type BlockKind, type Caption, type PageOpts,
+} from './blocks.ts';
+import { chartToMermaid, parseChart } from './chart.ts';
 import { getBuildVersion, loadAssets } from './embed.ts';
+import { scanLimits, type LimitHit } from './limits.ts';
 import { Renderer } from './render.ts';
-import { DEFAULT_THEME, deepMerge, PRESETS } from './themes.ts';
+import { applyBrand, DEFAULT_TOKENS, type Tokens } from './tokens.ts';
+import { applySlideDensity, DEFAULT_THEME, deepMerge, PRESETS, SIZE_PRESETS, type SizePreset } from './themes.ts';
 
 let VERSION = '1.0.0';
 
-// svgo's css-tree dep does a dynamic require that breaks under bun --compile
-// when resolved from the node entry; the official self-contained browser
-// bundle (svgo/browser, zero requires) bundles cleanly into the binary.
 type Optimize = (svg: string, opts: unknown) => { data: string };
 let svgoOptimize: Optimize | null = null;
 let svgoWarned = false;
@@ -34,28 +37,41 @@ Usage:
 
 Input:
   file.md   every fenced block is rendered: \`\`\`mermaid diagrams, plus
-            \`\`\`table and \`\`\`list blocks rendered as styled PNG images
+            table/list/card/chart/kpi/compare/funnel/task/progress/swimlane
+            extension blocks as styled PNG
   file.mmd  a single mermaid diagram
   -         mermaid source from stdin (single diagram)
 
 Options:
   -o, --out <path>        output directory, or exact .svg/.png file when the
                           input renders exactly one diagram (default: next to input)
-  -f, --format <fmt>      svg | png | both                     (default: both)
+  -f, --format <fmt>      svg | png | both                     (default: both;
+                          --preset defaults to png)
   -t, --theme <name>      tech (default) | openai | openai-dark | minimal |
                           latte | mocha | sketch                (default: tech)
+  --preset <name>         slide | a4 | square  (width+scale+png; explicit
+                          --width/--scale/-f win). slide=1600px@2, a4=900px@2,
+                          square=1080px@2; slide also enlarges node type
   --background <color>    page background, e.g. white | transparent | #1A1A1A
   --scale <n>             PNG scale factor                     (default: 2)
   --width <px>            layout viewport width                (default: 1200)
   --layout <engine>       elk (default, better routing) | dagre
-  --title <text>          embed a title into diagrams that don't have one
-  --title-pos <pos>       top (default) | bottom
+  --title <text>          figure title (PNG chrome; no mermaid frontmatter)
+  --subtitle <text>       figure subtitle under the title
+  --source <text>         source line in the footer
+  --unit <text>           unit line in the footer
+  --title-pos <pos>       top (default) | bottom  (chrome title above/below)
+  --index <n[,n…]>        render only these 1-based block indexes
+  --brand <hex>           accent color for extension blocks (#4098FC or 4098FC).
+                          Does not recolor flowchart shape coding
   --icon <pack>           iconify pack for @{icon: pack:name} nodes (repeatable,
                           fetched from unpkg and cached)
   --config <file.json>    extra Mermaid config, deep-merged over the theme
   --theme-js <file.js>    JS theming: file body is a function (config, ctx)
                           returning the modified config
   --css <file.css>        extra CSS appended to the theme's themeCSS
+  --strict-chart          treat mermaid pie/xychart/radar/flowchart/sequence
+                          budget hits as errors (default: warn)
   --browser <path>        browser executable override (default: auto-detect Edge/Chrome)
   --jobs <n>              max diagrams rendered in parallel    (default: 2)
   --profile               per-stage timing summary on stderr / in --json
@@ -67,6 +83,7 @@ Options:
 
 Examples:
   mmdx README.md                          # README-m1.(svg|png), README-m2.(svg|png)...
+  mmdx report.md --preset slide --title "Q1 构成" --unit 万元
   mmdx a.md b.md -o dist/ -t mocha
   mmdx diagram.mmd -o out/diagram.svg     # writes out/diagram.svg + out/diagram.png
   echo "graph LR; A-->B" | mmdx - -f svg
@@ -76,18 +93,27 @@ interface Options {
   inputs: string[];
   out: string | null;
   format: 'svg' | 'png' | 'both';
+  formatExplicit: boolean;
   theme: string;
+  preset: SizePreset | null;
   background: string | null;
   scale: number;
+  scaleExplicit: boolean;
   width: number;
+  widthExplicit: boolean;
   layout: 'elk' | 'dagre';
   title: string | null;
+  subtitle: string | null;
+  source: string | null;
+  unit: string | null;
   titlePos: 'top' | 'bottom';
   index: string | null;
+  brand: string | null;
   icons: string[];
   config: string | null;
   themeJs: string | null;
   css: string | null;
+  strictChart: boolean;
   browser: string | null;
   jobs: number;
   profile: boolean;
@@ -98,10 +124,13 @@ interface Options {
 
 function parseArgs(argv: string[]): Options {
   const o: Options = {
-    inputs: [], out: null, format: 'both', theme: DEFAULT_THEME, background: null,
-    scale: 2, width: 1200, layout: 'elk', title: null, titlePos: 'top', index: null, icons: [],
-    config: null, themeJs: null, css: null, browser: null, jobs: 2, profile: false,
-    list: false, json: false, quiet: false,
+    inputs: [], out: null, format: 'both', formatExplicit: false, theme: DEFAULT_THEME,
+    preset: null, background: null,
+    scale: 2, scaleExplicit: false, width: 1200, widthExplicit: false,
+    layout: 'elk', title: null, subtitle: null, source: null, unit: null,
+    titlePos: 'top', index: null, brand: null, icons: [],
+    config: null, themeJs: null, css: null, strictChart: false, browser: null,
+    jobs: 2, profile: false, list: false, json: false, quiet: false,
   };
   const need = (v: string | undefined, name: string): string => {
     if (v === undefined) { console.error(`mmdx: missing value for ${name}`); process.exit(2); }
@@ -111,19 +140,36 @@ function parseArgs(argv: string[]): Options {
     const a = argv[i];
     switch (a) {
       case '-o': case '--out': o.out = need(argv[++i], a); break;
-      case '-f': case '--format': o.format = need(argv[++i], a) as Options['format']; break;
+      case '-f': case '--format':
+        o.format = need(argv[++i], a) as Options['format'];
+        o.formatExplicit = true;
+        break;
       case '-t': case '--theme': o.theme = need(argv[++i], a); break;
+      case '--preset': {
+        const v = need(argv[++i], a);
+        if (!(v in SIZE_PRESETS)) {
+          console.error(`mmdx: --preset must be slide|a4|square, got "${v}"`);
+          process.exit(2);
+        }
+        o.preset = v as SizePreset;
+        break;
+      }
       case '--background': o.background = need(argv[++i], a); break;
-      case '--scale': o.scale = parseFloat(need(argv[++i], a)); break;
-      case '--width': o.width = parseInt(need(argv[++i], a), 10); break;
+      case '--scale': o.scale = parseFloat(need(argv[++i], a)); o.scaleExplicit = true; break;
+      case '--width': o.width = parseInt(need(argv[++i], a), 10); o.widthExplicit = true; break;
       case '--layout': o.layout = need(argv[++i], a) as Options['layout']; break;
       case '--title': o.title = need(argv[++i], a); break;
+      case '--subtitle': o.subtitle = need(argv[++i], a); break;
+      case '--source': o.source = need(argv[++i], a); break;
+      case '--unit': o.unit = need(argv[++i], a); break;
       case '--title-pos': o.titlePos = need(argv[++i], a) as Options['titlePos']; break;
       case '--index': o.index = need(argv[++i], a); break;
+      case '--brand': o.brand = need(argv[++i], a); break;
       case '--icon': o.icons.push(need(argv[++i], a)); break;
       case '--config': o.config = need(argv[++i], a); break;
       case '--theme-js': o.themeJs = need(argv[++i], a); break;
       case '--css': o.css = need(argv[++i], a); break;
+      case '--strict-chart': o.strictChart = true; break;
       case '--browser': o.browser = need(argv[++i], a); break;
       case '--jobs': o.jobs = Math.max(1, parseInt(need(argv[++i], a), 10)); break;
       case '--profile': o.profile = true; break;
@@ -137,7 +183,7 @@ function parseArgs(argv: string[]): Options {
           console.error(`mmdx: unknown option ${a}`);
           process.exit(2);
         }
-        o.inputs.push(a); // '-' = stdin
+        o.inputs.push(a);
     }
   }
   if (!o.inputs.length) { process.stdout.write(help()); process.exit(2); }
@@ -145,19 +191,24 @@ function parseArgs(argv: string[]): Options {
     console.error(`mmdx: --format must be svg|png|both, got "${o.format}"`);
     process.exit(2);
   }
+  if (o.preset) {
+    const p = SIZE_PRESETS[o.preset];
+    if (!o.widthExplicit) o.width = p.width;
+    if (!o.scaleExplicit) o.scale = p.scale;
+    if (!o.formatExplicit) o.format = 'png';
+  }
   return o;
 }
 
 interface Block {
-  input: string;      // display name ('<stdin>' for stdin)
-  base: string;       // output file stem base
-  index: number;      // 1-based block index within its input
+  input: string;
+  base: string;
+  index: number;
   line: number;
   code: string;
   kind: BlockKind;
 }
 
-// any fenced block with a recognized language (mermaid / table / list)
 const FENCE_RE = /^[ \t]*```([A-Za-z0-9_-]+)[^\n]*\n([\s\S]*?)^[ \t]*```\s*$/gm;
 
 function extractBlocks(input: string, raw: string): Block[] {
@@ -182,12 +233,6 @@ function extractBlocks(input: string, raw: string): Block[] {
   return code ? [{ input, base, index: 1, line: 1, code, kind: 'mermaid' }] : [];
 }
 
-/** frontmatter title present? */
-function hasTitle(code: string): boolean {
-  return /^---\s*\n[\s\S]*?\n---\s*\n/.test(code) && /(^|\n)\s*title:/.test(code);
-}
-
-/** extract `title:` from a diagram's frontmatter, if any */
 function frontTitle(code: string): string {
   const m = /^---\s*\n([\s\S]*?)\n---\s*\n/.exec(code);
   if (!m) return '';
@@ -214,12 +259,8 @@ async function fetchIconPack(name: string): Promise<{ name: string; json: string
   return { name, json };
 }
 
-/** Run a user theme-js file. The file body receives (config, ctx) and must
- *  return the modified config — either directly or via `export default fn`.
- *  Executed with new Function, so it works identically in the compiled binary. */
 function applyThemeJs(src: string, config: Record<string, unknown>, ctx: Record<string, unknown>): Record<string, unknown> {
   const body = src.replace(/^\s*export\s+default\s+/m, 'return ');
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval, no-new-func
   const factory = new Function('config', 'ctx', `"use strict";\n${body}`) as
     (c: Record<string, unknown>, x: Record<string, unknown>) => unknown;
   const out = factory(config, ctx);
@@ -232,6 +273,44 @@ function applyThemeJs(src: string, config: Record<string, unknown>, ctx: Record<
   return resolved as Record<string, unknown>;
 }
 
+function minifySvg(svg: string, label: string, quiet: boolean, json: boolean, renderer: Renderer, profile: boolean): string {
+  if (!svgoOptimize && !svgoWarned) {
+    svgoWarned = true;
+    process.stderr.write('mmdx: svgo unavailable — writing SVG without minification\n');
+  }
+  if (!svgoOptimize) return svg;
+  const tSvgo = performance.now();
+  try {
+    const optimized = svgoOptimize(svg, {
+      multipass: true,
+      plugins: [
+        {
+          name: 'preset-default',
+          params: { overrides: {
+            mergePaths: false,
+            collapseGroups: false,
+            convertShapeToPath: false,
+            convertPathData: false,
+          } },
+        },
+      ],
+    }).data;
+    if (profile) renderer.profile.push({ stage: 'svgo', ms: Math.round(performance.now() - tSvgo), label });
+    return optimized;
+  } catch {
+    log(quiet || json, `mmdx: ${label} svgo failed, writing unminified svg`);
+    if (profile) renderer.profile.push({ stage: 'svgo', ms: Math.round(performance.now() - tSvgo), label });
+    return svg;
+  }
+}
+
+interface JsonWarning {
+  input: string;
+  index: number;
+  code: string;
+  message: string;
+}
+
 async function main(): Promise<void> {
   VERSION = await getBuildVersion();
   const o = parseArgs(process.argv.slice(2));
@@ -241,7 +320,27 @@ async function main(): Promise<void> {
     process.exit(2);
   }
 
-  // ---- collect blocks from all inputs ----
+  let tokens: Tokens = DEFAULT_TOKENS;
+  const brandWarnings: string[] = [];
+  if (o.brand) {
+    try {
+      const br = applyBrand(o.brand);
+      tokens = br.tokens;
+      if (br.warning) {
+        brandWarnings.push(br.warning);
+        log(o.quiet || o.json, `mmdx: ${br.warning}`);
+      }
+    } catch (e) {
+      console.error(`mmdx: ${(e as Error).message}`);
+      process.exit(2);
+    }
+  }
+
+  const cliCaption: Caption = {
+    title: o.title, subtitle: o.subtitle, source: o.source, unit: o.unit, titlePos: o.titlePos,
+  };
+  const chromeOn = captionPresent(cliCaption);
+
   const blocks: Block[] = [];
   for (const input of o.inputs) {
     let raw: string;
@@ -265,7 +364,6 @@ async function main(): Promise<void> {
   }
   if (!blocks.length) { console.error('mmdx: no mermaid blocks found'); process.exit(1); }
 
-  // ---- optional per-input block selection (--index) ----
   const selected = o.index
     ? (() => {
       const want = new Set(o.index.split(',').map((s) => parseInt(s.trim(), 10)));
@@ -278,25 +376,20 @@ async function main(): Promise<void> {
     })()
     : blocks;
 
-  // ---- resolve output paths ----
-  const exts = o.format === 'both' ? ['svg', 'png'] : [o.format];
-  const single = selected.length === 1;
   const exact =
-    o.out && single && /\.(svg|png)$/i.test(o.out) ? path.resolve(o.out) : null;
+    o.out && selected.length === 1 && /\.(svg|png)$/i.test(o.out) ? path.resolve(o.out) : null;
   const dir = exact ? path.dirname(exact) : o.out ? path.resolve(o.out) : path.dirname(path.resolve(selected[0].input === '-' ? '.' : selected[0].input));
   fs.mkdirSync(dir, { recursive: true });
   const outFileFor = (b: Block, ext: string): string => {
     if (exact) return exact.replace(/\.(svg|png)$/i, `.${ext}`);
-    // keep the -m<n> suffix when a .md was filtered via --index so blocks
-    // don't masquerade as the whole file's diagram
-    const keepStem = (single && !o.index) || b.input.endsWith('.mmd');
+    const keepStem = (selected.length === 1 && !o.index) || b.input.endsWith('.mmd');
     const stem = keepStem ? b.base : `${b.base}-m${b.index}`;
     return path.join(dir, `${stem}.${ext}`);
   };
 
-  // ---- build theme config ----
   const preset = PRESETS[o.theme];
   let config = JSON.parse(JSON.stringify(preset.config)) as Record<string, unknown>;
+  if (o.preset === 'slide') applySlideDensity(config);
   if (o.themeJs) {
     config = applyThemeJs(fs.readFileSync(o.themeJs, 'utf8'), config, { theme: o.theme });
   }
@@ -310,7 +403,14 @@ async function main(): Promise<void> {
   const background = o.background || preset.background;
   const iconPacks = await Promise.all(o.icons.map(fetchIconPack));
 
-  // ---- render pipeline: one browser, pooled pages, bounded parallelism ----
+  const pageOptsBase: PageOpts = {
+    wrapWidth: o.preset ? o.width : undefined,
+    density: o.preset === 'slide' ? 'slide' : 'standard',
+    tokens,
+  };
+
+  const wrapMermaid = chromeOn || !!o.preset;
+
   const assets = await loadAssets();
   const renderer = await Renderer.create(assets, {
     browserPath: o.browser || undefined,
@@ -321,72 +421,86 @@ async function main(): Promise<void> {
     profile: o.profile,
   });
 
-  const results: Array<{ input: string; index: number; files: string[]; error?: string }> = [];
+  const results: Array<{ input: string; index: number; files: string[]; error?: string; warnings: JsonWarning[] }> = [];
   let cursor = 0;
   const jobs = Math.min(o.jobs, selected.length);
+
+  const writePngOnly = (b: Block, png: Buffer, note?: string): string[] => {
+    if (o.format === 'svg') {
+      process.stderr.write(note || `mmdx: ${b.input}#${b.index} ${b.kind} renders to PNG only; writing PNG\n`);
+    }
+    const f = outFileFor(b, 'png');
+    fs.writeFileSync(f, png);
+    return [f];
+  };
 
   const worker = async (): Promise<void> => {
     for (;;) {
       const i = cursor++;
       if (i >= selected.length) return;
       const b = selected[i];
-      const injected = o.title && !hasTitle(b.code) && b.kind === 'mermaid';
-      const code = injected ? `---\ntitle: ${o.title}\n---\n${b.code}` : b.code;
-      // text used to locate the title node when --title-pos bottom
-      const titleText = injected ? (o.title as string) : frontTitle(b.code);
+      const label = `${b.input}#${b.index}`;
       const wantPng = o.format === 'both' || o.format === 'png';
+      const wantSvg = o.format === 'both' || o.format === 'svg';
 
-      // one retry: transient browser hiccups under concurrency are cheaper
-      // to absorb here than to surface to the agent
-      const attempt = async (): Promise<string[]> => {
-        if (b.kind !== 'mermaid') {
-          // table/list/card render to PNG only (HTML layout has no portable SVG form)
-          const inner = b.kind === 'table' ? tableToHtml(b.code)
-            : b.kind === 'card' ? cardToHtml(b.code)
-            : listToHtml(b.code);
-          const png = await renderer.renderHtml(blockPage(inner), background, `${b.input}#${b.index}`);
-          const files: string[] = [];
-          if (o.format === 'svg') {
-            process.stderr.write(`mmdx: ${b.input}#${b.index} ${b.kind} renders to PNG only; writing PNG\n`);
-          }
-          const f = outFileFor(b, 'png');
-          fs.writeFileSync(f, png);
-          files.push(f);
-          return files;
+      const attempt = async (): Promise<{ files: string[]; warnings: JsonWarning[] }> => {
+        const warnings: JsonWarning[] = [];
+
+        if (b.kind === 'chart') {
+          const spec = parseChart(b.code);
+          const mermaid = chartToMermaid(spec);
+          const cap = mergeCaption(cliCaption, { title: spec.title, source: spec.source, unit: spec.unit });
+          const { svg } = await renderer.render(mermaid, config, background, false, 'top', '', preset.remap);
+          const html = blockPage(`<div class="fig">${svg}</div>`, { ...pageOptsBase, caption: cap });
+          const png = await renderer.renderHtml(html, background, label);
+          return { files: writePngOnly(b, png), warnings };
         }
-        const { svg, png } = await renderer.render(code, config, background, wantPng, o.titlePos, titleText, preset.remap);
-        const files: string[] = [];
-        if (o.format === 'both' || o.format === 'svg') {
-          const f = outFileFor(b, 'svg');
-          if (!svgoOptimize && !svgoWarned) {
-            svgoWarned = true;
-            process.stderr.write('mmdx: svgo unavailable — writing SVG without minification\n');
+
+        if (HTML_KINDS.has(b.kind)) {
+          const inner = htmlKindToInner(b.kind, b.code);
+          const html = blockPage(inner, { ...pageOptsBase, caption: cliCaption });
+          const png = await renderer.renderHtml(html, background, label);
+          return { files: writePngOnly(b, png), warnings };
+        }
+
+        const hits: LimitHit[] = scanLimits(b.code);
+        for (const h of hits) {
+          warnings.push({ input: b.input, index: b.index, code: h.code, message: h.message });
+          log(o.quiet || o.json, `mmdx: ${label} ${h.message}`);
+        }
+        if (o.strictChart && hits.length) {
+          throw new Error(hits.map((h) => h.message).join('; '));
+        }
+
+        if (wrapMermaid) {
+          const { svg } = await renderer.render(b.code, config, background, false, 'top', '', preset.remap);
+          const html = blockPage(`<div class="fig">${svg}</div>`, { ...pageOptsBase, caption: cliCaption });
+          const files: string[] = [];
+          if (wantSvg) {
+            const f = outFileFor(b, 'svg');
+            fs.writeFileSync(f, minifySvg(svg, label, o.quiet, o.json, renderer, o.profile));
+            files.push(f);
           }
-          const tSvgo = performance.now();
-          let optimized = svg;
-          if (svgoOptimize) {
-            try {
-              optimized = svgoOptimize(svg, {
-                multipass: true,
-                plugins: [
-                  {
-                    name: 'preset-default',
-                    params: { overrides: {
-                      mergePaths: false,
-                      collapseGroups: false,
-                      convertShapeToPath: false,
-                      convertPathData: false,
-                    } },
-                  },
-                ],
-              }).data;
-            } catch {
-              // svgo chokes on some SVGs under bun; the unminified file is valid
-              log(o.quiet || o.json, `mmdx: ${b.input}#${b.index} svgo failed, writing unminified svg`);
+          if (wantPng || o.format === 'svg') {
+            const png = await renderer.renderHtml(html, background, label);
+            if (wantPng) {
+              const f = outFileFor(b, 'png');
+              fs.writeFileSync(f, png);
+              files.push(f);
+            } else if (o.format === 'svg' && chromeOn) {
+              // chrome is PNG-only; SVG is the diagram
             }
           }
-          if (o.profile) renderer.profile.push({ stage: 'svgo', ms: Math.round(performance.now() - tSvgo), label: `${b.input}#${b.index}` });
-          fs.writeFileSync(f, optimized);
+          return { files, warnings };
+        }
+
+        const { svg, png } = await renderer.render(
+          b.code, config, background, wantPng, o.titlePos, frontTitle(b.code), preset.remap,
+        );
+        const files: string[] = [];
+        if (wantSvg) {
+          const f = outFileFor(b, 'svg');
+          fs.writeFileSync(f, minifySvg(svg, label, o.quiet, o.json, renderer, o.profile));
           files.push(f);
         }
         if (png) {
@@ -394,21 +508,25 @@ async function main(): Promise<void> {
           fs.writeFileSync(f, png);
           files.push(f);
         }
-        return files;
+        return { files, warnings };
       };
 
       try {
-        let files: string[];
+        let out: { files: string[]; warnings: JsonWarning[] };
         try {
-          files = await attempt();
+          out = await attempt();
         } catch (first) {
-          log(o.quiet || o.json, `mmdx: ${b.input}#${b.index} retrying after: ${(first as Error).message.split('\n')[0]}`);
-          files = await attempt();
+          log(o.quiet || o.json, `mmdx: ${label} retrying after: ${(first as Error).message.split('\n')[0]}`);
+          out = await attempt();
         }
-        results.push({ input: b.input, index: b.index, files });
-        log(o.quiet || o.json, `mmdx: ${b.input}#${b.index} → ${files.length} file(s)`);
+        results.push({ input: b.input, index: b.index, files: out.files, warnings: out.warnings });
+        log(o.quiet || o.json, `mmdx: ${label} → ${out.files.length} file(s)`);
       } catch (e) {
-        results.push({ input: b.input, index: b.index, files: [], error: e instanceof Error ? e.message : String(e) });
+        results.push({
+          input: b.input, index: b.index, files: [],
+          error: e instanceof Error ? e.message : String(e),
+          warnings: [],
+        });
       }
     }
   };
@@ -417,6 +535,10 @@ async function main(): Promise<void> {
 
   const failed = results.filter((r) => r.error);
   const written = results.flatMap((r) => r.files);
+  const warnings: JsonWarning[] = [
+    ...brandWarnings.map((message) => ({ input: '', index: 0, code: 'brand-contrast', message })),
+    ...results.flatMap((r) => r.warnings),
+  ];
 
   const profileSummary = (): Record<string, { count: number; totalMs: number; avgMs: number; maxMs: number; maxLabel: string }> => {
     const out: Record<string, { count: number; totalMs: number; avgMs: number; maxMs: number; maxLabel: string }> = {};
@@ -432,9 +554,15 @@ async function main(): Promise<void> {
   if (o.json) {
     console.log(JSON.stringify({
       theme: o.theme, layout: o.layout, format: o.format, background,
+      ...(o.preset ? { preset: o.preset } : {}),
+      ...(o.brand ? { brand: tokens.accent } : {}),
+      ...(chromeOn ? {
+        caption: { title: o.title, subtitle: o.subtitle, source: o.source, unit: o.unit },
+      } : {}),
       blocks: blocks.length, rendered: results.length - failed.length,
       failed: failed.length, files: written,
       errors: failed.map((f) => ({ input: f.input, index: f.index, error: f.error })),
+      warnings,
       ...(o.profile ? { profile: profileSummary() } : {}),
     }, null, 2));
   } else {

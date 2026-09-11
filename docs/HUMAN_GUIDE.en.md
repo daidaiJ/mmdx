@@ -13,7 +13,7 @@ This guide targets **human users** and covers installing mmdx, the full CLI refe
   - [Browser dependency](#browser-dependency)
 - [Quick start](#quick-start)
 - [Full CLI reference](#full-cli-reference)
-- [Extension blocks: tables / lists / cards](#extension-blocks-tables--lists--cards)
+- [Extension blocks](#extension-blocks)
 - [Theming](#theming)
 - [Performance tuning](#performance-tuning)
 - [Troubleshooting](#troubleshooting)
@@ -69,8 +69,9 @@ mmdx README.md                              # README-m1.(svg|png), README-m2.(sv
 mmdx a.md b.md other/*.md -o dist/          # multi-file batch, parallel
 mmdx diagram.mmd -o out/arch.svg            # exact name; sibling .png written alongside
 echo "graph LR; A-->B" | mmdx - -f svg      # single diagram from stdin
-mmdx report.md --index 2 --title "Architecture" --title-pos bottom
+mmdx report.md --preset slide --title "Architecture" --unit "ms" --source "bench"
 mmdx doc.md -t mocha --background transparent -f png --json
+mmdx doc.md --brand #E4572E --preset square
 mmdx doc.md --list                          # list the fenced blocks found, no rendering
 ```
 
@@ -78,7 +79,7 @@ Three input forms:
 
 | Input | Behavior |
 |---|---|
-| `.md` file | Renders all ```mermaid / ```table / ```list / ```card fenced blocks inside |
+| `.md` file | Renders all ```mermaid fences plus extension fences (table/list/card/chart/kpi/compare/funnel/task/progress/swimlane) |
 | `.mmd` file | Renders a single mermaid diagram |
 | `-` (stdin) | Reads a single mermaid diagram from standard input |
 
@@ -89,14 +90,21 @@ Output naming: by default next to the input, `<name>-m<N>.svg/.png` numbered by 
 | Flag | Meaning |
 | --- | --- |
 | `-o, --out <path>` | Output directory; exact filename when input has one diagram (default: next to input) |
-| `-f, --format <fmt>` | `svg` \| `png` \| `both` (default both) |
+| `-f, --format <fmt>` | `svg` \| `png` \| `both` (default both; `--preset` defaults to png unless `-f` is explicit) |
 | `-t, --theme <name>` | `tech` (default) · `openai` · `openai-dark` · `minimal` · `latte` · `mocha` · `sketch` |
+| `--preset <name>` | `slide` (1600px@2, larger type, ~80px footer) \| `a4` (900px@2) \| `square` (1080px@2). Explicit `--width`/`--scale`/`-f` win |
 | `--background <color>` | Page background, e.g. `white` \| `transparent` \| `#1A1A1A` (dark themes bake in their own background) |
 | `--layout <engine>` | `elk` (default, loaded for flowcharts only) \| `dagre` |
 | `--scale <n>` | PNG scale factor (default 2) |
 | `--width <px>` | Layout viewport width (default 1200) |
-| `--title <text>` | Inject a title into diagrams that don't have one |
-| `--title-pos <pos>` | `top` (default) \| `bottom` (title below, canvas recomputed) |
+| `--title <text>` | Figure title (PNG chrome; no longer injected as mermaid frontmatter) |
+| `--subtitle <text>` | Subtitle |
+| `--source <text>` | Source line in the footer |
+| `--unit <text>` | Unit line in the footer |
+| `--title-pos <pos>` | `top` (default) \| `bottom` (chrome title above/below the figure) |
+| `--index <n[,n…]>` | Render only these 1-based block indexes |
+| `--brand <hex>` | Accent for extension blocks (`#4098FC` or `4098FC`); does not recolor flowchart shapes |
+| `--strict-chart` | Promote mermaid pie/xychart/radar/flowchart/sequence budget hits to errors (default: warn) |
 | `--icon <pack>` | Iconify pack for `A@{icon: logos:react}` nodes (repeatable; fetched then cached) |
 | `--config <file.json>` | Native mermaid config, deep-merged over the theme |
 | `--theme-js <file.js>` | JS theming; file body is a `(config, ctx) => config` function |
@@ -115,36 +123,24 @@ The `--json` contract:
 
 ```json
 {
-  "theme": "tech", "layout": "elk", "format": "both", "background": "#FFFFFF",
+  "theme": "tech", "layout": "elk", "format": "png", "background": "#FFFFFF",
+  "preset": "slide", "brand": "#E4572E",
+  "caption": { "title": "Q1 mix", "subtitle": null, "source": "Finance", "unit": "CNY wan" },
   "blocks": 3, "rendered": 3, "failed": 0,
-  "files": ["doc-m1.svg", "doc-m1.png", "…"],
+  "files": ["doc-m1.png", "…"],
   "errors": [],
+  "warnings": [{ "input": "doc.md", "index": 1, "code": "pie-sectors", "message": "…" }],
   "profile": { "mermaid-render": { "count": 3, "totalMs": 285, "avgMs": 95, "maxMs": 120, "maxLabel": "doc#2" } }
 }
 ```
 
-(`profile` appears only when `--profile` is also passed.)
+(`preset`/`brand`/`caption` appear only when those flags are used; `warnings` is always an array; `profile` appears only when `--profile` is also passed.)
 
-## Extension blocks: tables / lists / cards
+## Extension blocks
 
-Besides mermaid diagrams, three common markdown structures render directly into styled images. Extension blocks produce **PNG only** — HTML layout has no portable SVG form.
+Besides mermaid diagrams, common markdown structures render directly into styled images. Extension blocks produce **PNG only** — HTML layout has no portable SVG form. All of them take `--title`/`--subtitle`/`--source`/`--unit` chrome and `--brand` accent.
 
-**Table** — a GFM pipe table inside a ```table fence, with alignment and inline bold/code:
-
-![Table rendering sample](ext-table.png)
-
-**List** — nested markdown lists inside a ```list fence:
-
-![List rendering sample](ext-list.png)
-
-**Card wall** — a ```card fence, one card per line: `emoji | title | description` (emoji and description optional):
-
-```card
-🚀 | Render pipeline | single-browser page pool, lossless 2x PNG export
-🎨 | Theme system | seven presets, customizable via theme-js and css
-```
-
-![Card rendering sample](ext-card.png)
+Syntax, limits, and one sample image per fence: **[extension-block gallery](EXTENSIONS.en.md)**.
 
 ## Theming
 
@@ -192,7 +188,7 @@ export default (config, ctx) => {
 
 Deeper needs (layout params, disabling mirrored actors…) use `--config` deep-merge over native settings (`flowchart.curve`, `sequence.mirrorActors`…).
 
-**Layering order**: preset → `--theme-js` → `--config` → `--css`.
+**Layering order**: theme → `--brand` → `--theme-js` → `--config` → `--css`. `--brand` only remaps accent / accent-tint; flowchart shape coding stays. Low-contrast accents warn but are not rewritten.
 
 ## Performance tuning
 
@@ -231,7 +227,10 @@ Rule of thumb: **exit 2 = wrong flags; Parsing error = wrong diagram; look the e
 
 ## Testing
 
-`bun run tests/run.ts`, two layers — visual review only looks at items the script flags as suspicious:
+`bun run tests/run.ts`, three layers — visual review only looks at items the script flags as suspicious:
 
-1. **Library sweep**: 20 mermaid diagram types + table/list/card, rendered in one browser session, then pixel-analyzed (margin symmetry ±8px, content ratio, blank-image detection)
-2. **CLI behavior**: exit codes, `--index` naming, bad-block isolation, stdin, JSON contract, 19-file 4-concurrency batch
+1. **Library sweep**: 20 mermaid diagram types + extension blocks, rendered in one browser session, then pixel-analyzed (margin symmetry, content ratio, blank-image detection)
+2. **CLI behavior**: exit codes, preset widths, caption, brand, over-limit warnings/`--strict-chart`, bad-block isolation, stdin, JSON contract
+3. **Profile probes**: Renderer `profile` on; fail if `page-reset` / `init-mermaid` counts or per-stage maxMs blow the budget (must not re-inject mermaid after every HTML block)
+
+Visual samples: `bun scripts/make-contact-sheet.ts` (mermaid collage) and `bun scripts/make-review.ts` (`docs/ext-*.png`).

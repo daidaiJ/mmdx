@@ -2,9 +2,9 @@
 
 # mmdx — Agent Guide
 
-Mermaid diagram export CLI. Batch-renders ```mermaid / ```table / ```list / ```card fenced blocks into SVG + PNG; themes, CJK font, ELK layout, and padding are all built in. **Do not hand-style diagram code; do not use the VSCode plugin.**
+Office diagram CLI. Renders fenced blocks to PNGs you can paste into PPT / Word / Feishu. Themes, CJK font, ELK, and padding are built in. **Do not hand-style diagram code; do not freehand SVG.**
 
-> Human-readable version: [HUMAN_GUIDE.en.md](HUMAN_GUIDE.en.md) · Overview: [README](../README.en.md)
+> Human-readable version: [HUMAN_GUIDE.en.md](HUMAN_GUIDE.en.md) · Extension gallery: [EXTENSIONS.en.md](EXTENSIONS.en.md) · Overview: [README](../README.en.md)
 
 ## Get the binary (by priority)
 
@@ -14,82 +14,97 @@ curl -L -o "$TMP/mmdx.exe" https://github.com/daidaiJ/mmdx/releases/latest/downl
 # 2. Run from source (needs bun): bun run src/cli.ts
 ```
 
-Below it's written as `mmdx` (any path above). Rendering needs system Edge/Chrome; if missing you get `no Chrome/Edge found` — pass `--browser <path>`. **Never auto-downloads a browser.**
+Below it's written as `mmdx`. Rendering needs system Edge/Chrome; if missing you get `no Chrome/Edge found` — pass `--browser <path>`. **Never auto-downloads a browser.**
 
 ## Env self-check (first use in a session, 30 seconds)
 
 ```bash
-mmdx --version   # expect 1.0.0; not found → use the full path
+mmdx --version
 echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --json --quiet
 ```
 
 Smoke JSON with `rendered:1` → environment ready. `rendered:0` → see [error triage](#error-triage).
 
-## Command tiers (run the low tier first, escalate if needed)
+## When not to draw
+
+- Plain list → ` ```list ` or prose
+- Two-sentence before/after → ` ```compare `
+- A single labeled box → write a sentence
+- The figure teaches nothing beyond a paragraph → don't draw it
+
+Before drawing, state in one or two sentences: type, `--preset` (if any), what the budget will cut. Office default voice is `mixed` (component names + plain verbs, no ports/protocols).
+
+## Command tiers
 
 ```bash
-# L0 default (80% of cases): all blocks → <name>-m1.svg/.png … next to input
-mmdx doc.md
+# L0 office default: PNG + slide frame
+mmdx doc.md --preset slide --title "Q1 mix" --unit "CNY wan" --source "Finance"
 # L1 batch / targeted
-mmdx a.md b.md docs/*.md -o dist/          # multi-file batch
-mmdx doc.md --index 2 -f png               # export block 2 only
-# L2 title / naming
-mmdx doc.md --title "Architecture" --title-pos bottom -o out/arch.svg
-echo "graph LR; A-->B" | mmdx - -f svg     # single diagram from stdin
+mmdx a.md b.md -o dist/ --preset slide
+mmdx doc.md --index 2 -f png
+# L2 exact name / stdin
+echo "graph LR; A-->B" | mmdx - -f png
 ```
 
-Format: chat/standalone image `-f png`; markdown docs default both; dark backgrounds `--background transparent` (dark themes bake in their own background — don't pass it again).
+Chat/slides: `-f png` or `--preset slide|a4|square` (preset defaults to png unless `-f` is explicit). `both` is for developers embedding Markdown. Explicit `--width`/`--scale`/`-f` override the preset. Brand: `--brand #4098FC` (accent only).
 
 ## Diagram picking
 
-| What the user wants | Type | Notes |
+| What the user wants | Use | Cap |
 | --- | --- | --- |
-| Process/steps/decisions | `flowchart LR/TD` | Pipelines LR; decisions/hierarchy TD |
-| Message flow/protocols | `sequenceDiagram` | ≤ 6 participants; use `autonumber`, `alt/else` |
-| State transitions | `stateDiagram-v2` | `[*] --> s1: event` |
-| Classes/interfaces | `classDiagram` | |
-| Data model | `erDiagram` | `USER \|\|--o{ ORDER : has` |
-| Concept structure | `mindmap` | Indent levels + `root((topic))` |
-| Schedule/share/evolution | `gantt` / `pie` / `timeline` | |
-| Table/list/cards → image | ```table / ```list / ```card fence | **PNG only**; card syntax `emoji \| title \| description` |
+| Share / mix | pie / ` ```chart ` pie | 3–6 slices |
+| Trend / numeric compare | ` ```chart ` line / bar | ≤6 cats × ≤2 series |
+| Option compare | ` ```compare ` | exactly 2 columns |
+| Process / approval / decision | flowchart | ≤9 nodes / ≤12 edges |
+| Cross-team handoff | ` ```swimlane ` | ≤5 lanes, ≤8 steps |
+| Task-status snapshot | ` ```task ` | ≤10 rows |
+| Attainment rings | ` ```progress ` | ≤4 rings |
+| KPI big numbers | ` ```kpi ` | ≤4 rows |
+| Funnel | ` ```funnel ` | ≤6 layers |
+| Table / list / cards | ` ```table ` / ` ```list ` / ` ```card ` | |
+| Schedule / composition / flow | gantt / treemap / sankey | |
+| Quadrant / journey / timeline / scores | quadrant / journey / timeline / radar | radar ≤8×3 |
 
-## Diagram rules (violations are the #1 cause of ugly output)
+**Appendix (renders, not featured):** sequence, state, class, ER, gitgraph, C4. Over limit → split overview+detail, or hand data charts to [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart).
 
-1. Node labels ≤ 12 CJK chars (~30 latin); details go to edge labels/notes/body text
-2. ≤ 15 nodes per diagram; split into "overview + detail" beyond that
-3. No global `style`/`classDef` recoloring; classDef only to emphasize individual nodes
-4. Name your `subgraph`s; container colors belong to the theme
-5. ≤ 3 emoji per diagram; brand icons `A@{icon: logos:react}` + `--icon logos`
-6. Titles via `--title`, never hand-written frontmatter
+## Diagram rules
 
-## Self-check loop (mandatory after rendering)
+1. Node labels ≤ 12 CJK chars; details go to edges/notes/prose
+2. Overview ≤9 nodes / ≤12 edges / ≤2 accents; sequence ≤5 lifelines. Degrade in order: decoration → duplicate merge → fold leaf clusters → degree-1 sinks → cross-cutting infra → split
+3. No global `style`/`classDef`; emphasize individual nodes only
+4. Name your `subgraph`s; cross-team handoff prefers swimlane
+5. Title/source/unit via `--title`/`--subtitle`/`--source`/`--unit`, never hand-written frontmatter
+6. CJK ≥ 12px; thin rings/arrows hold digits only
 
-1. Verify with `--json`: `failed:0` and `files.length === blocks × formats`
-2. **Read the generated PNG**: no truncated text, clear contrast, edges don't cross text, even margins on all four sides
-3. Problem → fix the diagram or styling → re-render that block with `--index N`; at most 2 iterations, then ask the user
+## Self-check loop
+
+1. `--json`: `failed:0`; non-empty `warnings` → split or AntV (`--strict-chart` promotes to errors)
+2. **Read the PNG**: caption visible, no truncated text, not over budget, even padding
+3. If you cut density, one fidelity line: "18 source nodes → 9 on the figure"
+4. Re-render with `--index N`; at most 2 iterations
 
 ## JSON contract (--json)
 
-One JSON on stdout: `theme/layout/format/background/blocks/rendered/failed/files[]/errors[{input,index,error}]`; with `--profile` an extra `profile{stage:{count,totalMs,avgMs,maxMs,maxLabel}}`. Non-JSON mode prints artifact paths line-by-line on stdout, progress on stderr.
+One JSON on stdout: `theme/layout/format/background/preset?/brand?/caption?/blocks/rendered/failed/files[]/errors[]/warnings[{input,index,code,message}]`; with `--profile` an extra `profile`. Non-JSON mode prints artifact paths on stdout.
 
 ## Error triage
 
 | Error | Nature | Fix |
 | --- | --- | --- |
-| `no Chrome/Edge found … --browser <path>` | No browser | Install Edge/Chrome or `--browser "<path-to-msedge.exe>"`; never auto-downloads |
-| `render timed out after 60s` | Resource pressure / hang | CLI already retried; rerun the command, isolate with `--jobs 1` if persistent |
+| `no Chrome/Edge found … --browser <path>` | No browser | Install Edge/Chrome or `--browser`; never auto-downloads |
+| `render timed out after 60s` | Resource pressure / hang | CLI already retried; isolate with `--jobs 1` |
 | `icon pack "xxx" not found` | Network down (unpkg) | Drop `--icon`, or run once online to warm the cache |
 | Chinese glyphs become boxes | Shouldn't happen (font bundled) | Check whether `--config`/`--theme-js` overrode fontFamily |
-| `Parsing error` (exit 1) | **Diagram syntax error** | Fix per the mermaid line info; other blocks unaffected |
+| `Parsing error` / limit message (exit 1) | **Diagram or fence is wrong** | Fix per the message; other blocks unaffected |
 | exit 2 | Usage error | Compare against `mmdx --help` |
 | SVG text vanishes in non-browser tools | svg is HTML-implemented | Use `-f png` |
 
-Rule of thumb: **exit 2 = wrong flags; Parsing error = wrong diagram; look the error up before reinstalling anything**.
+Rule of thumb: **exit 2 = wrong flags; exit 1 = wrong diagram or over limit; look the error up before reinstalling anything**.
 
 ## Theme notes
 
-`-t`: `tech` (default, tech docs) · `openai`/`openai-dark` (minimal) · `minimal` (Obsidian) · `latte`/`mocha` (Catppuccin) · `sketch` (hand-drawn).
-Layering: preset → `--theme-js` (function body `(config, ctx) => config`, must return config) → `--config` (native mermaid config deep-merge) → `--css`.
+`-t`: `tech` (default, shape-coded) · `openai`/`openai-dark` · `minimal` · `latte`/`mocha` · `sketch`.
+Layering: theme → `--brand` → `--theme-js` → `--config` → `--css`. `--brand` does not recolor flowchart decision diamonds.
 
 ## Exit codes
 
@@ -100,3 +115,4 @@ Layering: preset → `--theme-js` (function body `(config, ctx) => config`, must
 - Batch > 30 blocks → `--jobs 4` (default 2; single-browser page pool, don't go higher)
 - Same-named md files overwrite each other in one `-o` dir → separate directories or `--index`
 - `--config` JSON must be a real file (no process substitution on Windows)
+- Hand-written `xychart-beta` is the #1 ugly-chart source → use ` ```chart `
