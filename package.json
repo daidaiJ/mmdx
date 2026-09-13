@@ -15,17 +15,6 @@
   "bin": {
     "mmdx": "src/cli.ts"
   },
-  "files": [
-    "src",
-    "skill",
-    "README.md",
-    "README.en.md",
-    "LICENSE",
-    "CHANGELOG.md"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
   "dependencies": {
     "@mermaid-js/layout-elk": "^0.2.3",
     "mermaid": "^11.17.2",
