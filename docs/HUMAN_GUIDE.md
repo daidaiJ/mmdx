@@ -8,8 +8,9 @@
 
 - [安装部署](#安装部署)
   - [方式 A：Release 二进制（推荐）](#方式-a-二进制推荐)
-  - [方式 B：动态运行时](#方式-b-动态运行时需要-bun)
-  - [方式 C：克隆构建](#方式-c-克隆构建)
+  - [方式 B：npm 安装](#方式-b-npm-安装需要-bun)
+  - [方式 C：动态运行时](#方式-c-动态运行时需要-bun)
+  - [方式 D：克隆构建](#方式-d-克隆构建)
   - [浏览器依赖](#浏览器依赖)
 - [快速开始](#快速开始)
 - [CLI 全参数参考](#cli-全参数参考)
@@ -35,7 +36,18 @@ curl -L -o mmdx.exe https://github.com/daidaiJ/mmdx/releases/latest/download/mmd
 
 GitHub CDN 超时时给命令加代理前缀（如 `HTTPS_PROXY=... curl ...`）。
 
-### 方式 B：动态运行时（需要 bun）
+### 方式 B：npm 安装（需要 bun）
+
+适合已有 bun 环境的机器（或 AI agent 沙箱）。npm 包内是 TS 源码，由 bun 直接解释运行：
+
+```bash
+npm install -g mmdx            # 或 bun install -g mmdx
+mmdx --version                 # 免安装跑一次：bunx mmdx --help
+```
+
+> 需要 bun ≥ 1.1 在 PATH（`engines` 已声明）。没有 bun 的机器用方式 A 的二进制。push 新 tag 后 release workflow 会自动把该版本发到 npm，无需手工发布。
+
+### 方式 C：动态运行时（需要 bun）
 
 下载 Release 里的 `mmdx-dynamic-<tag>.zip`，解压后用 bun 直接跑源码（改主题、调渲染逻辑时方便）：
 
@@ -45,7 +57,7 @@ bun install
 bun run src/cli.ts --help
 ```
 
-### 方式 C：克隆构建
+### 方式 D：克隆构建
 
 ```bash
 git clone https://github.com/daidaiJ/mmdx.git && cd mmdx

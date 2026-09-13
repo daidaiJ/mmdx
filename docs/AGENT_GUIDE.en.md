@@ -11,7 +11,8 @@ Office diagram CLI. Renders fenced blocks to PNGs you can paste into PPT / Word 
 ```bash
 # 1. Release binary (recommended, no Node)
 curl -L -o "$TMP/mmdx.exe" https://github.com/daidaiJ/mmdx/releases/latest/download/mmdx-windows-x64.exe
-# 2. Run from source (needs bun): bun run src/cli.ts
+# 2. npm (needs bun ≥ 1.1 on PATH): npm install -g mmdx (or one-shot: bunx mmdx)
+# 3. Run from source (needs bun): bun run src/cli.ts
 ```
 
 Below it's written as `mmdx`. Rendering needs system Edge/Chrome; if missing you get `no Chrome/Edge found` — pass `--browser <path>`. **Never auto-downloads a browser.**

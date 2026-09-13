@@ -6,6 +6,7 @@
 
 ## [Unreleased]
 
+- 新增 npm 分发：push tag 后 release workflow 自动把源码包发到 npm（`npm i -g mmdx`，运行需 bun ≥ 1.1；CI 内 build 内联资源、版本号对齐 tag，发布用 `files` 白名单只带 src / skill / 文档）
 - 日历热力改成办公卡：格子随周数放大、空天可见、中文日期与月标、有值格子写次数
 - `tech` 默认主题：形状分色改为可见填色 + 1.5px 描边，连线/饼图/色板加饱和；默认 accent `#2563EB`
 - `--preset slide` 字号 18、描边加粗；skill / AGENT_GUIDE 增加投屏/PPT 导出引导（触发词 → 命令 → 5 米自检）

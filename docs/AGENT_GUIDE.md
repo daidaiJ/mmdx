@@ -11,7 +11,8 @@
 ```bash
 # 1. Release 二进制（推荐，免 Node）
 curl -L -o "$TMP/mmdx.exe" https://github.com/daidaiJ/mmdx/releases/latest/download/mmdx-windows-x64.exe
-# 2. 源码动态运行（需 bun）：bun run src/cli.ts
+# 2. npm 安装（需 bun ≥ 1.1 在 PATH）：npm install -g mmdx（或 bunx mmdx 免安装）
+# 3. 源码动态运行（需 bun）：bun run src/cli.ts
 ```
 
 下文统一写 `mmdx`。渲染需系统 Edge/Chrome，找不到时报错 `no Chrome/Edge found`，用 `--browser <path>`；**绝不自动下载浏览器**。

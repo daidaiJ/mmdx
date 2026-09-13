@@ -36,11 +36,14 @@
 #   最新版：https://github.com/daidaiJ/mmdx/releases/latest
 #   直链：  https://github.com/daidaiJ/mmdx/releases/latest/download/mmdx-windows-x64.exe
 
-# 方式 B：动态运行时（需要 bun）
+# 方式 B：npm 安装（需要 bun ≥ 1.1 在 PATH；渲染需系统自带 Edge/Chrome）
+npm install -g mmdx            # 或 bun install -g mmdx；免安装跑一次：bunx mmdx --help
+
+# 方式 C：动态运行时（需要 bun）
 #   下载 mmdx-dynamic-<tag>.zip 解压后：
 unzip mmdx-dynamic-v*.zip && cd mmdx-dynamic && bun install && bun run src/cli.ts --help
 
-# 方式 C：克隆构建
+# 方式 D：克隆构建
 bun run build && ./dist/mmdx-windows-x64.exe --help
 ```
 

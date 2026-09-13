@@ -8,8 +8,9 @@ This guide targets **human users** and covers installing mmdx, the full CLI refe
 
 - [Installation](#installation)
   - [Option A: release binary (recommended)](#option-a-release-binary-recommended)
-  - [Option B: dynamic runtime](#option-b-dynamic-runtime-needs-bun)
-  - [Option C: clone & build](#option-c-clone--build)
+  - [Option B: npm](#option-b-npm-needs-bun)
+  - [Option C: dynamic runtime](#option-c-dynamic-runtime-needs-bun)
+  - [Option D: clone & build](#option-d-clone--build)
   - [Browser dependency](#browser-dependency)
 - [Quick start](#quick-start)
 - [Full CLI reference](#full-cli-reference)
@@ -35,7 +36,18 @@ curl -L -o mmdx.exe https://github.com/daidaiJ/mmdx/releases/latest/download/mmd
 
 If the GitHub CDN times out, prefix the command with your proxy (e.g. `HTTPS_PROXY=... curl ...`).
 
-### Option B: dynamic runtime (needs bun)
+### Option B: npm (needs bun)
+
+For machines that already have bun (or AI-agent sandboxes). The npm package ships the TS source, which bun interprets directly:
+
+```bash
+npm install -g mmdx            # or: bun install -g mmdx
+mmdx --version                 # one-shot without installing: bunx mmdx --help
+```
+
+> Requires bun ≥ 1.1 on PATH (declared in `engines`). Machines without bun should use the binary in Option A. Pushing a new tag makes the release workflow publish that version to npm automatically — no manual publishing.
+
+### Option C: dynamic runtime (needs bun)
 
 Download `mmdx-dynamic-<tag>.zip` from the release assets and run the source with bun (handy when tweaking themes or render logic):
 
@@ -45,7 +57,7 @@ bun install
 bun run src/cli.ts --help
 ```
 
-### Option C: clone & build
+### Option D: clone & build
 
 ```bash
 git clone https://github.com/daidaiJ/mmdx.git && cd mmdx

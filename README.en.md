@@ -36,11 +36,14 @@ Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 #   Latest: https://github.com/daidaiJ/mmdx/releases/latest
 #   Direct: https://github.com/daidaiJ/mmdx/releases/latest/download/mmdx-windows-x64.exe
 
-# Option B: dynamic runtime (needs bun)
+# Option B: npm (needs bun ≥ 1.1 on PATH; rendering uses system Edge/Chrome)
+npm install -g mmdx            # or: bun install -g mmdx; one-shot without installing: bunx mmdx --help
+
+# Option C: dynamic runtime (needs bun)
 #   Download mmdx-dynamic-<tag>.zip, then:
 unzip mmdx-dynamic-v*.zip && cd mmdx-dynamic && bun install && bun run src/cli.ts --help
 
-# Option C: clone & build
+# Option D: clone & build
 bun run build && ./dist/mmdx-windows-x64.exe --help
 ```
 
