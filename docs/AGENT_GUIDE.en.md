@@ -74,19 +74,22 @@ Chat/slides: `-f png` or `--preset slide|a4|square` (preset defaults to png unle
 ## Diagram rules
 
 1. Node labels ≤ 12 CJK chars; details go to edges/notes/prose
-2. Overview ≤9 nodes / ≤12 edges / ≤2 accents; sequence ≤5 lifelines. Degrade in order: decoration → duplicate merge → fold leaf clusters → degree-1 sinks → cross-cutting infra → split
-3. No global `style`/`classDef`; emphasize individual nodes only
-4. Name your `subgraph`s; cross-team handoff prefers swimlane
-5. Title/source/unit via `--title`/`--subtitle`/`--source`/`--unit`, never hand-written frontmatter
-6. CJK ≥ 12px; thin rings/arrows hold digits only
-7. **5-metre projection check** (Read the PNG): squint — shape coding still reads, title is on the figure, nothing truncated. If not, cut nodes; do not add `--css`
+2. Labels containing `()`/`[]` brackets must be fully quoted: `A["O(1) overhead"]` — bare brackets break the parser at `(` with a Parsing error
+3. Overview ≤9 nodes / ≤12 edges / ≤2 accents; sequence ≤5 lifelines. Degrade in order: decoration → duplicate merge → fold leaf clusters → degree-1 sinks → cross-cutting infra → split
+4. **No single-chain snakes**: ≥6 nodes in one line (TD or LR) makes a skinny canvas that layouts badly in documents → split into 2-4 phase `subgraph`s (outer `LR`, inner `direction TB`); pure linear stories → timeline
+5. No global `style`/`classDef`; emphasize individual nodes only
+6. Name your `subgraph`s; cross-team handoff prefers swimlane
+7. Title/source/unit via `--title`/`--subtitle`/`--source`/`--unit`, never hand-written frontmatter
+8. CJK ≥ 12px; thin rings/arrows hold digits only
+9. **5-metre projection check** (Read the PNG): squint — shape coding still reads, title is on the figure, nothing truncated. If not, cut nodes; do not add `--css`
 
 ## Self-check loop
 
 1. `--json`: `failed:0`; non-empty `warnings` → split or AntV (`--strict-chart` promotes to errors)
 2. **Read the PNG**: caption visible, no truncated text, not over budget, even padding
-3. If you cut density, one fidelity line: "18 source nodes → 9 on the figure"
-4. Re-render with `--index N`; at most 2 iterations
+3. **sequence: always check the bottom** — note box / lifeline tails complete (large fonts make height measurement undershoot; see Common pitfalls)
+4. If you cut density, one fidelity line: "18 source nodes → 9 on the figure"
+5. Re-render with `--index N`; at most 2 iterations
 
 ## JSON contract (--json)
 
@@ -100,9 +103,10 @@ One JSON on stdout: `theme/layout/format/background/preset?/brand?/caption?/bloc
 | `render timed out after 60s` | Resource pressure / hang | CLI already retried; isolate with `--jobs 1` |
 | `icon pack "xxx" not found` | Network down (unpkg) | Drop `--icon`, or run once online to warm the cache |
 | Chinese glyphs become boxes | Shouldn't happen (font bundled) | Check whether `--config`/`--theme-js` overrode fontFamily |
-| `Parsing error` / limit message (exit 1) | **Diagram or fence is wrong** | Fix per the message; other blocks unaffected |
+| `Parsing error` / limit message (exit 1) | **Diagram or fence is wrong** | Fix per the message; other blocks unaffected; stuck at `(`/`[` usually means an unquoted label with brackets (rule 2) |
 | exit 2 | Usage error | Compare against `mmdx --help` |
 | SVG text vanishes in non-browser tools | svg is HTML-implemented | Use `-f png` |
+| sequence clipped at the bottom (note box / lifeline tails cut) | Global `fontSize` is not part of sequence layout math | `--config` must also set `sequence.actorFontSize/messageFontSize/noteFontSize`; do NOT band-aid with `overflow:visible` (lifelines paint far past the viewBox and pierce page content) |
 
 Rule of thumb: **exit 2 = wrong flags; exit 1 = wrong diagram or over limit; look the error up before reinstalling anything**.
 
@@ -121,3 +125,5 @@ Layering: theme → `--brand` → `--theme-js` → `--config` → `--css`. `--br
 - Same-named md files overwrite each other in one `-o` dir → separate directories or `--index`
 - `--config` JSON must be a real file (no process substitution on Windows)
 - Hand-written `xychart-beta` is the #1 ugly-chart source → use ` ```chart `
+- **Enlarging sequence fonts**: global `themeVariables.fontSize` scales text but not layout — also set `sequence:{actorFontSize,messageFontSize,noteFontSize}` to the same value, or the bottom gets clipped
+- **Embedding SVG into HTML/PDF**: artifacts ship a fixed pixel width and `max-width:none` → container CSS needs `svg{max-width:100%!important;height:auto!important}`; inject a `viewBox` when missing (some sequence outputs); add `break-inside:avoid` print rules to stop page-break slicing

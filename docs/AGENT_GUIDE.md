@@ -74,19 +74,22 @@ echo "graph LR; A-->B" | mmdx - -f png
 ## 写图规则
 
 1. 节点标签 ≤ 12 中文字；细节放边线/note/正文
-2. 总览 ≤9 节点 / ≤12 边 / 强调 ≤2；sequence 生命线 ≤5。降级：装饰 → 副本合并 → 叶子簇折叠 → 度-1 汇点 → 横切基础设施 → 拆图
-3. 不写全局 `style`/`classDef`；仅强调个别节点
-4. `subgraph` 要命名；跨部门交接优先 swimlane
-5. 标题/来源/单位用 `--title`/`--subtitle`/`--source`/`--unit`，不手写 frontmatter
-6. 中文 ≥ 12px；细环/细箭头里只放数字
-7. **投屏 5 米测试**（Read PNG）：眯眼能分清形状分色、图题在、字不截断。失败则砍节点，不加 `--css`
+2. 标签含 `()`/`[]` 等括号必须整体加引号：`A["O(1) 开销"]`——裸写会断在 `(` 报 Parsing error
+3. 总览 ≤9 节点 / ≤12 边 / 强调 ≤2；sequence 生命线 ≤5。降级：装饰 → 副本合并 → 叶子簇折叠 → 度-1 汇点 → 横切基础设施 → 拆图
+4. **禁一条龙长链**：≥6 节点串成一条线（无论 TD/LR）画布细长、嵌入文档难布局 → 按阶段拆 2-4 个 `subgraph`（外层 `LR`、组内 `direction TB`）；纯线性叙事改 timeline
+5. 不写全局 `style`/`classDef`；仅强调个别节点
+6. `subgraph` 要命名；跨部门交接优先 swimlane
+7. 标题/来源/单位用 `--title`/`--subtitle`/`--source`/`--unit`，不手写 frontmatter
+8. 中文 ≥ 12px；细环/细箭头里只放数字
+9. **投屏 5 米测试**（Read PNG）：眯眼能分清形状分色、图题在、字不截断。失败则砍节点，不加 `--css`
 
 ## 自检闭环
 
 1. `--json`：`failed:0`；`warnings` 非空则拆图或换 AntV（`--strict-chart` 升为错误）
 2. **Read PNG**：图题/来源可见、文字不截断、不超限、留白均匀
-3. 若砍过密度，保真一句：「18 源节点 → 9 张图」
-4. `--index N` 重渲染；最多 2 轮
+3. **sequence 必查底部**：Note 框/生命线收尾完整——放大字号见「常见坑」的 sequence 字号条目
+4. 若砍过密度，保真一句：「18 源节点 → 9 张图」
+5. `--index N` 重渲染；最多 2 轮
 
 ## JSON 契约（--json）
 
@@ -100,9 +103,10 @@ stdout 单份 JSON：`theme/layout/format/background/preset?/brand?/caption?/blo
 | `render timed out after 60s` | 资源紧张/假死 | CLI 已自动重试；持续则 `--jobs 1` |
 | `icon pack "xxx" not found` | 网络不通（unpkg） | 去掉 `--icon` 或先联网跑一次用缓存 |
 | 中文变方块 | 不应发生（内置字体） | 检查 `--config`/`--theme-js` 是否覆盖 fontFamily |
-| `Parsing error` / 超限信息（exit 1） | **图或围栏写错** | 按信息修图，其他块不受影响 |
+| `Parsing error` / 超限信息（exit 1） | **图或围栏写错** | 按信息修图，其他块不受影响；卡在 `(`/`[` 多为标签含括号没加引号（写图规则 2） |
 | exit 2 | 参数用法错误 | `mmdx --help` 对照 |
 | SVG 在非浏览器工具文字消失 | svg 是 HTML 实现 | 改 `-f png` |
+| sequence 底部被裁（Note/收尾缺一截） | 全局 `fontSize` 不参与 sequence 布局计算 | `--config` 同改 `sequence.actorFontSize/messageFontSize/noteFontSize`；勿用 `overflow:visible` 兜底（生命线会穿透页面） |
 
 总原则：**exit 2 = 参数错；exit 1 = 图写错或超限；报错先查表，别盲目重装环境**。
 
@@ -121,3 +125,5 @@ stdout 单份 JSON：`theme/layout/format/background/preset?/brand?/caption?/blo
 - 同名 md 导出到同一 `-o` 目录互相覆盖 → 分目录或 `--index`
 - `--config` 的 JSON 要落成真实文件（Windows 无进程替换）
 - 手写 `xychart-beta` 容易出丑 → 改用 ` ```chart `
+- **sequence 放大字号**：全局 `themeVariables.fontSize` 只放大文字不参与布局，必须配 `sequence:{actorFontSize,messageFontSize,noteFontSize}` 同值，否则底部被裁
+- **SVG 嵌 HTML/PDF**：产物带固定像素宽且 `max-width:none` → 容器 CSS 需 `svg{max-width:100%!important;height:auto!important}`；无 `viewBox` 的（部分 sequence）按宽高注入；打印加 `break-inside:avoid` 防跨页截断
