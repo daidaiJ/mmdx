@@ -795,7 +795,7 @@ export function htmlKindToInner(kind: BlockKind, code: string): string {
 
 export interface PageOpts {
   wrapWidth?: number;
-  density?: 'standard' | 'slide';
+  density?: 'standard' | 'slide' | 'column';
   caption?: Caption;
   tokens?: Tokens;
 }
@@ -814,6 +814,7 @@ body { margin: 0; background: var(--paper, #ffffff); }
 }
 .wrap.fixed { display: block; }
 .wrap.slide { padding: 20px 24px 80px; font-size: 16px; }
+.wrap.column { font-size: 16px; }
 .fig { display: flex; justify-content: center; }
 .fig svg { display: block; max-width: 100%; height: auto; }
 .caption-head { margin: 0 0 12px; }
@@ -986,7 +987,7 @@ export function blockPage(inner: string, opts: PageOpts = {}): string {
   const body = pos === 'bottom'
     ? `${inner}${cap.head}${cap.foot}`
     : `${cap.head}${inner}${cap.foot}`;
-  const cls = ['wrap', density === 'slide' ? 'slide' : '', width ? 'fixed' : ''].filter(Boolean).join(' ');
+  const cls = ['wrap', density === 'slide' ? 'slide' : '', density === 'column' ? 'column' : '', width ? 'fixed' : ''].filter(Boolean).join(' ');
   const widthCss = width ? `.wrap.fixed{width:${width}px;}` : '';
   return `<!doctype html><html><head><meta charset="utf-8"><style>${tokenCss(tokens)}${PAGE_CSS}${widthCss}</style></head>` +
     `<body><div class="${cls}">${body}</div></body></html>`;

@@ -38,16 +38,18 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 ## 命令档位
 
 ```bash
-# L0 办公默认：PNG + 幻灯片画幅
+# L0 聊天/窄栏：PNG + 800px 栏宽（2K 约 1/3）
+mmdx doc.md --preset column
+# L0b 投屏/PPT
 mmdx doc.md --preset slide --title "Q1 销售构成" --unit 万元 --source "财务月报"
 # L1 批量/定向
-mmdx a.md b.md -o dist/ --preset slide
+mmdx a.md b.md -o dist/ --preset column
 mmdx doc.md --index 2 -f png
 # L2 精确命名 / stdin
-echo "graph LR; A-->B" | mmdx - -f png
+echo "graph TD; A-->B" | mmdx - -f png --preset column
 ```
 
-聊天/幻灯片 `-f png` 或 `--preset slide|a4|square`（preset 未显式 `-f` 时默认 png）。**投屏 / PPT / 上会 / 周会 / 大屏** 必须 `--preset slide`（字号 18 + 加粗描边），并带 `--title`；不要用 `--css` 手调对比度，不要用暗色主题投会议室。飞书卡片 `square`，Word `a4`。`both` 仅开发者嵌 Markdown。显式 `--width`/`--scale`/`-f` 覆盖 preset。跟 VI：`--brand #2563EB`（只改强调色；投影不要用过浅的蓝）。
+聊天/窄栏用 `--preset column`（800px@2，字号 18、标签换行 200px；2K 屏约 1/3 栏宽）。**投屏 / PPT / 上会 / 周会 / 大屏** 必须 `--preset slide`（字号 18 + 加粗描边），并带 `--title`；不要用 `--css` 手调对比度，不要用暗色主题投会议室。飞书卡片 `square`，Word `a4`。`both` 仅开发者嵌 Markdown。显式 `--width`/`--scale`/`-f` 覆盖 preset。跟 VI：`--brand #2563EB`（只改强调色；投影不要用过浅的蓝）。`--json.warnings` 出现 `column-landscape` / `column-shrink` → 改 `flowchart TD` 或拆图，不要加宽 `--width`。
 
 ## 选型速查
 
@@ -76,7 +78,7 @@ echo "graph LR; A-->B" | mmdx - -f png
 1. 节点标签 ≤ 12 中文字；细节放边线/note/正文
 2. 标签含 `()`/`[]` 等括号必须整体加引号：`A["O(1) 开销"]`——裸写会断在 `(` 报 Parsing error
 3. 总览 ≤9 节点 / ≤12 边 / 强调 ≤2；sequence 生命线 ≤5。降级：装饰 → 副本合并 → 叶子簇折叠 → 度-1 汇点 → 横切基础设施 → 拆图
-4. **禁一条龙长链**：≥6 节点串成一条线（无论 TD/LR）画布细长、嵌入文档难布局 → 按阶段拆 2-4 个 `subgraph`（外层 `LR`、组内 `direction TB`）；纯线性叙事改 timeline
+4. **禁一条龙长链**：≥6 节点串成一条线（无论 TD/LR）画布细长、嵌入文档难布局 → 按阶段拆 2-4 个 `subgraph`（聊天用外层 `TD`；投屏宽屏才外层 `LR`、组内 `direction TB`）；纯线性叙事改 timeline
 5. 不写全局 `style`/`classDef`；仅强调个别节点
 6. `subgraph` 要命名；跨部门交接优先 swimlane
 7. 标题/来源/单位用 `--title`/`--subtitle`/`--source`/`--unit`，不手写 frontmatter

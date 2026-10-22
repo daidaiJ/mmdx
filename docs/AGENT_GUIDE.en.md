@@ -38,16 +38,18 @@ Before drawing, state in one or two sentences: type, `--preset` (if any), what t
 ## Command tiers
 
 ```bash
-# L0 office default: PNG + slide frame
+# L0 chat / narrow column: PNG + 800px (≈1/3 of 2K)
+mmdx doc.md --preset column
+# L0b projection / PPT
 mmdx doc.md --preset slide --title "Q1 mix" --unit "CNY wan" --source "Finance"
 # L1 batch / targeted
-mmdx a.md b.md -o dist/ --preset slide
+mmdx a.md b.md -o dist/ --preset column
 mmdx doc.md --index 2 -f png
 # L2 exact name / stdin
-echo "graph LR; A-->B" | mmdx - -f png
+echo "graph TD; A-->B" | mmdx - -f png --preset column
 ```
 
-Chat/slides: `-f png` or `--preset slide|a4|square` (preset defaults to png unless `-f` is explicit). **Projection / PPT / all-hands / big screen** must use `--preset slide` (18px type + heavier strokes) plus `--title`. Do not hand-tune contrast with `--css`; do not project `mocha`/`openai-dark`. Feishu cards: `square`. Word: `a4`. `both` is for developers embedding Markdown. Explicit `--width`/`--scale`/`-f` override the preset. Brand: `--brand #2563EB` (accent only; skip washed-out light blues on a projector).
+Chat / narrow-column surfaces: `--preset column` (800px@2, 18px type, 200px label wrap; ≈1/3 of a 2560×1440 display). **Projection / PPT / all-hands / big screen** must use `--preset slide` (18px type + heavier strokes) plus `--title`. Do not hand-tune contrast with `--css`; do not project `mocha`/`openai-dark`. Feishu cards: `square`. Word: `a4`. `both` is for developers embedding Markdown. Explicit `--width`/`--scale`/`-f` override the preset. Brand: `--brand #2563EB` (accent only; skip washed-out light blues on a projector). `column-landscape` / `column-shrink` in `--json.warnings` → switch to `flowchart TD` or split; do not raise `--width`.
 
 ## Diagram picking
 
@@ -76,7 +78,7 @@ Chat/slides: `-f png` or `--preset slide|a4|square` (preset defaults to png unle
 1. Node labels ≤ 12 CJK chars; details go to edges/notes/prose
 2. Labels containing `()`/`[]` brackets must be fully quoted: `A["O(1) overhead"]` — bare brackets break the parser at `(` with a Parsing error
 3. Overview ≤9 nodes / ≤12 edges / ≤2 accents; sequence ≤5 lifelines. Degrade in order: decoration → duplicate merge → fold leaf clusters → degree-1 sinks → cross-cutting infra → split
-4. **No single-chain snakes**: ≥6 nodes in one line (TD or LR) makes a skinny canvas that layouts badly in documents → split into 2-4 phase `subgraph`s (outer `LR`, inner `direction TB`); pure linear stories → timeline
+4. **No single-chain snakes**: ≥6 nodes in one line (TD or LR) makes a skinny canvas that layouts badly in documents → split into 2-4 phase `subgraph`s (outer `TD` for chat; outer `LR` + inner `direction TB` only on a wide slide); pure linear stories → timeline
 5. No global `style`/`classDef`; emphasize individual nodes only
 6. Name your `subgraph`s; cross-team handoff prefers swimlane
 7. Title/source/unit via `--title`/`--subtitle`/`--source`/`--unit`, never hand-written frontmatter

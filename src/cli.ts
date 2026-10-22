@@ -12,12 +12,12 @@ import {
 } from './blocks.ts';
 import { chartToMermaid, parseChart } from './chart.ts';
 import { getBuildVersion, loadAssets } from './embed.ts';
-import { scanLimits, type LimitHit } from './limits.ts';
+import { scanColumnHints, scanLimits, type LimitHit } from './limits.ts';
 import { Renderer } from './render.ts';
 import { applyBrand, DEFAULT_TOKENS, type Tokens } from './tokens.ts';
-import { applySlideDensity, DEFAULT_THEME, deepMerge, PRESETS, SIZE_PRESETS, type SizePreset } from './themes.ts';
+import { applyColumnDensity, applySlideDensity, DEFAULT_THEME, deepMerge, PRESETS, SIZE_PRESETS, type SizePreset } from './themes.ts';
 
-let VERSION = '1.1.0';
+let VERSION = '1.2.0';
 
 type Optimize = (svg: string, opts: unknown) => { data: string };
 let svgoOptimize: Optimize | null = null;
@@ -49,10 +49,10 @@ Options:
                           --preset defaults to png)
   -t, --theme <name>      tech (default) | openai | openai-dark | minimal |
                           latte | mocha | sketch                (default: tech)
-  --preset <name>         slide | a4 | square  (width+scale+png; explicit
-                          --width/--scale/-f win). slide=1600px@2, a4=900px@2,
-                          square=1080px@2; slide also enlarges type, spacing,
-                          and stroke weight for projection
+  --preset <name>         slide | a4 | square | column  (width+scale+png;
+                          explicit --width/--scale/-f win). slide=1600px@2
+                          (projection type/stroke), a4=900px@2, square=1080px@2,
+                          column=800px@2 (2K office ~1/3 column, tighter wrap)
   --background <color>    page background, e.g. white | transparent | #1A1A1A
   --scale <n>             PNG scale factor                     (default: 2)
   --width <px>            layout viewport width                (default: 1200)
@@ -149,7 +149,7 @@ function parseArgs(argv: string[]): Options {
       case '--preset': {
         const v = need(argv[++i], a);
         if (!(v in SIZE_PRESETS)) {
-          console.error(`mmdx: --preset must be slide|a4|square, got "${v}"`);
+          console.error(`mmdx: --preset must be slide|a4|square|column, got "${v}"`);
           process.exit(2);
         }
         o.preset = v as SizePreset;
@@ -312,6 +312,34 @@ interface JsonWarning {
   message: string;
 }
 
+/** CSS px width mermaid wrote on the root svg (after our viewBox rewrite). */
+function svgUserWidth(svg: string): number | null {
+  const tag = /<svg\b[^>]*>/.exec(svg)?.[0];
+  if (!tag) return null;
+  const wAttr = /\bwidth="([\d.]+)(?:px)?"/.exec(tag);
+  if (wAttr) {
+    const n = Number(wAttr[1]);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  const vb = /\bviewBox="\s*[-\d.]+\s+[-\d.]+\s+([\d.]+)\s+[-\d.]+/.exec(tag);
+  if (vb) {
+    const n = Number(vb[1]);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return null;
+}
+
+function columnShrinkHit(input: string, index: number, svg: string, colW: number): JsonWarning | null {
+  const w = svgUserWidth(svg);
+  if (w == null || w <= colW * 1.05) return null;
+  return {
+    input,
+    index,
+    code: 'column-shrink',
+    message: `diagram intrinsic width ${Math.round(w)}px exceeds column ${colW}px and will be scaled down; use flowchart TD, fewer nodes, or --preset a4`,
+  };
+}
+
 async function main(): Promise<void> {
   VERSION = await getBuildVersion();
   const o = parseArgs(process.argv.slice(2));
@@ -391,6 +419,7 @@ async function main(): Promise<void> {
   const preset = PRESETS[o.theme];
   let config = JSON.parse(JSON.stringify(preset.config)) as Record<string, unknown>;
   if (o.preset === 'slide') applySlideDensity(config);
+  if (o.preset === 'column') applyColumnDensity(config);
   if (o.themeJs) {
     config = applyThemeJs(fs.readFileSync(o.themeJs, 'utf8'), config, { theme: o.theme });
   }
@@ -406,7 +435,7 @@ async function main(): Promise<void> {
 
   const pageOptsBase: PageOpts = {
     wrapWidth: o.preset ? o.width : undefined,
-    density: o.preset === 'slide' ? 'slide' : 'standard',
+    density: o.preset === 'slide' ? 'slide' : o.preset === 'column' ? 'column' : 'standard',
     tokens,
   };
 
@@ -452,6 +481,13 @@ async function main(): Promise<void> {
           const mermaid = chartToMermaid(spec);
           const cap = mergeCaption(cliCaption, { title: spec.title, source: spec.source, unit: spec.unit });
           const { svg } = await renderer.render(mermaid, config, background, false, 'top', '', preset.remap);
+          if (o.preset === 'column') {
+            const hit = columnShrinkHit(b.input, b.index, svg, o.width);
+            if (hit) {
+              warnings.push(hit);
+              log(o.quiet || o.json, `mmdx: ${label} ${hit.message}`);
+            }
+          }
           const html = blockPage(`<div class="fig">${svg}</div>`, { ...pageOptsBase, caption: cap });
           const png = await renderer.renderHtml(html, background, label);
           return { files: writePngOnly(b, png), warnings };
@@ -472,9 +508,22 @@ async function main(): Promise<void> {
         if (o.strictChart && hits.length) {
           throw new Error(hits.map((h) => h.message).join('; '));
         }
+        if (o.preset === 'column') {
+          for (const h of scanColumnHints(b.code)) {
+            warnings.push({ input: b.input, index: b.index, code: h.code, message: h.message });
+            log(o.quiet || o.json, `mmdx: ${label} ${h.message}`);
+          }
+        }
 
         if (wrapMermaid) {
           const { svg } = await renderer.render(b.code, config, background, false, 'top', '', preset.remap);
+          if (o.preset === 'column') {
+            const hit = columnShrinkHit(b.input, b.index, svg, o.width);
+            if (hit) {
+              warnings.push(hit);
+              log(o.quiet || o.json, `mmdx: ${label} ${hit.message}`);
+            }
+          }
           const html = blockPage(`<div class="fig">${svg}</div>`, { ...pageOptsBase, caption: cliCaption });
           const files: string[] = [];
           if (wantSvg) {

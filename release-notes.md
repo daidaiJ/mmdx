@@ -1,15 +1,15 @@
-办公出图 1.1.0：画幅预设、图题层、品牌色、轻量数据围栏。
+mmdx v1.2.0：聊天窄栏画幅 `--preset column`（2K 约 1/3）。
 
 ## 亮点
-- `--preset slide|a4|square`；图题/来源/单位印在 PNG 上（**Breaking：** `--title` 不再写入 mermaid frontmatter）
-- `--brand` 只改扩展块强调色；`--strict-chart` + `--json.warnings`
-- 新围栏：chart / kpi / compare / funnel / task / progress / swimlane / gauge / vs / heatmap
-- skill / AGENT_GUIDE 按办公意图选型（总览 ≤9 节点）；图鉴见 docs/EXTENSIONS.md
-- 测试打开 profile 插桩，避免 HTML 块后按块重注 mermaid
+- `--preset column`：800px@2、字号 18、标签换行 200px，对准 2560×1440 办公屏约 1/3 栏宽
+- `column-landscape` / `column-shrink` 写入 `--json.warnings`；聊天流程图用 TD
+- skill / AGENT_GUIDE：聊天默认 column，投屏仍走 slide
+- Pele 换引擎列为后续（docs/research-pele.md）
+- tech 主题可见填色 + slide 字号 18；heatmap 办公卡样式
 
 ## 产物
 - mmdx-windows-x64.exe — 单文件二进制（免 Node；需系统 Edge/Chrome）
-- mmdx-dynamic-v1.1.0.zip — 动态运行时（需 bun）
+- mmdx-dynamic-v1.2.0.zip — 动态运行时（需 bun）
 
 ## 依赖环境
 Windows 10/11 自带 Microsoft Edge 即可运行。

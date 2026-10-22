@@ -47,7 +47,7 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 
 | 用户要表达的 | 用什么 | 上限 | 典型命令 |
 | --- | --- | --- | --- |
-| 占比 | pie 或 ` ```chart ` `type: pie` | 扇区 3–6 | `-f png --preset slide` |
+| 占比 | pie 或 ` ```chart ` `type: pie` | 扇区 3–6 | `-f png --preset column` |
 | 趋势 | ` ```chart ` `type: line` | 类别 ≤6、系列 ≤2 | 不要手写 `xychart-beta` |
 | 数值对比 | ` ```chart ` `type: bar` | 同上 | |
 | 方案对比（定性） | ` ```compare ` | 恰 2 栏 | |
@@ -56,7 +56,7 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 | 流向 | sankey | | |
 | 四象限 / 优先级 | quadrant | ≤12 项 | |
 | 排期 / 工期 | gantt | | |
-| 流程 / 审批 / 判定 | flowchart | ≤9 节点 / ≤12 边 | `flowchart LR` + 命名 subgraph |
+| 流程 / 审批 / 判定 | flowchart | ≤9 节点 / ≤12 边 | 聊天 `flowchart TD`；投屏才 `LR` + 命名 subgraph |
 | 跨部门交接 | ` ```swimlane ` | 泳道 ≤5、步骤 ≤8 | handoff 才是重点；有环/并行用 flowchart |
 | 需求池 / 多列看板 | kanban | | 当前状态快照改用 ` ```task ` |
 | 任务状态快照 | ` ```task ` | ≤10 行 | 6 态：未开始/设计/开发/测试/已上线/已取消 |
@@ -78,7 +78,7 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 ### 1b. 写图规则
 
 1. **节点标签 ≤ 12 个中文字（约 30 latin）**；细节放边线标签、note、或正文
-2. 方向：流水线 `LR`，决策/状态/层级 `TD`
+2. 方向：决策/状态/层级 `TD`；聊天/窄栏必须 `TD`。只有投屏宽屏才用流水线 `LR`
 3. `subgraph` 要命名，容器配色交给主题
 4. **总览 ≤9 节点 / ≤12 边 / 强调色 ≤2**；sequence 生命线 ≤5。超过不要缩小字号硬塞
 5. **降级阶梯**（按序砍，砍到预算内即停）：装饰（便签/水印）→ 副本合并（Worker ×N）→ 叶子簇折叠进容器 → 度-1 汇点（日志/监控）→ 横切基础设施 → 拆图
@@ -90,22 +90,24 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 
 ### 1c. 渲染
 
-聊天 / 幻灯片默认 **PNG**。贴 PPT / 投屏必须 `--preset slide`（1600px、字号 18、描边加粗）。Word/PDF 用 `--preset a4`，飞书卡片用 `--preset square`。`both`（SVG+PNG）仅开发者把图嵌进 Markdown。
+聊天 / 窄栏文档默认 **PNG + `--preset column`**（800px、字号 18、标签换行 200px；对准 2K 屏约 1/3 栏宽）。贴 PPT / 投屏必须 `--preset slide`（1600px、字号 18、描边加粗）。Word/PDF 用 `--preset a4`，飞书卡片用 `--preset square`。`both`（SVG+PNG）仅开发者把图嵌进 Markdown。
 
 ```bash
-# L0 办公默认
+# L0 聊天/窄栏（对话页、侧栏、1/3 屏正文）
+mmdx doc.md --preset column -f png
+# L0b 投屏/PPT
 mmdx doc.md --preset slide --title "Q1 销售构成" --unit 万元 --source "财务月报"
 # L1 批量/定向
-mmdx a.md b.md -o dist/ --preset slide
+mmdx a.md b.md -o dist/ --preset column
 mmdx doc.md --index 2 -f png
 # L2 精确命名 / stdin
 mmdx doc.md -o out/arch.png
-echo "graph LR; A-->B" | mmdx - -f png
+echo "graph TD; A-->B" | mmdx - -f png --preset column
 ```
 
 覆盖关系：显式 `--width` / `--scale` / `-f` 覆盖 preset 默认值。叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。
 
-### 1c-2. 投屏 / PPT（看到这些词必须走这条，不要用默认画幅）
+### 1c-2. 投屏 / PPT（看到这些词必须走这条）
 
 触发词：**投屏、投影、PPT、幻灯片、上会、周会、分享会、大屏、会议室、贴进 PPT**。  
 飞书卡片 → `--preset square`；Word/PDF → `--preset a4`。不要用 `--css` 手调投影对比度——preset 已经加粗描边和字号。
@@ -127,6 +129,17 @@ mmdx doc.md --preset slide --title "一句话结论" --source "出处" --unit "�
 5. 贴 PPT：图拉满内容区，不要缩成角落缩略图；底栏安全区已预留，不要再往 PNG 里垫大空白
 
 **渲染后自检（Read PNG，5 米测试）：** 眯眼仍能分清蓝流程 / 琥珀判定 / 绿状态；图题在；字不截断。通不过 → 砍节点或拆图，不要加 `--css`。
+
+### 1c-3. 聊天 / 窄栏（对话页、侧栏、正文只有约 1/3 屏宽）
+
+触发词：**聊天、对话、贴进对话、窄栏、侧栏、飞书文档正文、微信、钉钉**。  
+这些表面把图缩到栏宽。用 `--preset column`，让出图宽度对准栏宽。
+
+```bash
+mmdx doc.md --preset column --json --quiet
+```
+
+`--json.warnings` 出现 `column-landscape`（源是 `flowchart LR/RL`）或 `column-shrink`（图本身比 800px 宽、会被 CSS 缩小）→ 改 `flowchart TD`、砍节点或拆图。加大 `--width` 会让缩完的字更小。
 
 ### 1d. 自检闭环（渲染后必做）
 

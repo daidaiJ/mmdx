@@ -70,6 +70,7 @@ mmdx a.md b.md other/*.md -o dist/          # 多文件批量，并行
 mmdx diagram.mmd -o out/arch.svg            # 精确命名，同目录附带 .png
 echo "graph LR; A-->B" | mmdx - -f svg      # stdin 单图
 mmdx report.md --preset slide --title "架构总览" --unit 万元 --source 月报
+mmdx doc.md --preset column                    # 聊天/窄栏正文
 mmdx doc.md -t mocha --background transparent -f png --json
 mmdx doc.md --brand #E4572E --preset square
 mmdx doc.md --list                          # 只列出找到的围栏块，不渲染
@@ -92,7 +93,7 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 | `-o, --out <path>` | 输出目录；单图输入时可为精确文件名（默认与输入同目录） |
 | `-f, --format <fmt>` | `svg` \| `png` \| `both`（默认 both；`--preset` 未显式 `-f` 时默认 png） |
 | `-t, --theme <name>` | `tech`（默认）· `openai` · `openai-dark` · `minimal` · `latte` · `mocha` · `sketch` |
-| `--preset <name>` | `slide`（投屏/PPT：1600px@2，字号 18、描边加粗，底栏预留 ~80px）\| `a4`（900px@2）\| `square`（1080px@2）。显式 `--width`/`--scale`/`-f` 优先 |
+| `--preset <name>` | `slide`（投屏/PPT：1600px@2，字号 18、描边加粗，底栏预留 ~80px）\| `a4`（900px@2）\| `square`（1080px@2）\| `column`（聊天/窄栏：800px@2，2K 约 1/3 栏宽，字号 18、标签换行 200px）。显式 `--width`/`--scale`/`-f` 优先 |
 | `--background <color>` | 页面背景，如 `white` \| `transparent` \| `#1A1A1A`（dark 主题自带深色背景，无需再传） |
 | `--layout <engine>` | `elk`（默认，仅 flowchart 实际加载）\| `dagre` |
 | `--scale <n>` | PNG 缩放倍数（默认 2） |
@@ -203,7 +204,8 @@ page-init       ~1.2s ×页     screenshot      ~90ms ×图（含像素级二次
 | --- | --- |
 | 批量块数 > 30 | `--jobs 4`；默认 2 已够用——单浏览器页池，更高收益递减且增加内存压力 |
 | PNG 体积大 | 降 `--scale`（默认 2，聊天场景 1 足够）；PNG 无损压缩，架构图典型 20–80KB |
-| 宽图被压窄 | 调 `--width`（默认 1200），横向流程图可到 1600+ |
+| 聊天/窄栏里字太小 | `--preset column`，流程图用 `TD`；不要加大 `--width`（画布更宽，缩完字更小） |
+| 投屏/宽屏文档要铺满 | `--preset slide`，或横向流程图再加 `--width` |
 | 只要 SVG | `-f svg` 跳过截图环节 |
 | 首图慢 | browser-launch + page-init 是固定成本（~1.7s），批量摊薄；单图无解，属正常 |
 

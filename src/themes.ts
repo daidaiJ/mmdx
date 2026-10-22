@@ -619,6 +619,8 @@ export const SIZE_PRESETS = {
   slide: { width: 1600, scale: 2 },
   a4: { width: 900, scale: 2 },
   square: { width: 1080, scale: 2 },
+  /** Chat / narrow doc column (~1/3 of a 2560×1440 office display). */
+  column: { width: 800, scale: 2 },
 } as const;
 
 export type SizePreset = keyof typeof SIZE_PRESETS;
@@ -648,6 +650,29 @@ export function applySlideDensity(config: Record<string, unknown>): void {
   seq.messageMargin = 52;
   config.sequence = seq;
   config.themeCSS = ((config.themeCSS as string) || '') + SLIDE_WEIGHT_CSS;
+}
+
+/**
+ * Chat-column density: keep type readable at ~800px CSS width
+ * (≈1/3 of a 2560×1440 office display). wrappingWidth is the real lever —
+ * mermaid will not reflow LR→TD.
+ */
+export function applyColumnDensity(config: Record<string, unknown>): void {
+  config.fontSize = 18;
+  const tv = (config.themeVariables ?? {}) as Record<string, unknown>;
+  tv.fontSize = '18px';
+  config.themeVariables = tv;
+  const fc = (config.flowchart ?? {}) as Record<string, unknown>;
+  fc.nodeSpacing = 56;
+  fc.rankSpacing = 64;
+  fc.padding = 14;
+  fc.wrappingWidth = 200;
+  config.flowchart = fc;
+  const seq = (config.sequence ?? {}) as Record<string, unknown>;
+  seq.actorMargin = 40;
+  seq.messageMargin = 36;
+  seq.wrap = true;
+  config.sequence = seq;
 }
 
 export function deepMerge<T extends Record<string, unknown>>(base: T, extra: Record<string, unknown>): Record<string, unknown> {

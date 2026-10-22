@@ -175,3 +175,20 @@ export function scanLimits(code: string): LimitHit[] {
   if (k === 'sequence') return sequenceHits(code);
   return [];
 }
+
+/** Source-level hints when rendering into `--preset column` (~800px). */
+export function scanColumnHints(code: string): LimitHit[] {
+  const body = stripFrontmatter(code).trim();
+  const line = body.split('\n').find((l) => {
+    const t = l.trim();
+    return t && !t.startsWith('%%');
+  }) ?? '';
+  const t = line.trim();
+  if (/^(flowchart|graph)\s+(LR|RL)\b/i.test(t)) {
+    return [{
+      code: 'column-landscape',
+      message: 'flowchart LR/RL on --preset column is likely wider than the chat column; use flowchart TD or split',
+    }];
+  }
+  return [];
+}

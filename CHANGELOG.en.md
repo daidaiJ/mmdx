@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-22
+
+- New `--preset column` (800px@2, 18px type, 200px label wrap; ≈1/3 of a 2560×1440 office display) for chat / narrow-column surfaces; `column-landscape` / `column-shrink` in `--json.warnings`
+- skill / AGENT_GUIDE: chat defaults to `column`, projection stays on `slide`; chat flowcharts use `TD`
+- Pele engine switch parked as follow-up: [docs/research-pele.md](docs/research-pele.md)
 - Heatmap restyled as an office card: larger tiles, visible empty days, Chinese date/month labels, counts in cells
 - Default `tech` theme: shape-coding as tinted fills + 1.5px strokes, richer lines/pie/palette; default accent `#2563EB`
 - `--preset slide` now 18px type with heavier strokes; skill / AGENT_GUIDE add a projection/PPT export playbook (trigger words → command → 5-metre check)
@@ -56,5 +61,6 @@ First stable release.
 
 - `mmdx-windows-x64.exe` — windows x64 single file (no Node; needs system Edge/Chrome)
 
+[1.2.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.2.0
 [1.1.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.1.0
 [1.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.0.0

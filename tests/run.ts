@@ -16,9 +16,9 @@ import { PNG } from 'pngjs';
 import { blockPage, htmlKindToInner, type BlockKind } from '../src/blocks.ts';
 import { chartToMermaid, parseChart } from '../src/chart.ts';
 import { loadAssets } from '../src/embed.ts';
-import { scanLimits } from '../src/limits.ts';
+import { scanColumnHints, scanLimits } from '../src/limits.ts';
 import { Renderer } from '../src/render.ts';
-import { applySlideDensity, DEFAULT_THEME, PRESETS } from '../src/themes.ts';
+import { applyColumnDensity, applySlideDensity, DEFAULT_THEME, PRESETS } from '../src/themes.ts';
 import { applyBrand, normalizeHex } from '../src/tokens.ts';
 
 const ROOT = path.dirname(import.meta.dir);
@@ -71,6 +71,19 @@ const record = (name: string, ok: boolean, detail: string): void => {
       c.fontSize === 18 && /stroke-width: 2px/.test(css),
       `fontSize=${String(c.fontSize)} css=${/stroke-width: 2px/.test(css)}`,
     );
+  }
+  {
+    const c = JSON.parse(JSON.stringify(PRESETS.tech.config)) as Record<string, unknown>;
+    applyColumnDensity(c);
+    const fc = c.flowchart as { wrappingWidth?: number };
+    record(
+      'unit/column-density',
+      c.fontSize === 18 && fc.wrappingWidth === 200,
+      `fontSize=${String(c.fontSize)} wrap=${String(fc.wrappingWidth)}`,
+    );
+    const lr = scanColumnHints('flowchart LR\n  A-->B');
+    const td = scanColumnHints('flowchart TD\n  A-->B');
+    record('unit/column-landscape', lr.some((h) => h.code === 'column-landscape') && td.length === 0, lr.map((h) => h.code).join(',') || 'none');
   }
   record('unit/brand-bad', normalizeHex('nope') === null, 'null');
   const pale = applyBrand('#EEEEEE');
@@ -295,7 +308,7 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
 
 {
   const help = runCli(['-h']);
-  record('cli/help-preset-index', help.code === 0 && help.stdout.includes('--preset') && help.stdout.includes('--index') && help.stdout.includes('--brand') && help.stdout.includes('--subtitle'), `exit=${help.code}`);
+  record('cli/help-preset-index', help.code === 0 && help.stdout.includes('--preset') && help.stdout.includes('column') && help.stdout.includes('--index') && help.stdout.includes('--brand') && help.stdout.includes('--subtitle'), `exit=${help.code}`);
 }
 
 {
@@ -345,6 +358,12 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
   const oj = JSON.parse(ov.stdout) as { files: string[] };
   const ow = oj.files[0] ? PNG.sync.read(fs.readFileSync(oj.files[0])).width : 0;
   record('cli/preset-width-override', ov.code === 0 && ow === 1600, `exit=${ov.code} w=${ow}`);
+
+  const col = runCli([path.join('tests', 'diagrams', 'flowchart.md'), '--preset', 'column', '--json', '--quiet', '-o', path.join(outDir, 'col')]);
+  const cj = JSON.parse(col.stdout) as { format: string; preset?: string; files: string[]; warnings: Array<{ code: string }> };
+  const cw = cj.files[0] ? PNG.sync.read(fs.readFileSync(cj.files[0])).width : 0;
+  record('cli/preset-column', col.code === 0 && cj.format === 'png' && cj.preset === 'column' && cw === 1600, `exit=${col.code} format=${cj.format} w=${cw}`);
+  record('cli/preset-column-lr-warn', cj.warnings.some((w) => w.code === 'column-landscape'), cj.warnings.map((w) => w.code).join(',') || 'none');
   fs.rmSync(outDir, { recursive: true, force: true });
 }
 

@@ -6,6 +6,11 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-22
+
+- 新增 `--preset column`（800px@2，字号 18、标签换行 200px；对准 2K 办公屏约 1/3 栏宽）：聊天/窄栏正文出图；`column-landscape` / `column-shrink` 写入 `--json.warnings`
+- skill / AGENT_GUIDE：聊天默认 `column`，投屏仍走 `slide`；流程图贴聊天用 `TD`
+- Pele 换引擎列为后续：[docs/research-pele.md](docs/research-pele.md)
 - 日历热力改成办公卡：格子随周数放大、空天可见、中文日期与月标、有值格子写次数
 - `tech` 默认主题：形状分色改为可见填色 + 1.5px 描边，连线/饼图/色板加饱和；默认 accent `#2563EB`
 - `--preset slide` 字号 18、描边加粗；skill / AGENT_GUIDE 增加投屏/PPT 导出引导（触发词 → 命令 → 5 米自检）
@@ -56,5 +61,6 @@
 
 - `mmdx-windows-x64.exe` — windows x64 单文件（免 Node，需系统 Edge/Chrome）
 
+[1.2.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.2.0
 [1.1.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.1.0
 [1.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.0.0

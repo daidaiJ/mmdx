@@ -70,6 +70,7 @@ mmdx a.md b.md other/*.md -o dist/          # multi-file batch, parallel
 mmdx diagram.mmd -o out/arch.svg            # exact name; sibling .png written alongside
 echo "graph LR; A-->B" | mmdx - -f svg      # single diagram from stdin
 mmdx report.md --preset slide --title "Architecture" --unit "ms" --source "bench"
+mmdx doc.md --preset column                    # chat / narrow column
 mmdx doc.md -t mocha --background transparent -f png --json
 mmdx doc.md --brand #E4572E --preset square
 mmdx doc.md --list                          # list the fenced blocks found, no rendering
@@ -92,7 +93,7 @@ Output naming: by default next to the input, `<name>-m<N>.svg/.png` numbered by 
 | `-o, --out <path>` | Output directory; exact filename when input has one diagram (default: next to input) |
 | `-f, --format <fmt>` | `svg` \| `png` \| `both` (default both; `--preset` defaults to png unless `-f` is explicit) |
 | `-t, --theme <name>` | `tech` (default) · `openai` · `openai-dark` · `minimal` · `latte` · `mocha` · `sketch` |
-| `--preset <name>` | `slide` (projection/PPT: 1600px@2, 18px type, heavier strokes, ~80px footer) \| `a4` (900px@2) \| `square` (1080px@2). Explicit `--width`/`--scale`/`-f` win |
+| `--preset <name>` | `slide` (projection/PPT: 1600px@2, 18px type, heavier strokes, ~80px footer) \| `a4` (900px@2) \| `square` (1080px@2) \| `column` (chat/narrow column: 800px@2, ≈1/3 of 2560×1440, 18px type, 200px label wrap). Explicit `--width`/`--scale`/`-f` win |
 | `--background <color>` | Page background, e.g. `white` \| `transparent` \| `#1A1A1A` (dark themes bake in their own background) |
 | `--layout <engine>` | `elk` (default, loaded for flowcharts only) \| `dagre` |
 | `--scale <n>` | PNG scale factor (default 2) |
@@ -203,7 +204,8 @@ page-init       ~1.2s ×page   screenshot      ~90ms ×diagram (incl. pixel-leve
 | --- | --- |
 | Batch > 30 blocks | `--jobs 4`; the default 2 is enough — single-browser page pool, diminishing returns and memory pressure beyond that |
 | PNG too large | Lower `--scale` (default 2; 1 is fine for chat); PNG is lossless, typical architecture diagram 20–80 KB |
-| Wide diagram squashed | Raise `--width` (default 1200); horizontal flowcharts tolerate 1600+ |
+| Tiny type in chat / a narrow column | `--preset column` and `flowchart TD`; do not raise `--width` (a wider canvas shrinks even smaller) |
+| Fill a projector / wide doc | `--preset slide`, or raise `--width` for a horizontal flowchart |
 | SVG only | `-f svg` skips the screenshot stage |
 | First image slow | browser-launch + page-init is fixed cost (~1.7s), amortized over batches; normal for single images |
 
