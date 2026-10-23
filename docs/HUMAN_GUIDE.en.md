@@ -245,4 +245,4 @@ Rule of thumb: **exit 2 = wrong flags; Parsing error = wrong diagram; look the e
 2. **CLI behavior**: exit codes, preset widths, caption, brand, over-limit warnings/`--strict-chart`, bad-block isolation, stdin, JSON contract
 3. **Profile probes**: Renderer `profile` on; fail if `page-reset` / `init-mermaid` counts or per-stage maxMs blow the budget (must not re-inject mermaid after every HTML block)
 
-Visual samples: `bun scripts/make-contact-sheet.ts` (mermaid collage) and `bun scripts/make-review.ts` (`docs/ext-*.png`).
+Visual samples: `bun scripts/make-contact-sheet.ts` (Pele / mermaid engine collages) and `bun scripts/make-review.ts` (`docs/ext-*.png`).

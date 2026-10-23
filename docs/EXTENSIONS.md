@@ -4,7 +4,7 @@
 
 每种围栏一张 **本工具渲染** 的 PNG（`bun scripts/make-review.ts`）。扩展块只出 PNG，均吃 `--title` / `--subtitle` / `--source` / `--unit` 图题层，强调色走 `--brand`。
 
-mermaid 二十种图型拼图见 [tests/contact-sheet.png](../tests/contact-sheet.png)（`bun scripts/make-contact-sheet.ts`，跑完测试后）。
+mermaid 二十种图型拼图：Pele [contact-sheet-pele.png](../tests/contact-sheet-pele.png)、mermaid [contact-sheet-mermaid.png](../tests/contact-sheet-mermaid.png)（`bun scripts/make-contact-sheet.ts`）。
 
 ---
 
@@ -227,7 +227,6 @@ CI 分钟, 8, 3
 ## 更新样图
 
 ```bash
-bun run test
-bun scripts/make-contact-sheet.ts   # mermaid 拼图 → tests/contact-sheet.png
+bun scripts/make-contact-sheet.ts   # Pele / mermaid 拼图 → tests/contact-sheet-*.png
 bun scripts/make-review.ts          # 扩展块 → docs/ext-*.png
 ```

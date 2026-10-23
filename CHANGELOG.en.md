@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+- README now shows Pele / mermaid engine collages (`tests/contact-sheet-pele.png`, `tests/contact-sheet-mermaid.png`)
+
 ## [1.3.0] - 2026-10-23
 
 - Default renderer is now **Pele** ([obsidianmd/pele](https://github.com/obsidianmd/pele) v1.9.0, MIT): own layout + wide S-turn routing, so flowchart edges are curved by default instead of polylines

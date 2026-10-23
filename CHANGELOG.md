@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+- README 增加 Pele / mermaid 双引擎拼图合集（`tests/contact-sheet-pele.png`、`tests/contact-sheet-mermaid.png`）
+
 ## [1.3.0] - 2026-10-23
 
 - 默认渲染引擎改为 **Pele**（[obsidianmd/pele](https://github.com/obsidianmd/pele) v1.9.0，MIT）：自研布局 + 宽 S 弯连线，流程图默认曲线，不再是折线

@@ -7,7 +7,15 @@
 
 **A diagram export CLI built for office agents**: batch-render mermaid and office fences (table / chart / kpi / compare / vs / funnel / task / progress / gauge / heatmap / swimlane …) in Markdown into PNG — themes, CJK fonts, layout engine, and padding are all built in. No MCP server, no browser extension, and the machine producing the output doesn't need Node.
 
-![Rendering samples for twenty diagram types](tests/contact-sheet.png)
+The same `tests/diagrams` fixtures, one collage per engine.
+
+**Pele (default)** — own layout, wide S-turn flowchart edges
+
+![Pele, twenty diagram types](tests/contact-sheet-pele.png)
+
+**mermaid + ELK** — `--engine mermaid`
+
+![mermaid, twenty diagram types](tests/contact-sheet-mermaid.png)
 
 ## 📖 Documentation
 

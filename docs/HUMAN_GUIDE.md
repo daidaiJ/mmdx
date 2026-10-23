@@ -245,4 +245,4 @@ page-init       ~1.2s ×页     screenshot      ~90ms ×图（含像素级二次
 2. **CLI 行为**：退出码、preset 宽度、caption、brand、超限警告/`--strict-chart`、坏块隔离、stdin、JSON 契约
 3. **性能插桩**：打开 Renderer `profile`，卡住 `page-reset` / `init-mermaid` 次数与各阶段 maxMs；HTML 块后只清 DOM，不得按块重注 mermaid
 
-视觉样图：`bun scripts/make-contact-sheet.ts`（mermaid 拼图）与 `bun scripts/make-review.ts`（`docs/ext-*.png`）。
+视觉样图：`bun scripts/make-contact-sheet.ts`（Pele / mermaid 双引擎拼图）与 `bun scripts/make-review.ts`（`docs/ext-*.png`）。

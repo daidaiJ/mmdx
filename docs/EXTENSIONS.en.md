@@ -4,7 +4,7 @@
 
 One PNG **rendered by this tool** per fence (`bun scripts/make-review.ts`). Extension blocks are PNG-only. All of them take `--title` / `--subtitle` / `--source` / `--unit` chrome; accent color follows `--brand`.
 
-The twenty mermaid types are collaged in [tests/contact-sheet.png](../tests/contact-sheet.png) (`bun scripts/make-contact-sheet.ts`, after tests).
+Twenty mermaid types: Pele [contact-sheet-pele.png](../tests/contact-sheet-pele.png), mermaid [contact-sheet-mermaid.png](../tests/contact-sheet-mermaid.png) (`bun scripts/make-contact-sheet.ts`).
 
 ---
 
@@ -227,7 +227,6 @@ Cross-team handoff: `step | lane | next`, ≤5 lanes ≤8 steps. Loops, parallel
 ## Regenerating samples
 
 ```bash
-bun run test
-bun scripts/make-contact-sheet.ts   # mermaid collage → tests/contact-sheet.png
+bun scripts/make-contact-sheet.ts   # Pele / mermaid collages → tests/contact-sheet-*.png
 bun scripts/make-review.ts          # extension samples → docs/ext-*.png
 ```

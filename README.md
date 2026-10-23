@@ -7,7 +7,15 @@
 
 **为 AI agent 打造的办公出图 CLI**：把 Markdown 里的 mermaid 与办公围栏（table / chart / kpi / compare / vs / funnel / task / progress / gauge / heatmap / swimlane …）批量渲染成 PNG——主题、中文字体、布局引擎、留白全部内置，不需要 MCP server、浏览器插件，产物机器上也不需要 Node。
 
-![二十种图型渲染示例](tests/contact-sheet.png)
+同一套 `tests/diagrams` fixture，两种引擎各渲一张拼图。
+
+**Pele（默认）** — 自研布局，流程图宽 S 弯
+
+![Pele 二十种图型](tests/contact-sheet-pele.png)
+
+**mermaid + ELK** — `--engine mermaid`
+
+![mermaid 二十种图型](tests/contact-sheet-mermaid.png)
 
 ## 📖 文档导航
 

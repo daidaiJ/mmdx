@@ -9,6 +9,8 @@ probe-j.ts
 probe*.ts
 !docs/*.png
 !tests/contact-sheet.png
+!tests/contact-sheet-pele.png
+!tests/contact-sheet-mermaid.png
 tests/verify-*.jpg
 
 # codegraph index
