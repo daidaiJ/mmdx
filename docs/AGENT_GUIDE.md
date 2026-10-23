@@ -2,7 +2,7 @@
 
 # mmdx — Agent Guide
 
-办公出图 CLI。把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG；主题、中文字体、ELK、留白全部内置。**不要在图代码里手工调样式，不要用手绘 SVG。**
+办公出图 CLI。把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG；主题、中文字体、Pele 布局、留白全部内置。**不要在图代码里手工调样式，不要用手绘 SVG。**
 
 > 人类阅读版：[HUMAN_GUIDE.md](HUMAN_GUIDE.md) · 扩展块图鉴：[EXTENSIONS.md](EXTENSIONS.md) · 项目概览：[README](../README.md)
 
@@ -116,6 +116,10 @@ stdout 单份 JSON：`theme/layout/format/background/preset?/brand?/caption?/blo
 
 `-t`：`tech`（默认，形状分色 + 可见填色，适合文档和投屏）· `openai`/`openai-dark` · `minimal` · `latte`/`mocha` · `sketch`。
 叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。`--brand` 不重涂 flowchart 判定菱形。投屏不要换 `mocha`/`openai-dark`。
+
+## 渲染引擎
+
+默认 `--engine pele`（[obsidianmd/pele](https://github.com/obsidianmd/pele)）：自研布局 + 宽 S 弯连线，流程图默认曲线；形状分色映射到 `.pele-shape-*`。`--engine mermaid` 回退 Chromium + mermaid.js（连线同样为曲线）。`sketch` 自动回退 mermaid；`--layout elk|dagre` 只对 mermaid 生效。Pele 下 `--config` 只认 `flowchart.nodeSpacing/rankSpacing/wrappingWidth/curve`、`fontSize`、`padding`；`themeCSS`/`look`/`layoutAlgorithm`/`sequence.*` 忽略。扩展块与像素裁切不变，仍走 Chromium。
 
 ## 退出码
 

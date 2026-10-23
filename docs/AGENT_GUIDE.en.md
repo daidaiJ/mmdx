@@ -2,7 +2,7 @@
 
 # mmdx — Agent Guide
 
-Office diagram CLI. Renders fenced blocks to PNGs you can paste into PPT / Word / Feishu. Themes, CJK font, ELK, and padding are built in. **Do not hand-style diagram code; do not freehand SVG.**
+Office diagram CLI. Renders fenced blocks to PNGs you can paste into PPT / Word / Feishu. Themes, CJK font, Pele layout, and padding are built in. **Do not hand-style diagram code; do not freehand SVG.**
 
 > Human-readable version: [HUMAN_GUIDE.en.md](HUMAN_GUIDE.en.md) · Extension gallery: [EXTENSIONS.en.md](EXTENSIONS.en.md) · Overview: [README](../README.en.md)
 
@@ -116,6 +116,10 @@ Rule of thumb: **exit 2 = wrong flags; exit 1 = wrong diagram or over limit; loo
 
 `-t`: `tech` (default, shape-coded tinted fills — docs and projection) · `openai`/`openai-dark` · `minimal` · `latte`/`mocha` · `sketch`.
 Layering: theme → `--brand` → `--theme-js` → `--config` → `--css`. `--brand` does not recolor flowchart decision diamonds. Do not project `mocha`/`openai-dark`.
+
+## Renderer
+
+Default `--engine pele` ([obsidianmd/pele](https://github.com/obsidianmd/pele)): own layout + wide S-turn routing, so flowchart edges are curved by default; shape coding maps onto `.pele-shape-*`. `--engine mermaid` falls back to Chromium + mermaid.js (edges still curved). `sketch` auto-falls back to mermaid; `--layout elk|dagre` applies to mermaid only. Under Pele, `--config` honors `flowchart.nodeSpacing/rankSpacing/wrappingWidth/curve`, `fontSize`, `padding`; `themeCSS`/`look`/`layoutAlgorithm`/`sequence.*` are ignored. Extension blocks and the pixel crop stay on Chromium.
 
 ## Exit codes
 

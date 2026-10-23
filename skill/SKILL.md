@@ -5,7 +5,7 @@ description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 
 
 # mmdx — 办公出图（结构图 + 轻量数据图 + 版式块 → PNG）
 
-把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG。主题、中文字体、ELK、留白全部内置。**不要在图代码里手工调样式，不要用 VSCode 插件，不要让模型手绘 SVG。**
+把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG。主题、中文字体、渲染引擎（默认 Pele，流程图曲线连线）、留白全部内置。**不要在图代码里手工调样式，不要用 VSCode 插件，不要让模型手绘 SVG。**
 
 CLI 获取（按优先级）：
 
@@ -106,6 +106,8 @@ echo "graph TD; A-->B" | mmdx - -f png --preset column
 ```
 
 覆盖关系：显式 `--width` / `--scale` / `-f` 覆盖 preset 默认值。叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。
+
+**渲染引擎**：默认 `--engine pele`（自研布局 + 宽 S 弯连线，流程图默认曲线；形状分色映射到 `.pele-shape-*`）。`--engine mermaid` 回退 Chromium + mermaid.js（连线同样曲线）；`sketch` 自动回退 mermaid。`--layout elk|dagre` 只对 mermaid 生效。Pele 下 `--config` 只认 `flowchart.nodeSpacing/rankSpacing/wrappingWidth/curve`、`fontSize`、`padding`。扩展块与像素裁切仍走 Chromium。
 
 ### 1c-2. 投屏 / PPT（看到这些词必须走这条）
 

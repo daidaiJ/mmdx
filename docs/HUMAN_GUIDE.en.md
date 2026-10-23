@@ -95,7 +95,8 @@ Output naming: by default next to the input, `<name>-m<N>.svg/.png` numbered by 
 | `-t, --theme <name>` | `tech` (default) · `openai` · `openai-dark` · `minimal` · `latte` · `mocha` · `sketch` |
 | `--preset <name>` | `slide` (projection/PPT: 1600px@2, 18px type, heavier strokes, ~80px footer) \| `a4` (900px@2) \| `square` (1080px@2) \| `column` (chat/narrow column: 800px@2, ≈1/3 of 2560×1440, 18px type, 200px label wrap). Explicit `--width`/`--scale`/`-f` win |
 | `--background <color>` | Page background, e.g. `white` \| `transparent` \| `#1A1A1A` (dark themes bake in their own background) |
-| `--layout <engine>` | `elk` (default, loaded for flowcharts only) \| `dagre` |
+| `--engine <name>` | `pele` (default: own layout + wide S-turn routing, curved flowchart edges) \| `mermaid` (Chromium + mermaid.js fallback) |
+| `--layout <engine>` | `elk` (default) \| `dagre`. **`--engine mermaid` only** (Pele has its own layout); ELK loads for flowcharts only |
 | `--scale <n>` | PNG scale factor (default 2) |
 | `--width <px>` | Layout viewport width (default 1200) |
 | `--title <text>` | Figure title (PNG chrome; no longer injected as mermaid frontmatter) |
@@ -106,13 +107,13 @@ Output naming: by default next to the input, `<name>-m<N>.svg/.png` numbered by 
 | `--index <n[,n…]>` | Render only these 1-based block indexes |
 | `--brand <hex>` | Accent for extension blocks (default `#2563EB`; `2563EB` also works); does not recolor flowchart shapes. Use a deep hex on a projector |
 | `--strict-chart` | Promote mermaid pie/xychart/radar/flowchart/sequence budget hits to errors (default: warn) |
-| `--icon <pack>` | Iconify pack for `A@{icon: logos:react}` nodes (repeatable; fetched then cached) |
+| `--icon <pack>` | Iconify pack for `A@{icon: logos:react}` nodes (repeatable; fetched then cached). **`--engine mermaid` only** |
 | `--config <file.json>` | Native mermaid config, deep-merged over the theme |
 | `--theme-js <file.js>` | JS theming; file body is a `(config, ctx) => config` function |
-| `--css <file.css>` | Extra CSS appended to the theme's themeCSS |
+| `--css <file.css>` | Extra CSS (mermaid: themeCSS; Pele: in-SVG `<style>`) |
 | `--browser <path>` | Browser executable override (default: auto-detect Edge/Chrome) |
 | `--jobs <n>` | Parallel render count (default 2; single-browser page pool — don't go high) |
-| `--profile` | Per-stage timing summary (browser-launch / page-init / mermaid-render / screenshot / svgo) |
+| `--profile` | Per-stage timing summary (browser-launch / page-init / pele-render / mermaid-render / screenshot / svgo) |
 | `--list` | List the fenced blocks found and exit, no rendering |
 | `--json` | One machine-readable JSON on stdout (files + errors) |
 | `-q, --quiet` | Suppress progress lines on stderr |
@@ -124,7 +125,7 @@ The `--json` contract:
 
 ```json
 {
-  "theme": "tech", "layout": "elk", "format": "png", "background": "#FFFFFF",
+  "theme": "tech", "engine": "pele", "layout": "elk", "format": "png", "background": "#FFFFFF",
   "preset": "slide", "brand": "#E4572E",
   "caption": { "title": "Q1 mix", "subtitle": null, "source": "Finance", "unit": "CNY wan" },
   "blocks": 3, "rendered": 3, "failed": 0,
@@ -154,6 +155,15 @@ Syntax, limits, and one sample image per fence: **[extension-block gallery](EXTE
 | Obsidian notes | `minimal` |
 | Dark docs site / dark UI | `mocha` (or `openai-dark`) |
 | Casual sharing / blog | `sketch` (hand-drawn) |
+
+### Renderer (--engine)
+
+Default `pele` ([obsidianmd/pele](https://github.com/obsidianmd/pele), MIT): own layout + wide S-turn routing, so flowchart edges are curved, not polylines. Shape coding maps onto `.pele-shape-*` classes; each theme's `--pele-*` vars derive from its themeVariables.
+
+- `--engine mermaid`: falls back to Chromium + mermaid.js; edges are still curved (`flowchart.curve: basis`). `--layout elk|dagre` **applies in this mode only**
+- `sketch` has no hand-drawn Pele look: passing `-t sketch` auto-falls back to mermaid with a stderr note
+- Under Pele, `--theme-js` / `--config` keys that **work**: `flowchart.nodeSpacing` / `rankSpacing` / `wrappingWidth` / `curve`, `fontSize`, `padding` (from `flowchart.padding`); mermaid-only keys that are **ignored**: `themeCSS`, `look: handDrawn`, `layoutAlgorithm`, `sequence.*`, etc. `--css` is appended to Pele's in-svg `<style>`
+- Extension blocks (table/kpi/chart/…) and the pixel crop stay on Chromium, identical across both engines
 
 ### Fine-tuning (--css snippet library, appended after the theme)
 

@@ -21,7 +21,7 @@ for (const m of themeSrc.matchAll(/#([0-9a-fA-F]{6})\b/g)) allowed.add('#' + m[1
 const dir = path.join(ROOT, 'tests', 'diagrams');
 const preset = PRESETS[DEFAULT_THEME as keyof typeof PRESETS];
 const config = JSON.parse(JSON.stringify(preset.config)) as Record<string, unknown>;
-const r = await Renderer.create(await loadAssets(), { layout: 'elk', scale: 2, width: 1200 });
+const r = await Renderer.create(await loadAssets(), { layout: 'elk', engine: 'mermaid', scale: 2, width: 1200 });
 let flagged = 0;
 for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.md'))) {
   const src = fs.readFileSync(path.join(dir, f), 'utf8');

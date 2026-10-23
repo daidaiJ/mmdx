@@ -27,7 +27,7 @@ function baseConfig(bg: string, extra?: Record<string, unknown>): Record<string,
     fontSize: 15,
     flowchart: {
       htmlLabels: true,
-      curve: 'linear',
+      curve: 'basis',
       padding: 16,
       nodeSpacing: 64,
       rankSpacing: 76,
@@ -673,6 +673,65 @@ export function applyColumnDensity(config: Record<string, unknown>): void {
   seq.messageMargin = 36;
   seq.wrap = true;
   config.sequence = seq;
+}
+
+// ---------------------------------------------------------------------------
+// Pele bridge: map mermaid themeVariables onto Pele's `--pele-*` custom
+// properties. Pele's root svg sets `--_s:var(--pele-surface,...)` etc. and
+// paints shapes with `fill="var(--_s)" stroke="var(--_b)"`, so declaring the
+// `--pele-*` vars on `.pele` themes every diagram; the shape classes below
+// override `--_s`/`--_b` per node so tech keeps its shape color coding.
+// ---------------------------------------------------------------------------
+
+export function peleCss(config: Record<string, unknown>, background: string): string {
+  const tv = (config.themeVariables ?? {}) as Record<string, unknown>;
+  const pick = (...keys: string[]): string | undefined => {
+    for (const k of keys) {
+      const v = tv[k];
+      if (typeof v === 'string' && v) return v;
+    }
+    return undefined;
+  };
+  const surface = pick('primaryColor') ?? '#D7E4F4';
+  const border = pick('primaryBorderColor') ?? '#3A6F9C';
+  const surfaceAlt = pick('secondaryColor', 'tertiaryColor') ?? '#EEF1F5';
+  const diamFill = pick('noteBkgColor') ?? '#F3E4C8';
+  const diamStroke = pick('noteBorderColor') ?? '#A87428';
+  const stateFill = pick('stateBkg', 'activationBkgColor') ?? surface;
+  const stateStroke = pick('stateBorder', 'activationBorderColor') ?? border;
+  const storeFill = pick('critBkgColor') ?? '#E3DCEC';
+  const storeStroke = pick('critBorderColor') ?? '#5A4E82';
+  const series = [1, 2, 3, 4, 5, 6, 7, 8]
+    .map((i) => {
+      const c = pick(`pie${i}`);
+      return c ? `  --pele-series-${i}: ${c};\n` : '';
+    })
+    .join('');
+  return `
+.pele {
+  --pele-bg: ${background};
+  --pele-fg: ${pick('textColor', 'primaryTextColor') ?? '#1B1F26'};
+  --pele-muted: ${pick('tertiaryTextColor', 'lineColor') ?? '#5B6470'};
+  --pele-line: ${pick('lineColor', 'defaultLinkColor') ?? '#5B6570'};
+  --pele-surface: ${surface};
+  --pele-surface-alt: ${surfaceAlt};
+  --pele-border: ${border};
+  --pele-accent: #2563EB;
+  --pele-font: ${FONT_STACK};
+  --pele-radius: 6px;
+${series}}
+.pele-node rect, .pele-node path, .pele-node polygon, .pele-node circle, .pele-node ellipse { stroke-width: 1.5px; }
+.pele-edges path { stroke-width: 1.5px; }
+.pele-shape-rect, .pele-shape-rounded, .pele-shape-stadium, .pele-shape-fr-rect, .pele-shape-lin-rect,
+.pele-shape-subroutine, .pele-shape-doc, .pele-shape-notch-rect, .pele-shape-div-rect, .pele-shape-st-rect,
+.pele-shape-tag-rect, .pele-shape-delay, .pele-shape-win-pane, .pele-shape-bow-rect, .pele-shape-sl-rect,
+.pele-shape-tri, .pele-shape-flip-tri, .pele-shape-curv-trap, .pele-shape-trap-b, .pele-shape-trap-t,
+.pele-shape-odd, .pele-shape-lean-r, .pele-shape-lean-l { --_s: ${surface}; --_b: ${border}; }
+.pele-shape-diam, .pele-shape-hex { --_s: ${diamFill}; --_b: ${diamStroke}; }
+.pele-shape-circle, .pele-shape-ellipse, .pele-shape-dbl-circ, .pele-shape-sm-circ,
+.pele-shape-fr-circ, .pele-shape-f-circ, .pele-shape-cross-circ { --_s: ${stateFill}; --_b: ${stateStroke}; }
+.pele-shape-cyl, .pele-shape-h-cyl, .pele-shape-lin-cyl { --_s: ${storeFill}; --_b: ${storeStroke}; }
+`;
 }
 
 export function deepMerge<T extends Record<string, unknown>>(base: T, extra: Record<string, unknown>): Record<string, unknown> {

@@ -16,7 +16,7 @@ fs.mkdirSync(OUT, { recursive: true });
 
 const preset = PRESETS[DEFAULT_THEME as keyof typeof PRESETS];
 const config = JSON.parse(JSON.stringify(preset.config)) as Record<string, unknown>;
-const r = await Renderer.create(await loadAssets(), { layout: 'elk', scale: 2, width: 1200 });
+const r = await Renderer.create(await loadAssets(), { layout: 'elk', engine: 'pele', scale: 2, width: 1200 });
 
 for (const f of fs.readdirSync(path.join(ROOT, 'tests', 'diagrams')).filter((x) => x.endsWith('.md'))) {
   const src = fs.readFileSync(path.join(ROOT, 'tests', 'diagrams', f), 'utf8');

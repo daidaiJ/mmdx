@@ -6,16 +6,22 @@ import fs from 'node:fs';
 import puppeteer, { type Browser, type Page } from 'puppeteer-core';
 import { PNG } from 'pngjs';
 import type { Assets } from './embed.ts';
+import { peleCss } from './themes.ts';
 
 export type Layout = 'elk' | 'dagre';
+export type Engine = 'pele' | 'mermaid';
 
 export interface RendererOptions {
   browserPath?: string;
   layout: Layout;
+  /** diagram renderer; `pele` falls back to mermaid for unsupported types */
+  engine: Engine;
   scale: number;
   width: number;
   /** iconify packs preloaded for `@{icon: pack:icon}` node syntax */
   iconPacks?: Array<{ name: string; json: string }>;
+  /** extra CSS appended to the pele `<style>` (`--css`); mermaid uses themeCSS */
+  extraCss?: string;
   /** record per-stage timings into renderer.profile */
   profile?: boolean;
 }
@@ -150,6 +156,9 @@ export class Renderer {
     });
     await page.setContent(PAGE_HTML);
     await this.mark('init-mermaid', () => page.addScriptTag({ content: this.assets.mermaidJs }));
+    if (this.assets.peleJs) {
+      await this.mark('init-pele', () => page.addScriptTag({ content: this.assets.peleJs! }));
+    }
 
     if (this.opts.layout === 'elk' && this.assets.elkJs) {
       // stash the payload; ELK is parsed lazily on the first flowchart render
@@ -280,56 +289,102 @@ export class Renderer {
       const padX = Renderer.PAD_X;
       const padY = Renderer.PAD_Y;
       await this.ensureMermaid(page);
-      const res = (await this.mark('mermaid-render', () => page.evaluate(
-        async ([code, config, background, titlePos, titleText, remap]) => {
+      const engine = this.opts.engine;
+      const stage = engine === 'pele' ? 'pele-render' : 'mermaid-render';
+      const fc = (config.flowchart ?? {}) as Record<string, unknown>;
+      const peleOpts = {
+        fontFamily: typeof config.fontFamily === 'string' ? config.fontFamily : undefined,
+        fontSize: typeof config.fontSize === 'number' ? config.fontSize : undefined,
+        maxWidth: this.opts.width,
+        autoDirection: true,
+        padding: typeof fc.padding === 'number' ? fc.padding : undefined,
+        config,
+      };
+      const peleStyle = engine === 'pele'
+        ? peleCss(config, background) + (this.opts.extraCss ? `\n${this.opts.extraCss}` : '')
+        : '';
+      const res = (await this.mark(stage, () => page.evaluate(
+        async ([code, config, background, titlePos, titleText, remap, engine, peleOpts, peleStyle]) => {
           const wm = window as unknown as {
             mermaid: {
               initialize: (c: Record<string, unknown>) => void;
               render: (id: string, code: string) => Promise<{ svg: string }>;
               registerLayoutLoaders: (l: unknown) => void;
             };
+            pele?: { render: (source: string, options: Record<string, unknown>) => { svg: string } };
             __elkB64?: string;
             __elkReady?: boolean;
           };
           const mermaid = wm.mermaid;
-          const isFlowchart = /^\s*(flowchart|graph)/m.test(code);
-          const wantElk = isFlowchart && config.layoutAlgorithm === 'elk';
-          const elkB64 = wm.__elkB64;
-          if (wantElk && !wm.__elkReady && elkB64) {
-            const bin = atob(elkB64 as string);
-            const bytes = new Uint8Array(bin.length);
-            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-            const mod = (await import(URL.createObjectURL(new Blob([bytes], { type: 'text/javascript' })))) as { default?: unknown };
-            wm.mermaid.registerLayoutLoaders(mod.default ?? mod);
-            wm.__elkReady = true;
-          }
-          mermaid.initialize({
-            ...config,
-            layoutAlgorithm: wantElk ? 'elk' : 'dagre',
-            startOnLoad: false,
-            suppressErrorRendering: true,
-          });
           const id = 'mmdx-' + Math.random().toString(36).slice(2);
-          let el: SVGSVGElement;
-          try {
-            const { svg } = await mermaid.render(id, code);
-            // mermaid v11 removes its temp nodes after render; re-attach the
-            // svg ourselves so we can measure and screenshot it.
-            let out = svg;
-            if (remap) {
-              for (const [from, to] of Object.entries(remap)) {
-                out = out.replace(new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), to);
+          let el: SVGSVGElement | null = null;
+
+          // Pele first when selected: it lays out and routes on its own (wide
+          // S-turn edges by default). Only an unsupported diagram type falls
+          // through to mermaid — syntax/semantic errors fail loud like mermaid.
+          if (engine === 'pele' && wm.pele) {
+            try {
+              let out = wm.pele.render(code, peleOpts).svg;
+              if (peleStyle) out = out.replace(/(<svg\b[^>]*>)/, `$1<style>${peleStyle}</style>`);
+              if (remap) {
+                for (const [from, to] of Object.entries(remap)) {
+                  out = out.replace(new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), to);
+                }
               }
+              const holder = document.createElement('div');
+              holder.innerHTML = out;
+              el = holder.querySelector('svg') as SVGSVGElement;
+              if (!el) throw new Error('pele output contains no <svg>');
+              document.body.appendChild(el);
+            } catch (e) {
+              if ((e as { code?: string }).code !== 'unsupported-diagram') {
+                return { error: e instanceof Error ? e.message : String(e) } satisfies RawResult;
+              }
+              el = null;
             }
-            const holder = document.createElement('div');
-            holder.innerHTML = out;
-            el = holder.querySelector('svg') as SVGSVGElement;
-            if (!el) throw new Error('render output contains no <svg>');
-            document.body.appendChild(el);
-          } catch (e) {
-            document.getElementById(id)?.remove();
-            return { error: e instanceof Error ? e.message : String(e) } satisfies RawResult;
           }
+
+          if (!el) {
+            const isFlowchart = /^\s*(flowchart|graph)\b/m.test(code);
+            const wantElk = isFlowchart && config.layoutAlgorithm === 'elk';
+            const elkB64 = wm.__elkB64;
+            if (wantElk && !wm.__elkReady && elkB64) {
+              const bin = atob(elkB64 as string);
+              const bytes = new Uint8Array(bin.length);
+              for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+              const mod = (await import(URL.createObjectURL(new Blob([bytes], { type: 'text/javascript' })))) as { default?: unknown };
+              wm.mermaid.registerLayoutLoaders(mod.default ?? mod);
+              wm.__elkReady = true;
+            }
+            mermaid.initialize({
+              ...config,
+              layoutAlgorithm: wantElk ? 'elk' : 'dagre',
+              startOnLoad: false,
+              suppressErrorRendering: true,
+            });
+            try {
+              const { svg } = await mermaid.render(id, code);
+              // mermaid v11 removes its temp nodes after render; re-attach the
+              // svg ourselves so we can measure and screenshot it.
+              let out = svg;
+              if (remap) {
+                for (const [from, to] of Object.entries(remap)) {
+                  out = out.replace(new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), to);
+                }
+              }
+              const holder = document.createElement('div');
+              holder.innerHTML = out;
+              el = holder.querySelector('svg') as SVGSVGElement;
+              if (!el) throw new Error('render output contains no <svg>');
+              document.body.appendChild(el);
+            } catch (e) {
+              document.getElementById(id)?.remove();
+              return { error: e instanceof Error ? e.message : String(e) } satisfies RawResult;
+            }
+          }
+          if (!el) return { error: 'render produced no output' } satisfies RawResult;
+          el.id = id;
+
           // decorative elements that extend beyond logical content
           const isDecor = (n: Element): boolean =>
             n.tagName === 'defs' || /^(style|title|desc)$/.test(n.tagName) ||
@@ -450,7 +505,10 @@ export class Renderer {
             box: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
           } satisfies RawResult;
         },
-        [code, config, background, titlePos, titleText, remap ?? null] as [string, Record<string, unknown>, string, 'top' | 'bottom', string, Record<string, string> | null],
+        [code, config, background, titlePos, titleText, remap ?? null, engine, peleOpts, peleStyle] as [
+          string, Record<string, unknown>, string, 'top' | 'bottom', string,
+          Record<string, string> | null, Engine, Record<string, unknown>, string,
+        ],
       ))) as RawResult;
 
       if (res.error || !res.svg || !res.id) {

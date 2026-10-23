@@ -95,7 +95,8 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 | `-t, --theme <name>` | `tech`（默认）· `openai` · `openai-dark` · `minimal` · `latte` · `mocha` · `sketch` |
 | `--preset <name>` | `slide`（投屏/PPT：1600px@2，字号 18、描边加粗，底栏预留 ~80px）\| `a4`（900px@2）\| `square`（1080px@2）\| `column`（聊天/窄栏：800px@2，2K 约 1/3 栏宽，字号 18、标签换行 200px）。显式 `--width`/`--scale`/`-f` 优先 |
 | `--background <color>` | 页面背景，如 `white` \| `transparent` \| `#1A1A1A`（dark 主题自带深色背景，无需再传） |
-| `--layout <engine>` | `elk`（默认，仅 flowchart 实际加载）\| `dagre` |
+| `--engine <name>` | `pele`（默认：自研布局 + 宽 S 弯连线，流程图默认曲线）\| `mermaid`（Chromium + mermaid.js，回退） |
+| `--layout <engine>` | `elk`（默认）\| `dagre`。**仅 `--engine mermaid` 生效**（Pele 自带布局）；仅 flowchart 实际加载 ELK |
 | `--scale <n>` | PNG 缩放倍数（默认 2） |
 | `--width <px>` | 布局视口宽（默认 1200） |
 | `--title <text>` | 图题（印在 PNG chrome 上，不再写入 mermaid frontmatter） |
@@ -106,13 +107,13 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 | `--index <n[,n…]>` | 只渲染这些 1-based 块序号 |
 | `--brand <hex>` | 扩展块强调色（默认 `#2563EB`；可写 `2563EB`）；不重涂 flowchart 形状分色。投屏请用深色，避免浅蓝 |
 | `--strict-chart` | mermaid pie/xychart/radar/flowchart/sequence 超限当错误（默认只警告） |
-| `--icon <pack>` | iconify 图标包，支持 `A@{icon: logos:react}` 节点（可重复传；拉取后有缓存） |
+| `--icon <pack>` | iconify 图标包，支持 `A@{icon: logos:react}` 节点（可重复传；拉取后有缓存）。**仅 `--engine mermaid`** |
 | `--config <file.json>` | mermaid 原生配置，深合并到主题之上 |
 | `--theme-js <file.js>` | JS 换色函数，文件体是 `(config, ctx) => config` |
-| `--css <file.css>` | 追加 CSS 到主题的 themeCSS 之后 |
+| `--css <file.css>` | 追加 CSS（mermaid：themeCSS；Pele：图内 `<style>`） |
 | `--browser <path>` | 浏览器可执行文件路径（默认自动探测 Edge/Chrome） |
 | `--jobs <n>` | 并行渲染数（默认 2；单浏览器页池，别开太高） |
-| `--profile` | 各阶段耗时汇总（browser-launch / page-init / mermaid-render / screenshot / svgo） |
+| `--profile` | 各阶段耗时汇总（browser-launch / page-init / pele-render / mermaid-render / screenshot / svgo） |
 | `--list` | 列出找到的围栏块后退出，不渲染 |
 | `--json` | stdout 输出单份 JSON（files + errors），便于程序化核对 |
 | `-q, --quiet` | 抑制 stderr 进度行 |
@@ -124,7 +125,7 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 
 ```json
 {
-  "theme": "tech", "layout": "elk", "format": "png", "background": "#FFFFFF",
+  "theme": "tech", "engine": "pele", "layout": "elk", "format": "png", "background": "#FFFFFF",
   "preset": "slide", "brand": "#E4572E",
   "caption": { "title": "Q1 销售构成", "subtitle": null, "source": "财务月报", "unit": "万元" },
   "blocks": 3, "rendered": 3, "failed": 0,
@@ -154,6 +155,15 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 | Obsidian 笔记 | `minimal` |
 | 暗色文档站/深色界面 | `mocha`（或 `openai-dark`） |
 | 轻松分享/博客 | `sketch`（手绘风） |
+
+### 渲染引擎（--engine）
+
+默认 `pele`（[obsidianmd/pele](https://github.com/obsidianmd/pele)，MIT）：自研布局 + 宽 S 弯路由，流程图连线默认曲线而非折线。形状分色映射到 `.pele-shape-*` 类，各主题的 `--pele-*` 变量由 themeVariables 派生。
+
+- `--engine mermaid`：回退到 Chromium + mermaid.js；连线同样为曲线（`flowchart.curve: basis`）。`--layout elk|dagre` **仅在此模式生效**
+- `sketch` 主题无 Pele 手绘实现：传 `-t sketch` 时自动回退 mermaid，并在 stderr 提示
+- Pele 下 `--theme-js` / `--config` **生效的键**：`flowchart.nodeSpacing` / `rankSpacing` / `wrappingWidth` / `curve`、`fontSize`、`padding`（取 `flowchart.padding`）；**忽略的 mermaid 专属键**：`themeCSS`、`look: handDrawn`、`layoutAlgorithm`、`sequence.*` 等。`--css` 对 Pele 追加到图内 `<style>`
+- 扩展块（table/kpi/chart/…）与 PNG 像素裁切仍走 Chromium，两种引擎一致
 
 ### 微调（--css 片段库，追加到主题之后）
 

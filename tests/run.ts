@@ -123,7 +123,7 @@ const record = (name: string, ok: boolean, detail: string): void => {
 // ---------------------------------------------------------------------------
 
 const assets = await loadAssets();
-const renderer = await Renderer.create(assets, { layout: 'elk', scale: 2, width: 1200, profile: true });
+const renderer = await Renderer.create(assets, { layout: 'elk', engine: 'pele', scale: 2, width: 1200, profile: true });
 const tech = PRESETS[DEFAULT_THEME].config;
 
 interface Analysis {
@@ -267,6 +267,7 @@ await screenBlock('heatmap', 'heatmap', 'heatmap.md', 16);
     'init-font': { maxMs: 5_000, maxCount: 3 },
     'page-restore': { maxMs: 12_000, maxCount: 2 },
     'page-reset': { maxMs: 1_000, maxCount: 2 },
+    'pele-render': { maxMs: 20_000 },
     'mermaid-render': { maxMs: 20_000 },
     'screenshot': { maxMs: 12_000 },
     'block-render': { maxMs: 8_000 },
@@ -309,6 +310,7 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
 {
   const help = runCli(['-h']);
   record('cli/help-preset-index', help.code === 0 && help.stdout.includes('--preset') && help.stdout.includes('column') && help.stdout.includes('--index') && help.stdout.includes('--brand') && help.stdout.includes('--subtitle'), `exit=${help.code}`);
+  record('cli/help-engine', help.code === 0 && help.stdout.includes('--engine') && help.stdout.includes('pele'), `exit=${help.code}`);
 }
 
 {
@@ -443,6 +445,25 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
 
 {
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mmdx-t-'));
+  const dflt = runCli([path.join('tests', 'diagrams', 'flowchart.md'), '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'p')]);
+  const dj = JSON.parse(dflt.stdout) as { engine?: string; files: string[] };
+  record('cli/engine-default-pele', dflt.code === 0 && dj.engine === 'pele' && dj.files.length === 1, `exit=${dflt.code} engine=${dj.engine}`);
+
+  const mer = runCli([path.join('tests', 'diagrams', 'flowchart.md'), '--engine', 'mermaid', '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'm')]);
+  const mj = JSON.parse(mer.stdout) as { engine?: string; files: string[] };
+  record('cli/engine-mermaid', mer.code === 0 && mj.engine === 'mermaid' && mj.files.length === 1, `exit=${mer.code} engine=${mj.engine}`);
+
+  const bad = runCli([path.join('tests', 'edge', 'table.md'), '--engine', 'nope', '-f', 'png', '-o', outDir]);
+  record('cli/engine-bad-exit2', bad.code === 2, `exit=${bad.code}`);
+
+  const sk = runCli([path.join('tests', 'diagrams', 'flowchart.md'), '-t', 'sketch', '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'sk')]);
+  const sj = JSON.parse(sk.stdout) as { engine?: string };
+  record('cli/sketch-forces-mermaid', sk.code === 0 && sj.engine === 'mermaid', `exit=${sk.code} engine=${sj.engine}`);
+  fs.rmSync(outDir, { recursive: true, force: true });
+}
+
+{
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mmdx-t-'));
   const r = runCli([
     path.join('tests', 'diagrams', 'flowchart.md'),
     path.join('tests', 'edge', 'table.md'),
@@ -451,9 +472,10 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
   ]);
   const j = JSON.parse(r.stdout || '{}') as { profile?: Record<string, { count: number }> };
   const initN = j.profile?.['init-mermaid']?.count ?? 0;
+  const renders = (j.profile?.['pele-render']?.count ?? 0) + (j.profile?.['mermaid-render']?.count ?? 0);
   record(
     'cli/profile-hotspots',
-    r.code === 0 && (j.profile?.['mermaid-render']?.count ?? 0) >= 1 && initN > 0 && initN <= 3,
+    r.code === 0 && renders >= 1 && initN > 0 && initN <= 3,
     `exit=${r.code} init-mermaid=${initN} stages=${Object.keys(j.profile || {}).join(',')}`,
   );
   fs.rmSync(outDir, { recursive: true, force: true });

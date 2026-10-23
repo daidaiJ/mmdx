@@ -23,8 +23,9 @@
 ## ✨ 核心特性
 
 - **tech 默认主题**：白底、形状分色可见填色（蓝=流程、琥珀=判定、绿=状态、紫=存储）；投屏/PPT 用 `--preset slide` 加粗描边和字号；另有 6 套预设，20 种 mermaid 图型全覆盖
+- **Pele 渲染引擎（默认）**：[obsidianmd/pele](https://github.com/obsidianmd/pele) 自研布局 + 宽 S 弯路由，流程图连线默认曲线而非折线；`--engine mermaid` 回退 Chromium + mermaid.js
 - **内置中文字体**：Noto Sans SC 子集（GB2312 全量汉字 + 拉丁，仅 1.9MB），任意机器渲染一致，中文标签换行正确
-- **ELK 布局引擎**：官方 `@mermaid-js/layout-elk`，只对 flowchart 懒加载；连线避让、长文本换行开箱即用
+- **ELK 布局引擎**：官方 `@mermaid-js/layout-elk`，仅 `--engine mermaid` 的 flowchart 懒加载；Pele 自带布局
 - **像素级均匀留白**：每张图二次裁切到墨迹包围盒，四边留白对称是构造保证，不靠 mermaid 不可靠的 viewBox
 - **扩展块**：```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane 直出 PNG
 - **办公交付**：`--preset slide|a4|square|column`、图题/来源/单位 chrome、`--brand` 强调色；agent 友好的 `--json`（含 `warnings`）
@@ -94,11 +95,11 @@ Markdown 围栏：`mermaid`（图表）以及 `table` / `list` / `card` / `chart
 单 Chromium + 页面池 + 有界 worker；`--profile` 可观测：
 
 ```
-browser-launch  ~0.5s ×1      mermaid-render ~95ms ×图
+browser-launch  ~0.5s ×1      pele-render     ~15ms ×图
 page-init       ~1.2s ×页     screenshot      ~90ms ×图（含像素级二次裁切）
 ```
 
-- ELK（7MB bundle）懒解析：只有 flowchart/graph 真正渲染时才加载，sequence/pie/gantt 等零开销
+- 默认引擎 Pele 在页面内渲染（复用 Chromium 已加载的 CJK 字体，CJK 度量与 mermaid 路径一致）；`--engine mermaid` 时 ELK（7MB bundle）懒解析，仅 flowchart/graph 加载
 - 截图跨页面串行化（headless Chrome 只服务活动 tab）+ 视口按内容适配，2x 高清单图仍在 ~100ms 量级
 - 渲染卡死 60s 必然报错而不是挂住整批；每个图自动重试一次
 - PNG 为 2x 无损（典型架构图 20–80KB）；SVG 经 svgo 压缩——二进制内嵌 svgo 官方 browser 构建（自包含 ESM），压缩后的 SVG 与 PNG 一样开箱即得

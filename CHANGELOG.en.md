@@ -6,6 +6,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-23
+
+- Default renderer is now **Pele** ([obsidianmd/pele](https://github.com/obsidianmd/pele) v1.9.0, MIT): own layout + wide S-turn routing, so flowchart edges are curved by default instead of polylines
+- New `--engine pele|mermaid` (default `pele`); `--engine mermaid` keeps the original Chromium + mermaid.js + ELK path as fallback
+- Shape coding mapped onto Pele classes: `.pele-shape-rect/rounded/stadium` process blue, `.pele-shape-diam/hex` decision amber, `.pele-shape-circle/ellipse` state green, `.pele-shape-cyl` store purple; `--pele-*` vars derived from each theme's themeVariables
+- The mermaid fallback is curved too: `flowchart.curve` changed from `linear` to `basis` (also fixes `layoutAlgorithm` never being written, so `--layout elk` now actually activates)
+- `sketch` has no hand-drawn Pele look, so it auto-falls back to mermaid with a stderr note
+- `--layout elk|dagre` applies to `--engine mermaid` only (Pele has its own layout)
+- `--theme-js` / `--config` keys Pele honors: `flowchart.nodeSpacing` / `rankSpacing` / `wrappingWidth` / `curve`, `fontSize`, `padding`; mermaid-only keys (`themeCSS`, `look`, `layoutAlgorithm`, …) are ignored under Pele
+- Extension blocks (table/kpi/chart/…) and the pixel crop stay on Chromium, unchanged
+- `--json` gains `engine`; `--help` documents `--engine`; version bumped to 1.3.0
+
 ## [1.2.0] - 2026-10-22
 
 - New `--preset column` (800px@2, 18px type, 200px label wrap; ≈1/3 of a 2560×1440 office display) for chat / narrow-column surfaces; `column-landscape` / `column-shrink` in `--json.warnings`
@@ -61,6 +73,7 @@ First stable release.
 
 - `mmdx-windows-x64.exe` — windows x64 single file (no Node; needs system Edge/Chrome)
 
+[1.3.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.3.0
 [1.2.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.2.0
 [1.1.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.1.0
 [1.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.0.0

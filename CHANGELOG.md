@@ -6,6 +6,18 @@
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-23
+
+- 默认渲染引擎改为 **Pele**（[obsidianmd/pele](https://github.com/obsidianmd/pele) v1.9.0，MIT）：自研布局 + 宽 S 弯连线，流程图默认曲线，不再是折线
+- 新增 `--engine pele|mermaid`（默认 `pele`）；`--engine mermaid` 保留原 Chromium + mermaid.js + ELK 路径作回退
+- 形状分色映射到 Pele 类：`.pele-shape-rect/rounded/stadium` 过程蓝、`.pele-shape-diam/hex` 判断琥珀、`.pele-shape-circle/ellipse` 状态绿、`.pele-shape-cyl` 存储紫；`--pele-*` 变量由各主题 themeVariables 派生
+- mermaid 回退也改为曲线：`flowchart.curve` 由 `linear` 改为 `basis`（并修复 `layoutAlgorithm` 未写入、`--layout elk` 实际未激活的问题）
+- `sketch` 主题无手绘 Pele 实现，自动回退 mermaid 并在 stderr 提示
+- `--layout elk|dagre` 仅对 `--engine mermaid` 生效（Pele 自带布局）
+- `--theme-js` / `--config` 对 Pele 生效的键：`flowchart.nodeSpacing` / `rankSpacing` / `wrappingWidth` / `curve`、`fontSize`、`padding`；mermaid 专属键（`themeCSS`、`look`、`layoutAlgorithm` 等）在 Pele 下忽略
+- 扩展块（table/kpi/chart/…）与 PNG 像素裁切仍走 Chromium，不变
+- `--json` 增加 `engine`；`--help` 增加 `--engine`；版本号 1.3.0
+
 ## [1.2.0] - 2026-10-22
 
 - 新增 `--preset column`（800px@2，字号 18、标签换行 200px；对准 2K 办公屏约 1/3 栏宽）：聊天/窄栏正文出图；`column-landscape` / `column-shrink` 写入 `--json.warnings`
@@ -61,6 +73,7 @@
 
 - `mmdx-windows-x64.exe` — windows x64 单文件（免 Node，需系统 Edge/Chrome）
 
+[1.3.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.3.0
 [1.2.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.2.0
 [1.1.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.1.0
 [1.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.0.0

@@ -23,8 +23,9 @@ Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 ## ✨ Highlights
 
 - **`tech` default theme**: white canvas, shape-coded tinted fills (blue = process, amber = decision, green = state, purple = storage); `--preset slide` thickens strokes and type for projection; 6 more presets; all 20 mermaid diagram types
+- **Pele renderer (default)**: [obsidianmd/pele](https://github.com/obsidianmd/pele) with its own layout + wide S-turn routing, so flowchart edges are curved, not polylines; `--engine mermaid` falls back to Chromium + mermaid.js
 - **Bundled CJK font**: Noto Sans SC subset (full GB2312 + Latin, only 1.9 MB) — identical rendering on any machine, correct wrapping for Chinese labels
-- **ELK layout engine**: official `@mermaid-js/layout-elk`, lazily loaded for flowcharts only; edge avoidance and long-label wrapping out of the box
+- **ELK layout engine**: official `@mermaid-js/layout-elk`, lazily loaded for `--engine mermaid` flowcharts only; Pele ships its own layout
 - **Pixel-level even padding**: every image is re-cropped to its ink bounding box; symmetric margins are a construction guarantee, not mermaid's unreliable viewBox
 - **Extension blocks**: ```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane straight to PNG
 - **Office delivery**: `--preset slide|a4|square|column`, title/source/unit chrome, `--brand` accent; agent-friendly `--json` (including `warnings`)
@@ -94,11 +95,11 @@ Layering order: preset → `--theme-js` → `--config` → `--css`. Customizatio
 One Chromium + page pool + bounded workers; observable via `--profile`:
 
 ```
-browser-launch  ~0.5s ×1      mermaid-render ~95ms ×diagram
+browser-launch  ~0.5s ×1      pele-render     ~15ms ×diagram
 page-init       ~1.2s ×page   screenshot      ~90ms ×diagram (incl. pixel-level re-crop)
 ```
 
-- ELK (7 MB bundle) parsed lazily: loaded only when a flowchart/graph actually renders; sequence/pie/gantt etc. pay zero cost
+- The default Pele engine renders in-page (reusing Chromium's loaded CJK font, so CJK metrics match the mermaid path); with `--engine mermaid`, ELK (7 MB bundle) is parsed lazily and only for flowchart/graph
 - Screenshots serialized across pages (headless Chrome serves one active tab) + viewport fitted to content; a 2x hi-res diagram still lands around ~100 ms
 - A hung render always errors after 60s instead of stalling the batch; each diagram is retried once
 - PNG is lossless 2x (typical architecture diagram 20–80 KB); SVG is minified by svgo — the official browser build is embedded in the binary (self-contained ESM), so minified SVG is as turnkey as PNG

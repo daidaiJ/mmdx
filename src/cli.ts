@@ -17,7 +17,7 @@ import { Renderer } from './render.ts';
 import { applyBrand, DEFAULT_TOKENS, type Tokens } from './tokens.ts';
 import { applyColumnDensity, applySlideDensity, DEFAULT_THEME, deepMerge, PRESETS, SIZE_PRESETS, type SizePreset } from './themes.ts';
 
-let VERSION = '1.2.0';
+let VERSION = '1.3.0';
 
 type Optimize = (svg: string, opts: unknown) => { data: string };
 let svgoOptimize: Optimize | null = null;
@@ -56,7 +56,9 @@ Options:
   --background <color>    page background, e.g. white | transparent | #1A1A1A
   --scale <n>             PNG scale factor                     (default: 2)
   --width <px>            layout viewport width                (default: 1200)
+  --engine <name>         pele (default, own layout, curved edges) | mermaid
   --layout <engine>       elk (default, better routing) | dagre
+                          (mermaid engine only; pele has its own layout)
   --title <text>          figure title (PNG chrome; no mermaid frontmatter)
   --subtitle <text>       figure subtitle under the title
   --source <text>         source line in the footer
@@ -66,11 +68,11 @@ Options:
   --brand <hex>           accent color for extension blocks (#2563EB or 2563EB).
                           Does not recolor flowchart shape coding
   --icon <pack>           iconify pack for @{icon: pack:name} nodes (repeatable,
-                          fetched from unpkg and cached)
+                          fetched from unpkg and cached; mermaid engine only)
   --config <file.json>    extra Mermaid config, deep-merged over the theme
   --theme-js <file.js>    JS theming: file body is a function (config, ctx)
                           returning the modified config
-  --css <file.css>        extra CSS appended to the theme's themeCSS
+  --css <file.css>        extra CSS (mermaid themeCSS / pele in-svg style)
   --strict-chart          treat mermaid pie/xychart/radar/flowchart/sequence
                           budget hits as errors (default: warn)
   --browser <path>        browser executable override (default: auto-detect Edge/Chrome)
@@ -102,6 +104,8 @@ interface Options {
   scaleExplicit: boolean;
   width: number;
   widthExplicit: boolean;
+  engine: 'pele' | 'mermaid';
+  engineExplicit: boolean;
   layout: 'elk' | 'dagre';
   title: string | null;
   subtitle: string | null;
@@ -128,6 +132,7 @@ function parseArgs(argv: string[]): Options {
     inputs: [], out: null, format: 'both', formatExplicit: false, theme: DEFAULT_THEME,
     preset: null, background: null,
     scale: 2, scaleExplicit: false, width: 1200, widthExplicit: false,
+    engine: 'pele', engineExplicit: false,
     layout: 'elk', title: null, subtitle: null, source: null, unit: null,
     titlePos: 'top', index: null, brand: null, icons: [],
     config: null, themeJs: null, css: null, strictChart: false, browser: null,
@@ -158,6 +163,7 @@ function parseArgs(argv: string[]): Options {
       case '--background': o.background = need(argv[++i], a); break;
       case '--scale': o.scale = parseFloat(need(argv[++i], a)); o.scaleExplicit = true; break;
       case '--width': o.width = parseInt(need(argv[++i], a), 10); o.widthExplicit = true; break;
+      case '--engine': o.engine = need(argv[++i], a) as Options['engine']; o.engineExplicit = true; break;
       case '--layout': o.layout = need(argv[++i], a) as Options['layout']; break;
       case '--title': o.title = need(argv[++i], a); break;
       case '--subtitle': o.subtitle = need(argv[++i], a); break;
@@ -190,6 +196,14 @@ function parseArgs(argv: string[]): Options {
   if (!o.inputs.length) { process.stdout.write(help()); process.exit(2); }
   if (!['svg', 'png', 'both'].includes(o.format)) {
     console.error(`mmdx: --format must be svg|png|both, got "${o.format}"`);
+    process.exit(2);
+  }
+  if (!['pele', 'mermaid'].includes(o.engine)) {
+    console.error(`mmdx: --engine must be pele|mermaid, got "${o.engine}"`);
+    process.exit(2);
+  }
+  if (!['elk', 'dagre'].includes(o.layout)) {
+    console.error(`mmdx: --layout must be elk|dagre, got "${o.layout}"`);
     process.exit(2);
   }
   if (o.preset) {
@@ -348,6 +362,11 @@ async function main(): Promise<void> {
     console.error(`mmdx: unknown theme "${o.theme}" (available: ${Object.keys(PRESETS).join(', ')})`);
     process.exit(2);
   }
+  // Pele has no hand-drawn look; the sketch preset stays on mermaid.
+  if (o.theme === 'sketch' && o.engine === 'pele') {
+    log(o.quiet || o.json, 'mmdx: theme "sketch" needs the mermaid hand-drawn look; using --engine mermaid');
+    o.engine = 'mermaid';
+  }
 
   let tokens: Tokens = DEFAULT_TOKENS;
   const brandWarnings: string[] = [];
@@ -429,6 +448,8 @@ async function main(): Promise<void> {
   if (o.css) {
     config.themeCSS = ((config.themeCSS as string) || '') + '\n' + fs.readFileSync(o.css, 'utf8');
   }
+  // drives mermaid's layout loader selection; pele ignores it (own layout)
+  config.layoutAlgorithm = o.layout;
 
   const background = o.background || preset.background;
   const iconPacks = await Promise.all(o.icons.map(fetchIconPack));
@@ -445,9 +466,11 @@ async function main(): Promise<void> {
   const renderer = await Renderer.create(assets, {
     browserPath: o.browser || undefined,
     layout: o.layout,
+    engine: o.engine,
     scale: o.scale,
     width: o.width,
     iconPacks,
+    extraCss: o.css ? fs.readFileSync(o.css, 'utf8') : undefined,
     profile: o.profile,
   });
 
@@ -603,7 +626,7 @@ async function main(): Promise<void> {
 
   if (o.json) {
     console.log(JSON.stringify({
-      theme: o.theme, layout: o.layout, format: o.format, background,
+      theme: o.theme, engine: o.engine, layout: o.layout, format: o.format, background,
       ...(o.preset ? { preset: o.preset } : {}),
       ...(o.brand ? { brand: tokens.accent } : {}),
       ...(chromeOn ? {
@@ -630,7 +653,7 @@ async function main(): Promise<void> {
     if (!o.quiet) {
       process.stderr.write(
         `mmdx: ${results.length - failed.length}/${results.length} diagram(s) rendered ` +
-        `[theme=${o.theme} layout=${o.layout}]\n`,
+        `[theme=${o.theme} engine=${o.engine} layout=${o.layout}]\n`,
       );
     }
   }
