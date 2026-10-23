@@ -7,6 +7,8 @@
 ## [Unreleased]
 
 - README 增加 Pele / mermaid 双引擎拼图合集（`tests/contact-sheet-pele.png`、`tests/contact-sheet-mermaid.png`）
+- skill / AGENT_GUIDE / HUMAN_GUIDE 写明两引擎差别：布局和画法，不是配色；ELK 只作用于 mermaid flowchart
+- 调研后续可抽的布局/配色思路：[docs/research-layout-color.md](docs/research-layout-color.md)（不引入第二套图语法）
 
 ## [1.3.0] - 2026-10-23
 

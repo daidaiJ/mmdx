@@ -158,14 +158,26 @@ Syntax, limits, and one sample image per fence: **[extension-block gallery](EXTE
 
 ### Renderer (--engine)
 
-Default `pele` ([obsidianmd/pele](https://github.com/obsidianmd/pele), MIT): own layout + wide S-turn routing, so flowchart edges are curved, not polylines. Shape coding maps onto `.pele-shape-*` classes; each theme's `--pele-*` vars derive from its themeVariables.
+The gap is **layout and chrome**, not a prettier default palette. Flowchart blue / amber / green / purple is the same `tech` token set mapped onto Pele `.pele-shape-*`. `--layout elk` applies to **mermaid flowcharts only**; sequence, C4, mindmap, and gitgraph never used ELK — each engine lays those out itself. Collages: [Pele](../tests/contact-sheet-pele.png) · [mermaid](../tests/contact-sheet-mermaid.png).
 
-- `--engine mermaid`: falls back to Chromium + mermaid.js; edges are still curved (`flowchart.curve: basis`). `--layout elk|dagre` **applies in this mode only**
-- `sketch` has no hand-drawn Pele look: passing `-t sketch` auto-falls back to mermaid with a stderr note
-- Under Pele, `--theme-js` / `--config` keys that **work**: `flowchart.nodeSpacing` / `rankSpacing` / `wrappingWidth` / `curve`, `fontSize`, `padding` (from `flowchart.padding`); mermaid-only keys that are **ignored**: `themeCSS`, `look: handDrawn`, `layoutAlgorithm`, `sequence.*`, etc. `--css` is appended to Pele's in-svg `<style>`
-- Extension blocks (table/kpi/chart/…) and the pixel crop stay on Chromium, identical across both engines
+| Type | Pele (default) | mermaid + ELK |
+| --- | --- | --- |
+| flowchart | Wide S-turns; subgraph membership follows the source (a worker outside the cluster stays outside) | Layered ELK + kinky edges; `curve: basis` still feels polyline |
+| sequence | Numbered messages, CJK wraps, thin activations | Hyphenation artifacts, giant activation dots |
+| C4 | Light office cards, dashed external box; **ignores** theme `c4` fills | Dark blocks + person glyph, closer to C4 textbooks |
+| mindmap | Organic curves, leaves as plain text | Boxes colored by branch |
+| gitgraph / state | Thinner, tighter | Thick orthogonal git lines; more dramatic state arcs |
+| `@{icon}` / `-t sketch` | No icon resolver; no hand-drawn look | `--icon` works; `sketch` forces this path |
+
+- `--engine mermaid`: Chromium + mermaid.js. `--layout elk|dagre` **only in this mode, and only for flowcharts**
+- `-t sketch` has no Pele hand-drawn look: auto-falls back to mermaid with a stderr note
+- Under Pele, `--config` **honors** `flowchart.nodeSpacing` / `rankSpacing` / `wrappingWidth` / `curve`, `fontSize`, `padding`; **ignores** `themeCSS`, `look`, `layoutAlgorithm`, `sequence.*`, `c4.*`. `--css` appends to the in-svg `<style>` — use `.pele-shape-*` / `.pele-edges`, not `.edgePath .path`
+- Extension blocks and the pixel crop stay on Chromium
+- Layout/color ideas worth stealing later (no second diagram language): [research-layout-color.md](research-layout-color.md)
 
 ### Fine-tuning (--css snippet library, appended after the theme)
+
+Default Pele uses `.pele-shape-*` / `.pele-edges path`. The selectors below are for the mermaid engine (`--engine mermaid` or `-t sketch`):
 
 ```css
 /* larger corner radius */   .node rect { rx: 14px; ry: 14px; }

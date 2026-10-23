@@ -83,7 +83,7 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 4. **总览 ≤9 节点 / ≤12 边 / 强调色 ≤2**；sequence 生命线 ≤5。超过不要缩小字号硬塞
 5. **降级阶梯**（按序砍，砍到预算内即停）：装饰（便签/水印）→ 副本合并（Worker ×N）→ 叶子簇折叠进容器 → 度-1 汇点（日志/监控）→ 横切基础设施 → 拆图
 6. 不写 `style`/`classDef` 调全局色；仅强调个别节点（每图 ≤2）
-7. emoji 每图 ≤ 3；品牌图标 `A@{icon: logos:react}` + `--icon logos`
+7. emoji 每图 ≤ 3；品牌图标 `A@{icon: logos:react}` + `--icon logos`（仅 `--engine mermaid`）
 8. 中文标签 ≥ 12px；细环/细箭头里只放数字，名称放图例
 9. 标题/来源/单位用 `--title` / `--subtitle` / `--source` / `--unit`（印在 PNG 上），不手写 mermaid frontmatter
 10. 跟 VI 用 `--brand #RRGGBB`（只改强调色，不重涂 flowchart 形状分色）。投屏请用深色 hex，默认 accent 已是 `#2563EB`
@@ -107,7 +107,15 @@ echo "graph TD; A-->B" | mmdx - -f png --preset column
 
 覆盖关系：显式 `--width` / `--scale` / `-f` 覆盖 preset 默认值。叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。
 
-**渲染引擎**：默认 `--engine pele`（自研布局 + 宽 S 弯连线，流程图默认曲线；形状分色映射到 `.pele-shape-*`）。`--engine mermaid` 回退 Chromium + mermaid.js（连线同样曲线）；`sketch` 自动回退 mermaid。`--layout elk|dagre` 只对 mermaid 生效。Pele 下 `--config` 只认 `flowchart.nodeSpacing/rankSpacing/wrappingWidth/curve`、`fontSize`、`padding`。扩展块与像素裁切仍走 Chromium。
+**渲染引擎**：差别在**布局和画法**，不是配色更好。flowchart 蓝/琥珀/绿/紫是同一套 `tech` token。`--layout elk` **只作用于 mermaid 的 flowchart**；时序/C4/思维导图/gitgraph 是两套引擎各自排版。拼图对照：`tests/contact-sheet-pele.png` / `tests/contact-sheet-mermaid.png`。
+
+| 要什么 | 用哪个 |
+| --- | --- |
+| 流程 / 时序 / 状态（办公默认） | `--engine pele`（默认）：宽 S 弯、subgraph 成员位置更贴源码、sequence 带序号且中文能换行 |
+| C4 深色块 + 小人、思维导图按枝上色盒子、`@{icon}` | `--engine mermaid`（flowchart 才走 ELK；C4 吃主题 `c4` 节） |
+| 手绘风 | `-t sketch`（自动 mermaid） |
+
+Pele 下 `--config` 只认 `flowchart.nodeSpacing/rankSpacing/wrappingWidth/curve`、`fontSize`、`padding`。扩展块与像素裁切仍走 Chromium。
 
 ### 1c-2. 投屏 / PPT（看到这些词必须走这条）
 
@@ -146,7 +154,7 @@ mmdx doc.md --preset column --json --quiet
 ### 1d. 自检闭环（渲染后必做）
 
 1. `--json`：`failed:0`；`warnings` 若非空，按 1a 拆图或换 AntV
-2. **Read 看 PNG**：图题/来源/单位在图上（若传了）、文字不截断、类别不过多、连线不穿字、四边留白
+2. **Read 看 PNG**：图题/来源/单位在图上（若传了）、文字不截断、类别不过多、连线不穿字、四边留白。流程图折线过多 → 确认没被切到 mermaid+ELK；C4 变成浅色办公卡 → 这是 Pele，要教科书深色块就 `--engine mermaid`
 3. 若砍过密度，补一句保真台账：「18 源节点 → 9 张图」
 4. 问题 → 改图或调 caption → `--index N` 重渲染；最多 2 轮，仍不满意问用户
 

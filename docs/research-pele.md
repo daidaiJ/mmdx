@@ -17,6 +17,7 @@
 
 - `--theme-js` / `--config`：Pele 生效 `flowchart.nodeSpacing/rankSpacing/wrappingWidth/curve`、`fontSize`、`padding`；mermaid 专属键（`themeCSS`、`look`、`layoutAlgorithm`、`sequence.*`）忽略。
 - `--icon`：iconPacks 仍只注册给 mermaid，Pele 下不解析图标（未接线）。
+- C4 / mindmap 的 mermaid 专属配色（`c4` 节、按枝上色）Pele 未吃到；补齐思路见 [research-layout-color.md](research-layout-color.md)。
 
 ## 不做
 

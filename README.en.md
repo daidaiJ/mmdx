@@ -25,6 +25,7 @@ The same `tests/diagrams` fixtures, one collage per engine.
 | 👤 Human user | [docs/HUMAN_GUIDE.en.md](docs/HUMAN_GUIDE.en.md) | Readable: install & deploy, full CLI reference, theming, performance tuning, troubleshooting |
 | 🖼 Extension blocks | [docs/EXTENSIONS.en.md](docs/EXTENSIONS.en.md) | One tool-rendered PNG + syntax per fence |
 | 📜 Changelog | [CHANGELOG.md](CHANGELOG.md) | Release history |
+| 🔧 Engine / layout notes | [docs/research-layout-color.md](docs/research-layout-color.md) | Layout and color knobs worth stealing (no second diagram language) |
 
 Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 
@@ -90,7 +91,7 @@ Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` /
 
 | | |
 | --- | --- |
-| `tech` (default) | Design-doc style: white background, shape coding, thin borders, orthogonal edges |
+| `tech` (default) | Design-doc style: white background, shape coding, thin borders; Pele wide S-turn edges by default |
 | `openai` / `openai-dark` | Near-monochrome, thin borders, mint accents |
 | `minimal` | Obsidian Minimal: warm neutrals + a single violet accent |
 | `latte` / `mocha` | Catppuccin palettes |

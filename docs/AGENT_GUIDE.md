@@ -88,7 +88,7 @@ echo "graph TD; A-->B" | mmdx - -f png --preset column
 ## 自检闭环
 
 1. `--json`：`failed:0`；`warnings` 非空则拆图或换 AntV（`--strict-chart` 升为错误）
-2. **Read PNG**：图题/来源可见、文字不截断、不超限、留白均匀
+2. **Read PNG**：图题/来源可见、文字不截断、不超限、留白均匀。流程图折线过多 → 你在 mermaid+ELK；C4 浅色卡 → Pele（要深色块就 `--engine mermaid`）
 3. **sequence 必查底部**：Note 框/生命线收尾完整——放大字号见「常见坑」的 sequence 字号条目
 4. 若砍过密度，保真一句：「18 源节点 → 9 张图」
 5. `--index N` 重渲染；最多 2 轮
@@ -119,7 +119,15 @@ stdout 单份 JSON：`theme/layout/format/background/preset?/brand?/caption?/blo
 
 ## 渲染引擎
 
-默认 `--engine pele`（[obsidianmd/pele](https://github.com/obsidianmd/pele)）：自研布局 + 宽 S 弯连线，流程图默认曲线；形状分色映射到 `.pele-shape-*`。`--engine mermaid` 回退 Chromium + mermaid.js（连线同样为曲线）。`sketch` 自动回退 mermaid；`--layout elk|dagre` 只对 mermaid 生效。Pele 下 `--config` 只认 `flowchart.nodeSpacing/rankSpacing/wrappingWidth/curve`、`fontSize`、`padding`；`themeCSS`/`look`/`layoutAlgorithm`/`sequence.*` 忽略。扩展块与像素裁切不变，仍走 Chromium。
+差别在**布局和画法**，flowchart 形状分色是同一套 `tech` token。`--layout elk` **只作用于 mermaid 的 flowchart**。拼图：[Pele](../tests/contact-sheet-pele.png) / [mermaid](../tests/contact-sheet-mermaid.png)。
+
+| 要什么 | 引擎 |
+| --- | --- |
+| 流程 / 时序 / 状态（默认） | `pele`：宽 S 弯；subgraph 成员更贴源码；sequence 带序号、长中文能换行 |
+| C4 深色块 + 小人、思维导图按枝上色盒子、`@{icon}` | `mermaid`：C4 吃主题 `c4` 节；flowchart 才走 ELK |
+| 手绘 | `-t sketch`（自动 mermaid） |
+
+Pele 下 `--config` 只认 `flowchart.nodeSpacing/rankSpacing/wrappingWidth/curve`、`fontSize`、`padding`；`themeCSS` / `look` / `layoutAlgorithm` / `sequence.*` 忽略。扩展块与像素裁切仍走 Chromium。后续可抽的布局/配色思路见 [research-layout-color.md](research-layout-color.md)（不引入第二套图语法）。
 
 ## 退出码
 

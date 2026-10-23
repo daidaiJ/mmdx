@@ -88,7 +88,7 @@ Chat / narrow-column surfaces: `--preset column` (800px@2, 18px type, 200px labe
 ## Self-check loop
 
 1. `--json`: `failed:0`; non-empty `warnings` → split or AntV (`--strict-chart` promotes to errors)
-2. **Read the PNG**: caption visible, no truncated text, not over budget, even padding
+2. **Read the PNG**: caption visible, no truncated text, not over budget, even padding. Flowchart full of polylines → you are on mermaid+ELK; C4 as light office cards → Pele (use `--engine mermaid` for textbook dark blocks)
 3. **sequence: always check the bottom** — note box / lifeline tails complete (large fonts make height measurement undershoot; see Common pitfalls)
 4. If you cut density, one fidelity line: "18 source nodes → 9 on the figure"
 5. Re-render with `--index N`; at most 2 iterations
@@ -119,7 +119,15 @@ Layering: theme → `--brand` → `--theme-js` → `--config` → `--css`. `--br
 
 ## Renderer
 
-Default `--engine pele` ([obsidianmd/pele](https://github.com/obsidianmd/pele)): own layout + wide S-turn routing, so flowchart edges are curved by default; shape coding maps onto `.pele-shape-*`. `--engine mermaid` falls back to Chromium + mermaid.js (edges still curved). `sketch` auto-falls back to mermaid; `--layout elk|dagre` applies to mermaid only. Under Pele, `--config` honors `flowchart.nodeSpacing/rankSpacing/wrappingWidth/curve`, `fontSize`, `padding`; `themeCSS`/`look`/`layoutAlgorithm`/`sequence.*` are ignored. Extension blocks and the pixel crop stay on Chromium.
+The gap is **layout and chrome**, not a better palette. Flowchart shape coding is the same `tech` tokens. `--layout elk` applies to **mermaid flowcharts only**. Collages: [Pele](../tests/contact-sheet-pele.png) / [mermaid](../tests/contact-sheet-mermaid.png).
+
+| Want | Engine |
+| --- | --- |
+| Flow / sequence / state (default) | `pele`: wide S-turns; subgraph membership follows the source; numbered sequence messages, CJK wraps |
+| C4 dark blocks + person, mindmap boxes colored by branch, `@{icon}` | `mermaid`: C4 uses the theme `c4` section; ELK only on flowcharts |
+| Hand-drawn | `-t sketch` (forces mermaid) |
+
+Under Pele, `--config` honors `flowchart.nodeSpacing/rankSpacing/wrappingWidth/curve`, `fontSize`, `padding`; `themeCSS` / `look` / `layoutAlgorithm` / `sequence.*` are ignored. Extension blocks and the pixel crop stay on Chromium. Layout/color ideas worth stealing later: [research-layout-color.md](research-layout-color.md) (no second diagram language).
 
 ## Exit codes
 

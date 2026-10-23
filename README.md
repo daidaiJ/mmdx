@@ -25,6 +25,7 @@
 | 👤 人类用户 | [docs/HUMAN_GUIDE.md](docs/HUMAN_GUIDE.md) | 易读版：安装部署、CLI 全参数、主题定制、性能调优、排障 |
 | 🖼 扩展块 | [docs/EXTENSIONS.md](docs/EXTENSIONS.md) | 每种围栏一张工具渲染的 PNG + 语法 |
 | 📜 变更历史 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
+| 🔧 引擎/布局调研 | [docs/research-layout-color.md](docs/research-layout-color.md) | Pele vs mermaid 可抽的布局配色旋钮（不引入新语法） |
 
 各文档均为中文默认，同名 `.en.md` 为英文版。
 
@@ -90,7 +91,7 @@ Markdown 围栏：`mermaid`（图表）以及 `table` / `list` / `card` / `chart
 
 | | |
 | --- | --- |
-| `tech`（默认） | 大厂方案文档风：白底、形状分色、细边框、正交连线 |
+| `tech`（默认） | 大厂方案文档风：白底、形状分色、细边框；默认 Pele 宽 S 弯连线 |
 | `openai` / `openai-dark` | 近单色、细边框、薄荷点缀 |
 | `minimal` | Obsidian Minimal 风格：暖中性色 + 单一紫罗兰强调 |
 | `latte` / `mocha` | Catppuccin 配色 |

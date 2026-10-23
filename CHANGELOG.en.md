@@ -7,6 +7,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 ## [Unreleased]
 
 - README now shows Pele / mermaid engine collages (`tests/contact-sheet-pele.png`, `tests/contact-sheet-mermaid.png`)
+- skill / AGENT_GUIDE / HUMAN_GUIDE spell out the engine gap: layout and chrome, not palette; ELK is mermaid-flowchart only
+- Follow-up layout/color ideas: [docs/research-layout-color.md](docs/research-layout-color.md) (no second diagram language)
 
 ## [1.3.0] - 2026-10-23
 

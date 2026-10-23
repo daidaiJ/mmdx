@@ -158,14 +158,26 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 
 ### 渲染引擎（--engine）
 
-默认 `pele`（[obsidianmd/pele](https://github.com/obsidianmd/pele)，MIT）：自研布局 + 宽 S 弯路由，流程图连线默认曲线而非折线。形状分色映射到 `.pele-shape-*` 类，各主题的 `--pele-*` 变量由 themeVariables 派生。
+差别在**布局和画法**，不是默认配色更好。flowchart 的蓝流程 / 琥珀判定 / 绿状态 / 紫存储是同一套 `tech` token 映射到 Pele 的 `.pele-shape-*`。`--layout elk` **只作用于 mermaid 的 flowchart**；时序、C4、思维导图、gitgraph 从来不是 ELK，而是两套引擎各自排版。对照拼图：[Pele](../tests/contact-sheet-pele.png) · [mermaid](../tests/contact-sheet-mermaid.png)。
 
-- `--engine mermaid`：回退到 Chromium + mermaid.js；连线同样为曲线（`flowchart.curve: basis`）。`--layout elk|dagre` **仅在此模式生效**
-- `sketch` 主题无 Pele 手绘实现：传 `-t sketch` 时自动回退 mermaid，并在 stderr 提示
-- Pele 下 `--theme-js` / `--config` **生效的键**：`flowchart.nodeSpacing` / `rankSpacing` / `wrappingWidth` / `curve`、`fontSize`、`padding`（取 `flowchart.padding`）；**忽略的 mermaid 专属键**：`themeCSS`、`look: handDrawn`、`layoutAlgorithm`、`sequence.*` 等。`--css` 对 Pele 追加到图内 `<style>`
-- 扩展块（table/kpi/chart/…）与 PNG 像素裁切仍走 Chromium，两种引擎一致
+| 图种 | Pele（默认） | mermaid + ELK |
+| --- | --- | --- |
+| flowchart | 宽 S 弯；subgraph 成员位置更贴源码（例如集群外的 worker 不会掉进框里） | ELK 分层 + 折角边；`curve: basis` 仍常带折线感 |
+| sequence | 消息带序号、长中文能换行、激活是细条 | 易出现断字（「限-流」）、激活点画成大圆 |
+| C4 | 浅色办公卡，外部系统靠虚线框；**不吃**主题 `c4` 深色块 | 深色块 + 小人，更像 C4 教科书 |
+| mindmap | 有机曲线 + 叶子纯文字 | 按枝上色的盒子 |
+| gitgraph / state | 线更细、更紧 | git 粗直角地铁线；state 的弧更夸张 |
+| `@{icon}` / `-t sketch` | 不解析图标；无手绘 | `--icon` 可用；`sketch` 自动走这条 |
+
+- `--engine mermaid`：Chromium + mermaid.js。`--layout elk|dagre` **仅在此模式、且仅 flowchart 生效**
+- `-t sketch` 无 Pele 手绘：自动回退 mermaid，stderr 提示
+- Pele 下 `--config` **生效**：`flowchart.nodeSpacing` / `rankSpacing` / `wrappingWidth` / `curve`、`fontSize`、`padding`；**忽略** `themeCSS`、`look`、`layoutAlgorithm`、`sequence.*`、`c4.*`。`--css` 追加到图内 `<style>`，选择器要用 `.pele-shape-*` / `.pele-edges`，不是 `.edgePath .path`
+- 扩展块与 PNG 像素裁切仍走 Chromium
+- 后续可抽的布局/配色思路（不引入 D2/PlantUML 等第二套语法）：[research-layout-color.md](research-layout-color.md)
 
 ### 微调（--css 片段库，追加到主题之后）
+
+默认 Pele 用 `.pele-shape-*` / `.pele-edges path`。下面是 mermaid 引擎（`--engine mermaid` 或 `-t sketch`）的选择器：
 
 ```css
 /* 更大圆角 */        .node rect { rx: 14px; ry: 14px; }
