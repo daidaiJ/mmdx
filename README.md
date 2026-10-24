@@ -7,6 +7,8 @@
 
 **为 AI agent 打造的办公出图 CLI**：把 Markdown 里的 mermaid 与办公围栏（table / chart / kpi / compare / vs / funnel / task / progress / gauge / heatmap / swimlane …）批量渲染成 PNG——主题、中文字体、布局引擎、留白全部内置，不需要 MCP server、浏览器插件，产物机器上也不需要 Node。
 
+**场景分级**：高频办公图走围栏模板（PNG @2x / mermaid 另有矢量 SVG，秒级、每图 <1.5k token）；偶发 editorial 封面 / 方案插图按内置 vendored 的 [diagram-design 规格](docs/editorial-diagram-design/README.md)手绘 HTML（PNG @3x，分钟级）——两档统一经 mmdx 导出，deviceScaleFactor 超采样一次栅格化、无 JPEG、内嵌中文字体，清晰度是构造保证。
+
 同一套 `tests/diagrams` fixture，两种引擎各渲一张拼图。
 
 **Pele（默认）** — 自研布局，流程图宽 S 弯

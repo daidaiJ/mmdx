@@ -9,7 +9,7 @@
 - 新增 `file.html` 整页输入：HTML 原样截图为 PNG（fullPage，只出 PNG），保留页面自身样式、脚本与背景；`--width` 为布局视口（页面显式更窄的 `body` 宽度优先），`--scale` / `--background` 照常生效——可作为手绘 HTML 工作流（如 diagram-design）的免 Playwright 导出后端
 - HTML 截图自带离线中文保证：内嵌 Noto Sans SC 以 `'Noto Sans SC'` 字族注册，并按 CJK 码位区间 alias 到 `sans-serif` / `serif` 兜底链——页面声明的西文字体不变，中文字形离线一致，页面自带的 CJK 字体仍优先
 - `.md` 里的 ` ```html ` 围栏仍不支持（只认独立 `.html` / `.htm` 文件），避免绕过扩展块的版式纪律；HTML 输入无预算/lint/像素筛查契约
-- 文档写明配套用法：skill §1c-4 / AGENT_GUIDE / HUMAN_GUIDE / README 中英——触发词、高保真建议（`--scale 3`、画布宽对齐、显式透明底）、护栏（办公图不手写 HTML）
+- 文档写明配套用法：skill §1c-4 / AGENT_GUIDE / HUMAN_GUIDE / README 中英——触发词、高保真建议（`--scale 3`、画布宽对齐、显式透明底）、护栏（办公图不手写 HTML）；并确立「场景分级」总口径：高速档=围栏模板（PNG @2x / mermaid SVG，秒级），精美档=手绘 HTML（PNG @3x，分钟级），统一 mmdx 导出，清晰度靠 deviceScaleFactor 超采样一次栅格化（无事后缩放、无 JPEG）
 - 嵌入 [diagram-design](https://github.com/cathrynlavery/diagram-design) skill 规格层到 [docs/editorial-diagram-design/](docs/editorial-diagram-design/README.md)（MIT，commit `0b9b10c`，`SKILL.md` + 63 个 `references/` 原文未改）；适配层覆盖：导出走 `mmdx file.html`（替代 Playwright）、离线中文用 `'Noto Sans SC'`、选型仍以 mmdx skill 为准
 - README 增加 Pele / mermaid 双引擎拼图合集（`tests/contact-sheet-pele.png`、`tests/contact-sheet-mermaid.png`）
 - skill / AGENT_GUIDE / HUMAN_GUIDE 写明两引擎差别：布局和画法，不是配色；ELK 只作用于 mermaid flowchart

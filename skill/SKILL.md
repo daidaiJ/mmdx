@@ -5,7 +5,16 @@ description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 
 
 # mmdx — 办公出图（结构图 + 轻量数据图 + 版式块 → PNG）
 
-把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG。主题、中文字体、渲染引擎（默认 Pele，流程图曲线连线）、留白全部内置。**不要在图代码里手工调样式，不要用 VSCode 插件，不要让模型手绘 SVG。**
+把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG。主题、中文字体、渲染引擎（默认 Pele，流程图曲线连线）、留白全部内置。**不要在图代码里手工调样式，不要用 VSCode 插件。**
+
+**场景分级（先选档，再动笔）**：
+
+| 档位 | 场景 | 路径 | 产物 |
+| --- | --- | --- | --- |
+| **高速**（默认） | 流程/审批/轻量数据图/版式块——周报贴片、投屏、高频可验收 | 围栏（mermaid 图型 + 扩展块），按 §1a 选型 | PNG @2x；mermaid 图型另有矢量 SVG |
+| **精美**（低频） | 封面/方案插图——editorial 质感、一次性 | 手绘 HTML（vendored [diagram-design 规格](../docs/editorial-diagram-design/README.md)）→ §1c-4 | PNG @3x |
+
+两档统一经 mmdx 导出。**清晰度是构造保证**：PNG 走 deviceScaleFactor 超采样、一次栅格化，无事后缩放、无 JPEG 压缩，中文内嵌字体——不存在"糊"的来源；要更高保真加 `--scale 3`，不要放大已出的 PNG。办公出图默认高速档，不要为绕开围栏纪律降档手绘。
 
 CLI 获取（按优先级）：
 

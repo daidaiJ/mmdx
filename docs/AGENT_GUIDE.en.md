@@ -2,9 +2,20 @@
 
 # mmdx — Agent Guide
 
-Office diagram CLI. Renders fenced blocks to PNGs you can paste into PPT / Word / Feishu. Themes, CJK font, Pele layout, and padding are built in. **Do not hand-style diagram code; do not freehand SVG.**
+Office diagram CLI. Renders fenced blocks to PNGs you can paste into PPT / Word / Feishu. Themes, CJK font, Pele layout, and padding are built in. **Do not hand-style diagram code.**
 
 > Human-readable version: [HUMAN_GUIDE.en.md](HUMAN_GUIDE.en.md) · Extension gallery: [EXTENSIONS.en.md](EXTENSIONS.en.md) · Overview: [README](../README.en.md)
+
+## Scene tiers (pick a tier before drawing)
+
+| Tier | Scene | Path | Output | Per image |
+| --- | --- | --- | --- | --- |
+| **Fast** (default) | Flows / approvals / light data / layout blocks — weekly-report pastes, projection, high-frequency verifiable | Fences (mermaid types + extension blocks) via the [picking table](#diagram-picking) | PNG @2x; mermaid types also give vector SVG | ~0.3–1.5k tokens, seconds |
+| **Premium** (rare) | Covers / proposal illustrations — editorial feel, one-off | Hand-drawn HTML ([vendored diagram-design specs](editorial-diagram-design/README.md)) → [HTML file export](#html-file-export-pairs-with-diagram-design) | PNG @3x | ~10–20k tokens, minutes |
+
+Both tiers export through mmdx. **Sharpness is a construction guarantee**: PNGs are rasterized once at deviceScaleFactor supersampling — no post-hoc scaling, no JPEG, embedded CJK font — so there is no source of blur. For more fidelity raise `--scale 3` (print / 4K full-bleed); never upscale an existing PNG, and match the diagram width to the target (e.g. `--width 1600`) for full-bleed pastes.
+
+**Guardrail**: office diagramming defaults to the fast tier; do not drop to hand-drawn HTML to route around fence discipline (budgets / lint / pixel screening only work inside the fence system). The premium tier is only for "the HTML already exists" exports or genuine one-off editorial needs.
 
 ## Get the binary (by priority)
 

@@ -155,7 +155,7 @@ mmdx page.html --background transparent   # 显式覆盖才有透明背景
 ```
 
 - **中文字体兜底**：内嵌 Noto Sans SC 以 `'Noto Sans SC'` 字族注册，并按 CJK 码位区间 alias 到 `sans-serif` / `serif` 兜底链——页面声明的西文字体原样渲染，中文字形离线一致；页面自己声明的中文字体仍然优先。
-- **高保真建议**：印刷 / 大屏缩放用 `--scale 3`（默认 2 够 PPT）；固定画布页让 `body` 宽 = 画布宽（或 `--width` 对齐设计宽），避免响应式重排；需要透明底才显式 `--background transparent`；webfont 与图片的加载等待渲染器自动处理。
+- **高保真建议**：印刷 / 大屏缩放用 `--scale 3`（默认 2 够 PPT）；固定画布页让 `body` 宽 = 画布宽（或 `--width` 对齐设计宽），避免响应式重排；需要透明底才显式 `--background transparent`；webfont 与图片的加载等待渲染器自动处理。PNG 是本档的保真形态——字体与超采样都烘进像素，任意查看机器一致；确需可编辑矢量，参考 [上游 export 规格](editorial-diagram-design/references/export.md) 手工抽取 SVG（其文本依赖查看端字体，中文一致性无保证）。
 - **定位是渲染工具，不是质量闸**：预算、lint、像素筛查不适用于任意 HTML。`.md` 里的 ` ```html ` 围栏**不支持**（避免绕过扩展块的版式纪律），只认独立的 `.html` / `.htm` 文件。
 - **配套手绘 HTML 工作流**：[diagram-design](https://github.com/cathrynlavery/diagram-design) 生成自包含图后，mmdx 可替代 Playwright 做导出——系统 Edge、免下载浏览器、离线中文一致。它的 skill 规格已原文嵌入 [docs/editorial-diagram-design/](editorial-diagram-design/README.md)（MIT，含 mmdx 适配说明），偶发的 editorial 封面 / 方案插图按其规格手绘后用本命令导出。
 

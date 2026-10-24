@@ -2,9 +2,20 @@
 
 # mmdx — Agent Guide
 
-办公出图 CLI。把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG；主题、中文字体、Pele 布局、留白全部内置。**不要在图代码里手工调样式，不要用手绘 SVG。**
+办公出图 CLI。把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG；主题、中文字体、Pele 布局、留白全部内置。**不要在图代码里手工调样式。**
 
 > 人类阅读版：[HUMAN_GUIDE.md](HUMAN_GUIDE.md) · 扩展块图鉴：[EXTENSIONS.md](EXTENSIONS.md) · 项目概览：[README](../README.md)
+
+## 场景分级（先选档，再动笔）
+
+| 档位 | 场景 | 路径 | 产物 | 单图成本 |
+| --- | --- | --- | --- | --- |
+| **高速**（默认） | 流程/审批/轻量数据图/版式块——周报贴片、投屏、高频可验收 | 围栏（mermaid 图型 + 扩展块），按[选型速查](#选型速查) | PNG @2x；mermaid 图型另有矢量 SVG | ~0.3–1.5k token，秒级 |
+| **精美**（低频） | 封面/方案插图——editorial 质感、一次性 | 手绘 HTML（[vendored diagram-design 规格](editorial-diagram-design/README.md)）→ [HTML 文件导出](#html-文件导出配套-diagram-design) | PNG @3x | ~10–20k token，分钟级 |
+
+统一经 mmdx 导出。**清晰度是构造保证**：PNG 走 deviceScaleFactor 超采样、一次栅格化，无事后缩放、无 JPEG 压缩，中文内嵌字体——不存在"糊"的来源。要更高保真加 `--scale 3`（印刷/4K 全屏），不要放大已出的 PNG；全屏贴片让图宽对准目标（如 `--width 1600`）。
+
+**护栏**：办公出图默认高速档；不要为绕开围栏纪律降档手绘（预算/lint/像素筛查只在围栏体系内生效）。精美档仅用于「HTML 已存在」的导出或确需 editorial 质感的一次性场景。
 
 ## 获取（按优先级）
 
