@@ -7,7 +7,7 @@
 
 **为 AI agent 打造的办公出图 CLI**：把 Markdown 里的 mermaid 与办公围栏（table / chart / kpi / compare / vs / funnel / task / progress / gauge / heatmap / swimlane …）批量渲染成 PNG——主题、中文字体、布局引擎、留白全部内置，不需要 MCP server、浏览器插件，产物机器上也不需要 Node。
 
-**场景分级**：高频办公图走围栏模板（PNG @2x / mermaid 另有矢量 SVG，秒级、每图 <1.5k token）；偶发 editorial 封面 / 方案插图按内置 vendored 的 [diagram-design 规格](docs/editorial-diagram-design/README.md)手绘 HTML（PNG @3x，分钟级）——两档统一经 mmdx 导出，deviceScaleFactor 超采样一次栅格化、无 JPEG、内嵌中文字体，清晰度是构造保证。
+**场景分级**：高频办公图走围栏模板（PNG @2x / mermaid 另有矢量 SVG，秒级、每图 <1.5k token）；偶发 editorial 封面 / 方案插图按内置 vendored 的 [diagram-design 规格](skill/editorial/README.md)手绘 HTML（PNG @3x，分钟级）——两档统一经 mmdx 导出，deviceScaleFactor 超采样一次栅格化、无 JPEG、内嵌中文字体，清晰度是构造保证。
 
 同一套 `tests/diagrams` fixture，两种引擎各渲一张拼图。
 
@@ -28,7 +28,7 @@
 | 🖼 扩展块 | [docs/EXTENSIONS.md](docs/EXTENSIONS.md) | 每种围栏一张工具渲染的 PNG + 语法 |
 | 📜 变更历史 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 | 🔧 引擎/布局调研 | [docs/research-layout-color.md](docs/research-layout-color.md) | Pele vs mermaid 可抽的布局配色旋钮（不引入新语法） |
-| 🖋 手绘 editorial 规格 | [docs/editorial-diagram-design/](docs/editorial-diagram-design/README.md) | vendored diagram-design skill（MIT）：偶发封面/方案插图按其规格手绘 HTML，`mmdx file.html --scale 3` 导出 |
+| 🖋 手绘 editorial 规格 | [skill/editorial/](skill/editorial/README.md) | vendored diagram-design skill（MIT）：偶发封面/方案插图按其规格手绘 HTML，`mmdx file.html --scale 3` 导出 |
 
 各文档均为中文默认，同名 `.en.md` 为英文版。
 
@@ -41,7 +41,7 @@
 - **像素级均匀留白**：每张图二次裁切到墨迹包围盒，四边留白对称是构造保证，不靠 mermaid 不可靠的 viewBox
 - **扩展块**：```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane 直出 PNG
 - **办公交付**：`--preset slide|a4|square|column`、图题/来源/单位 chrome、`--brand` 强调色；agent 友好的 `--json`（含 `warnings`）
-- **整页 HTML 截图**：`file.html` 原样导出高保真 PNG（`--scale 3` 印刷级）——系统 Edge、免 Playwright、内嵌中文字体兜底 CJK；配套 vendored 的 [diagram-design](docs/editorial-diagram-design/README.md) 规格可手绘 editorial 图再导出
+- **整页 HTML 截图**：`file.html` 原样导出高保真 PNG（`--scale 3` 印刷级）——系统 Edge、免 Playwright、内嵌中文字体兜底 CJK；配套 vendored 的 [diagram-design](skill/editorial/README.md) 规格可手绘 editorial 图再导出
 
 ## 🚀 快速上手
 

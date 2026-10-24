@@ -11,7 +11,7 @@
 | 档位 | 场景 | 路径 | 产物 | 单图成本 |
 | --- | --- | --- | --- | --- |
 | **高速**（默认） | 流程/审批/轻量数据图/版式块——周报贴片、投屏、高频可验收 | 围栏（mermaid 图型 + 扩展块），按[选型速查](#选型速查) | PNG @2x；mermaid 图型另有矢量 SVG | ~0.3–1.5k token，秒级 |
-| **精美**（低频） | 封面/方案插图——editorial 质感、一次性 | 手绘 HTML（[vendored diagram-design 规格](editorial-diagram-design/README.md)）→ [HTML 文件导出](#html-文件导出配套-diagram-design) | PNG @3x | ~10–20k token，分钟级 |
+| **精美**（低频） | 封面/方案插图——editorial 质感、一次性 | 手绘 HTML（[vendored diagram-design 规格](../skill/editorial/README.md)）→ [HTML 文件导出](#html-文件导出配套-diagram-design) | PNG @3x | ~10–20k token，分钟级 |
 
 统一经 mmdx 导出。**清晰度是构造保证**：PNG 走 deviceScaleFactor 超采样、一次栅格化，无事后缩放、无 JPEG 压缩，中文内嵌字体——不存在"糊"的来源。要更高保真加 `--scale 3`（印刷/4K 全屏），不要放大已出的 PNG；全屏贴片让图宽对准目标（如 `--width 1600`）。
 
@@ -72,7 +72,7 @@ mmdx page.html --background transparent     # 透明底需显式传
 ```
 
 - 只认独立 `.html` / `.htm` 文件；`.md` 里写 ` ```html ` 围栏**无效**。页面样式、脚本、背景全保留；中文字形走内嵌字体兜底（离线一致）；`--width` = 布局视口，页面显式更窄的 `body` 宽优先
-- **手绘 editorial 图**（封面 / 方案插图，低频高保真场景）：规格见 [editorial-diagram-design](editorial-diagram-design/README.md)（vendored diagram-design skill，MIT）——按它的总则 + 对应 `type-*.md` 手写 HTML，再用上面命令导出；中文用 `'Noto Sans SC'` 字族名
+- **手绘 editorial 图**（封面 / 方案插图，低频高保真场景）：规格见 [skill/editorial](../skill/editorial/README.md)（vendored diagram-design skill，MIT）——按它的总则 + 对应 `type-*.md` 手写 HTML，再用上面命令导出；中文用 `'Noto Sans SC'` 字族名
 - **护栏**：办公出图不要为绕开围栏去手写 HTML——预算 / lint / 像素筛查对任意 HTML 失效；手绘路径只用于「HTML 已存在」或确需 editorial 质感的一次性场景
 
 ## 选型速查

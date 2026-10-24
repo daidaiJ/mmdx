@@ -12,20 +12,16 @@ description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 
 | 档位 | 场景 | 路径 | 产物 |
 | --- | --- | --- | --- |
 | **高速**（默认） | 流程/审批/轻量数据图/版式块——周报贴片、投屏、高频可验收 | 围栏（mermaid 图型 + 扩展块），按 §1a 选型 | PNG @2x；mermaid 图型另有矢量 SVG |
-| **精美**（低频） | 封面/方案插图——editorial 质感、一次性 | 手绘 HTML（vendored [diagram-design 规格](../docs/editorial-diagram-design/README.md)）→ §1c-4 | PNG @3x |
+| **精美**（低频） | 封面/方案插图——editorial 质感、一次性 | 手绘 HTML（vendored [diagram-design 规格](editorial/README.md)）→ §1c-4 | PNG @3x |
 
 两档统一经 mmdx 导出。**清晰度是构造保证**：PNG 走 deviceScaleFactor 超采样、一次栅格化，无事后缩放、无 JPEG 压缩，中文内嵌字体——不存在"糊"的来源；要更高保真加 `--scale 3`，不要放大已出的 PNG。办公出图默认高速档，不要为绕开围栏纪律降档手绘。
 
-CLI 获取（按优先级）：
+**按需加载**（默认只读本文件，以下按场景再读，勿预读）：
 
-1. **Release 二进制**（推荐，免 Node）：https://github.com/daidaiJ/mmdx/releases/latest
-   ```bash
-   curl -L -o "$TMP/mmdx.exe" https://github.com/daidaiJ/mmdx/releases/latest/download/mmdx-windows-x64.exe
-   ```
-2. 本机已构建：`D:\CODE\ai\mmdx\dist\mmdx-windows-x64.exe`
-3. 源码动态运行（需 bun）：仓库 `D:\CODE\ai\mmdx`，`bun run src/cli.ts`
-
-下文统一写 `mmdx`。渲染需系统 Edge/Chrome；找不到时报 `no Chrome/Edge found`，用 `--browser <path>`。**绝不自动下载浏览器。**
+- [references/fences.md](references/fences.md) — 围栏语法速记 + 每围栏细则 + 能上会边界（写围栏前抄语法时）
+- [references/troubleshooting.md](references/troubleshooting.md) — 报错速诊 / `--json.warnings` 处置 / 退出码（渲染失败时）
+- [references/themes-engines.md](references/themes-engines.md) — 主题选型 / 双引擎差别 / Pele 配置键（换主题或引擎时）
+- [editorial/](editorial/README.md) — vendored diagram-design 手绘规格（精美档动笔前）
 
 **适用边界**：流程/审批/排期、轻量占比/趋势/对比、KPI/表格/卡片/任务快照 → 用本 skill。**已有 HTML 文件要导出图片**（如 diagram-design 产物）→ `mmdx file.html`（见 §1c-4）。反例：文生图；分组柱/双轴/散点 → [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
 
@@ -36,7 +32,7 @@ mmdx --version
 echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --json --quiet
 ```
 
-冒烟 JSON 且 `rendered:1` → 就绪。`rendered:0` → §4 错误速诊。
+冒烟 JSON 且 `rendered:1` → 就绪。`rendered:0` → [troubleshooting.md](references/troubleshooting.md)。
 
 ## 1. Agent Loop（选型 → 先砍再画 → 渲染 → 自检）
 
@@ -72,7 +68,7 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 | 多指标达成率（同心） | ` ```progress ` | ≤4 环 | 绝对值用 kpi |
 | 并排半环进度 | ` ```gauge ` | ≤4 个 | 覆盖率 / SLO / 冲刺完成；中文在环下 |
 | KPI 大数字 | ` ```kpi ` | ≤4 行 | |
-| 提交/发布日历 | ` ```heatmap ` | ≤12 周 | `YYYY-MM-DD, n`；格子写次数；全年交给 AntV |
+| 提交/发布日历 | ` ```heatmap ` | ≤12 周 | `YYYY-MM-DD, n`；全年交给 AntV |
 | 表格截图 | ` ```table ` | | GFM 表原文 |
 | 要点列表 | ` ```list ` | | |
 | 要点卡 | ` ```card ` | | `emoji \| 标题 \| 描述` |
@@ -82,7 +78,7 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 | 概念结构 | mindmap | | |
 | 多维打分 | radar | 维 ≤8、系列 ≤3 | |
 
-超限：拆「总览 + 局部」，或数据图交给 AntV mcp-server-chart。`--json` 的 `warnings` 与上表同一口径；`--strict-chart` 把 mermaid 超限升为错误。` ```chart ` 与版式块超限直接失败（exit 1），同文件其他块照常产出。
+围栏语法抄 [references/fences.md](references/fences.md)。超限：拆「总览 + 局部」，或数据图交给 AntV mcp-server-chart。`--json` 的 `warnings` 与上表同一口径；`--strict-chart` 把 mermaid 超限升为错误。` ```chart ` 与版式块超限直接失败（exit 1），同文件其他块照常产出。
 
 ### 1b. 写图规则
 
@@ -116,15 +112,7 @@ echo "graph TD; A-->B" | mmdx - -f png --preset column
 
 覆盖关系：显式 `--width` / `--scale` / `-f` 覆盖 preset 默认值。叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。
 
-**渲染引擎**：差别在**布局和画法**，不是配色更好。flowchart 蓝/琥珀/绿/紫是同一套 `tech` token。`--layout elk` **只作用于 mermaid 的 flowchart**；时序/C4/思维导图/gitgraph 是两套引擎各自排版。拼图对照：`tests/contact-sheet-pele.png` / `tests/contact-sheet-mermaid.png`。
-
-| 要什么 | 用哪个 |
-| --- | --- |
-| 流程 / 时序 / 状态（办公默认） | `--engine pele`（默认）：宽 S 弯、subgraph 成员位置更贴源码、sequence 带序号且中文能换行 |
-| C4 深色块 + 小人、思维导图按枝上色盒子、`@{icon}` | `--engine mermaid`（flowchart 才走 ELK；C4 吃主题 `c4` 节） |
-| 手绘风 | `-t sketch`（自动 mermaid） |
-
-Pele 下 `--config` 只认 `flowchart.nodeSpacing/rankSpacing/wrappingWidth/curve`、`fontSize`、`padding`。扩展块与像素裁切仍走 Chromium。
+**渲染引擎**：默认 `--engine pele`（流程/时序/状态的办公默认）；C4 深色块、思维导图盒子、`@{icon}`、手绘 `sketch` 才 `--engine mermaid`。差别是**布局和画法**，不是配色；细节与 Pele 配置键见 [references/themes-engines.md](references/themes-engines.md)。
 
 ### 1c-2. 投屏 / PPT（看到这些词必须走这条）
 
@@ -171,114 +159,11 @@ mmdx page.html -o out/page.png --scale 3
 - 只认独立 `.html` / `.htm` 文件；`.md` 里写 ` ```html ` 围栏**无效**。页面自带样式、脚本、背景全保留，中文字形走内嵌字体兜底，离线一致
 - **高保真**：`--scale 3`（印刷/大屏缩放，diagram-design 官方导出即 3x）；默认 2 够 PPT。固定画布页让 `body` 宽=画布宽（或 `--width` 对齐），避免响应式重排；透明底显式 `--background transparent`
 - **护栏**：办公出图**不要**为绕开围栏纪律去手写 HTML——预算、lint、像素筛查对任意 HTML 全部失效。这条路径只用于「HTML 已经存在」的导出，不是画图路径
-- 偶发需要 **editorial 封面 / 方案插图**（低频、一次性、杂志感）确要手绘时：规格用 vendored 的 [docs/editorial-diagram-design](../docs/editorial-diagram-design/README.md)（diagram-design skill，MIT，原文嵌入）——读它的总则 + 对应 type 文件，导出仍用上面的命令
+- 偶发需要 **editorial 封面 / 方案插图**（低频、一次性、杂志感）确要手绘时：规格用 [editorial/](editorial/README.md)（diagram-design skill 规格层，MIT，随本 skill 分发）——读它的总则 + 对应 type 文件，导出仍用上面的命令
 
 ### 1d. 自检闭环（渲染后必做）
 
-1. `--json`：`failed:0`；`warnings` 若非空，按 1a 拆图或换 AntV
+1. `--json`：`failed:0`；`warnings` 若非空，按 [troubleshooting.md](references/troubleshooting.md) 处置
 2. **Read 看 PNG**：图题/来源/单位在图上（若传了）、文字不截断、类别不过多、连线不穿字、四边留白。流程图折线过多 → 确认没被切到 mermaid+ELK；C4 变成浅色办公卡 → 这是 Pele，要教科书深色块就 `--engine mermaid`
 3. 若砍过密度，补一句保真台账：「18 源节点 → 9 张图」
 4. 问题 → 改图或调 caption → `--index N` 重渲染；最多 2 轮，仍不满意问用户
-
-## 2. 围栏速记
-
-````markdown
-```chart
-type: bar          # bar | line | pie
-title: 各区销量
-unit: 万元
-source: 销量表
-华东, 120
-华南, 86
-```
-
-```kpi
-GMV | 1.28 亿 | +12%
-订单 | 8.6 万 | -3%
-```
-
-```compare
-方案 A | 自建渲染 | 可控、无外网
-方案 B | 远程图表 MCP | 图型全、有网络依赖
-```
-
-```funnel
-访问, 10000
-下单, 1200
-支付, 860
-```
-
-```task
-用户中心改版 | 开发 | 09-08 | 5人天 | 卡点
-支付对账 | 未开始 | 09-15 | 3人天
-```
-
-```progress
-Q1 收入, 87
-交付里程碑, 4300, 5000
-```
-
-```gauge
-覆盖率, 87
-SLO, 99
-采纳率, 62
-```
-
-```vs
-, 优化前, 优化后
-构建耗时, 42, 11
-镜像体积, 1.8, 0.6
-```
-
-```heatmap
-2026-09-01, 2
-2026-09-08, 12
-```
-
-```swimlane
-提需求 | 产品 | 评审
-评审 | 产品 | 开发
-开发 | 研发
-```
-````
-
-kpi 变化列默认**红涨绿跌**（可用 `--css` 覆盖）。progress 第一行 = 最外环。gauge 是并排半环，第一项用强调色。vs 只接受两列非负数字。heatmap 只接受 `YYYY-MM-DD`，缺天当 0，格内写次数，跨度 >12 周直接失败。task 不接受「进行中」，必须写具体相位。swimlane 不做并行/判定（有判定用 flowchart）。
-
-## 3. 能上会 / 不能上会
-
-| 能上会 | 不能上会（交给 AntV 或拆图） |
-| --- | --- |
-| pie 3–6 扇区 | 7+ 扇区、玫瑰图 |
-| bar/line ≤6 类 × ≤2 系列 | 分组柱、双轴、散点、箱线 |
-| radar ≤8 维 × ≤3 系列 | 更多维/系列 |
-| flowchart 总览 ≤9 节点 | 把日志/监控/副本塞进同一张 |
-| 跨部门交接用 swimlane | 用 subgraph 硬凑泳道还要画菱形 |
-
-## 4. 错误速诊
-
-| 报错 | 性质 | 处置 |
-| --- | --- | --- |
-| `no Chrome/Edge found … --browser <path>` | 环境缺浏览器 | 装 Edge/Chrome 或 `--browser`；不自动下载 |
-| `svgo unavailable` | 极罕见 | 无害降级 |
-| `render timed out after 60s` | 资源紧张 | CLI 已重试；持续则 `--jobs 1` |
-| `icon pack "xxx" not found` | 网络不通 | 去掉 `--icon` |
-| 中文变方块 | 不应发生 | 检查 `--config`/`--theme-js` 是否覆盖 fontFamily |
-| exit 1 + `Parsing error` / 超限信息 | **图或围栏写错** | 按信息修；其他块不受影响 |
-| exit 2 | 参数用法错误 | `mmdx --help` |
-
-总原则：**exit 2 = 参数错；exit 1 = 图写错或超限；报错先查表。**
-
-## 5. 主题
-
-| 场景 | `-t` |
-| --- | --- |
-| 技术方案/周报/投屏（默认） | `tech`（形状分色：蓝流程 / 琥珀判定 / 绿状态 / 紫存储；填色可见，不是发丝描边） |
-| 开源 README | `openai` / `openai-dark` |
-| 暗色文档 | `mocha` |
-| 轻松分享 | `sketch` |
-
-`--brand` 只改扩展块强调色（卡片左边条、kpi 数字、swimlane 第一条跨带箭头），**不**把判定菱形改成品牌色。
-
-## 附录 — 开发文档场景（能渲染、不主推）
-
-sequence、state、class、ER、gitgraph、C4。办公选型不要从这里起。继续可用 mermaid-cli。

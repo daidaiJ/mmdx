@@ -11,7 +11,7 @@ Office diagram CLI. Renders fenced blocks to PNGs you can paste into PPT / Word 
 | Tier | Scene | Path | Output | Per image |
 | --- | --- | --- | --- | --- |
 | **Fast** (default) | Flows / approvals / light data / layout blocks — weekly-report pastes, projection, high-frequency verifiable | Fences (mermaid types + extension blocks) via the [picking table](#diagram-picking) | PNG @2x; mermaid types also give vector SVG | ~0.3–1.5k tokens, seconds |
-| **Premium** (rare) | Covers / proposal illustrations — editorial feel, one-off | Hand-drawn HTML ([vendored diagram-design specs](editorial-diagram-design/README.md)) → [HTML file export](#html-file-export-pairs-with-diagram-design) | PNG @3x | ~10–20k tokens, minutes |
+| **Premium** (rare) | Covers / proposal illustrations — editorial feel, one-off | Hand-drawn HTML ([vendored diagram-design specs](../skill/editorial/README.md)) → [HTML file export](#html-file-export-pairs-with-diagram-design) | PNG @3x | ~10–20k tokens, minutes |
 
 Both tiers export through mmdx. **Sharpness is a construction guarantee**: PNGs are rasterized once at deviceScaleFactor supersampling — no post-hoc scaling, no JPEG, embedded CJK font — so there is no source of blur. For more fidelity raise `--scale 3` (print / 4K full-bleed); never upscale an existing PNG, and match the diagram width to the target (e.g. `--width 1600`) for full-bleed pastes.
 
@@ -72,7 +72,7 @@ mmdx page.html --background transparent     # transparent only when explicit
 ```
 
 - Standalone `.html` / `.htm` files only; an ` ```html ` fence inside `.md` is **ignored**. The page's own styles, scripts and background are kept; Chinese glyphs fall through to the bundled font (offline-consistent); `--width` is the layout viewport, an explicit narrower `body` width wins
-- **Hand-drawn editorial images** (covers / proposal illustrations, low-frequency high-fidelity): specs live in [editorial-diagram-design](editorial-diagram-design/README.md) (vendored diagram-design skill, MIT) — follow its primer plus the matching `type-*.md`, write the HTML, export with the command above; use `'Noto Sans SC'` for Chinese
+- **Hand-drawn editorial images** (covers / proposal illustrations, low-frequency high-fidelity): specs live in [skill/editorial](../skill/editorial/README.md) (vendored diagram-design skill, MIT) — follow its primer plus the matching `type-*.md`, write the HTML, export with the command above; use `'Noto Sans SC'` for Chinese
 - **Guardrail**: do not hand-write HTML to route around the fences for office diagrams — budgets / lint / pixel screening do not apply to arbitrary HTML; the hand-drawn path is only for "the HTML already exists" or one-off editorial needs
 
 ## Diagram picking

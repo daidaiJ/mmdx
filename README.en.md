@@ -7,7 +7,7 @@
 
 **A diagram export CLI built for office agents**: batch-render mermaid and office fences (table / chart / kpi / compare / vs / funnel / task / progress / gauge / heatmap / swimlane …) in Markdown into PNG — themes, CJK fonts, layout engine, and padding are all built in. No MCP server, no browser extension, and the machine producing the output doesn't need Node.
 
-**Scene tiers**: high-frequency office diagrams go through fence templates (PNG @2x, vector SVG for mermaid types; seconds, <1.5k tokens per image); the occasional editorial cover / proposal illustration is hand-drawn as HTML per the vendored [diagram-design specs](docs/editorial-diagram-design/README.md) (PNG @3x, minutes) — both tiers export through mmdx, rasterized once at deviceScaleFactor supersampling with no JPEG and an embedded CJK font, so sharpness is a construction guarantee.
+**Scene tiers**: high-frequency office diagrams go through fence templates (PNG @2x, vector SVG for mermaid types; seconds, <1.5k tokens per image); the occasional editorial cover / proposal illustration is hand-drawn as HTML per the vendored [diagram-design specs](skill/editorial/README.md) (PNG @3x, minutes) — both tiers export through mmdx, rasterized once at deviceScaleFactor supersampling with no JPEG and an embedded CJK font, so sharpness is a construction guarantee.
 
 The same `tests/diagrams` fixtures, one collage per engine.
 
@@ -28,7 +28,7 @@ The same `tests/diagrams` fixtures, one collage per engine.
 | 🖼 Extension blocks | [docs/EXTENSIONS.en.md](docs/EXTENSIONS.en.md) | One tool-rendered PNG + syntax per fence |
 | 📜 Changelog | [CHANGELOG.md](CHANGELOG.md) | Release history |
 | 🔧 Engine / layout notes | [docs/research-layout-color.md](docs/research-layout-color.md) | Layout and color knobs worth stealing (no second diagram language) |
-| 🖋 Hand-drawn editorial specs | [docs/editorial-diagram-design/](docs/editorial-diagram-design/README.md) | Vendored diagram-design skill (MIT): for the occasional cover / proposal illustration, hand-draw per its specs and export with `mmdx file.html --scale 3` |
+| 🖋 Hand-drawn editorial specs | [skill/editorial/](skill/editorial/README.md) | Vendored diagram-design skill (MIT): for the occasional cover / proposal illustration, hand-draw per its specs and export with `mmdx file.html --scale 3` |
 
 Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 
@@ -41,7 +41,7 @@ Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 - **Pixel-level even padding**: every image is re-cropped to its ink bounding box; symmetric margins are a construction guarantee, not mermaid's unreliable viewBox
 - **Extension blocks**: ```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane straight to PNG
 - **Office delivery**: `--preset slide|a4|square|column`, title/source/unit chrome, `--brand` accent; agent-friendly `--json` (including `warnings`)
-- **Whole-page HTML shots**: `file.html` exports as-is to a high-fidelity PNG (`--scale 3` for print) — system Edge, no Playwright, bundled CJK font fills the fallback; pairs with the vendored [diagram-design](docs/editorial-diagram-design/README.md) specs to hand-draw editorial images and export them
+- **Whole-page HTML shots**: `file.html` exports as-is to a high-fidelity PNG (`--scale 3` for print) — system Edge, no Playwright, bundled CJK font fills the fallback; pairs with the vendored [diagram-design](skill/editorial/README.md) specs to hand-draw editorial images and export them
 
 ## 🚀 Quick start
 
