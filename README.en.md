@@ -72,11 +72,12 @@ More (multi-file batches, exact naming, title injection) in the [HUMAN_GUIDE qui
 ```bash
 mmdx a.md b.md other/*.md -o dist/          # multi-file batch, parallel
 mmdx diagram.mmd -o out/arch.svg            # exact name; sibling .png written alongside
+mmdx page.html -o out/shot.png --scale 2    # whole-page HTML screenshot (Playwright-free)
 mmdx report.md --index 2 --title "Architecture" --title-pos bottom
 mmdx doc.md -t mocha --background transparent -f png --json
 ```
 
-Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` / `kpi` / `compare` / `vs` / `funnel` / `task` / `progress` / `gauge` / `heatmap` / `swimlane` (extension blocks, PNG only). For slides: `mmdx doc.md --preset slide --title "…" --source "…"`. For chat / a narrow column: `--preset column`.
+Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` / `kpi` / `compare` / `vs` / `funnel` / `task` / `progress` / `gauge` / `heatmap` / `swimlane` (extension blocks, PNG only). For slides: `mmdx doc.md --preset slide --title "…" --source "…"`. For chat / a narrow column: `--preset column`. Standalone `.html` files are screenshotted whole (own styles kept, bundled CJK font fills the fallback chain) — see [HUMAN_GUIDE](docs/HUMAN_GUIDE.en.md#whole-page-html-screenshots).
 
 **Card wall** — a ```card fence, one card per line: `emoji | title | description` (emoji and description optional):
 

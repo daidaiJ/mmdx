@@ -14,6 +14,7 @@
 - [快速开始](#快速开始)
 - [CLI 全参数参考](#cli-全参数参考)
 - [扩展块](#扩展块)
+- [HTML 整页截图](#html-整页截图)
 - [主题定制](#主题定制)
 - [性能调优](#性能调优)
 - [排障](#排障)
@@ -143,6 +144,19 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 除 mermaid 图外，常见 Markdown 结构可直接渲染成样式化图片。扩展块**只出 PNG**——HTML 排版没有可移植的 SVG 形态。均吃 `--title`/`--subtitle`/`--source`/`--unit` 图题层，配色走 `--brand` 的 accent。
 
 语法、上限与每种一张样图见 **[扩展块图鉴](EXTENSIONS.md)**。
+
+## HTML 整页截图
+
+`file.html` 作为输入时，整页 HTML **原样截图为 PNG**（fullPage，只出 PNG）：保留页面自身的样式、脚本与背景，`--width` 是布局视口（页面显式 `body` 宽度更窄时以 body 为准），`--scale` / `--background` 照常生效。
+
+```bash
+mmdx page.html -o out/page.png --scale 2
+mmdx page.html --background transparent   # 显式覆盖才有透明背景
+```
+
+- **中文字体兜底**：内嵌 Noto Sans SC 以 `'Noto Sans SC'` 字族注册，并按 CJK 码位区间 alias 到 `sans-serif` / `serif` 兜底链——页面声明的西文字体原样渲染，中文字形离线一致；页面自己声明的中文字体仍然优先。
+- **定位是渲染工具，不是质量闸**：预算、lint、像素筛查不适用于任意 HTML。`.md` 里的 ` ```html ` 围栏**不支持**（避免绕过扩展块的版式纪律），只认独立的 `.html` / `.htm` 文件。
+- **配套手绘 HTML 工作流**（如 [diagram-design](https://github.com/cathrynlavery/diagram-design) 生成的自包含图）：mmdx 可以替代 Playwright 做导出——用系统 Edge、免下载浏览器、离线中文一致。
 
 ## 主题定制
 

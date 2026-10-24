@@ -4,8 +4,11 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [1.4.0] - 2026-10-25
 
+- 新增 `file.html` 整页输入：HTML 原样截图为 PNG（fullPage，只出 PNG），保留页面自身样式、脚本与背景；`--width` 为布局视口（页面显式更窄的 `body` 宽度优先），`--scale` / `--background` 照常生效——可作为手绘 HTML 工作流（如 diagram-design）的免 Playwright 导出后端
+- HTML 截图自带离线中文保证：内嵌 Noto Sans SC 以 `'Noto Sans SC'` 字族注册，并按 CJK 码位区间 alias 到 `sans-serif` / `serif` 兜底链——页面声明的西文字体不变，中文字形离线一致，页面自带的 CJK 字体仍优先
+- `.md` 里的 ` ```html ` 围栏仍不支持（只认独立 `.html` / `.htm` 文件），避免绕过扩展块的版式纪律；HTML 输入无预算/lint/像素筛查契约
 - README 增加 Pele / mermaid 双引擎拼图合集（`tests/contact-sheet-pele.png`、`tests/contact-sheet-mermaid.png`）
 - skill / AGENT_GUIDE / HUMAN_GUIDE 写明两引擎差别：布局和画法，不是配色；ELK 只作用于 mermaid flowchart
 - 调研后续可抽的布局/配色思路：[docs/research-layout-color.md](docs/research-layout-color.md)（不引入第二套图语法）

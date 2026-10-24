@@ -331,6 +331,28 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
 
 {
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mmdx-t-'));
+  const shot = path.join('tests', 'edge', 'shot.html');
+  const r = runCli([shot, '-o', path.join(outDir, 'shot.png'), '--json', '--quiet']);
+  const j = JSON.parse(r.stdout) as { rendered: number; failed: number; files: string[] };
+  const a = j.files[0] ? analyze(j.files[0]) : null;
+  record(
+    'cli/html-shot-fullpage',
+    r.code === 0 && j.rendered === 1 && !!a && a.w === 960 && a.h >= 260 && a.h <= 440 && a.ink > 0.005,
+    `exit=${r.code} w=${a?.w} h=${a?.h} ink=${a ? a.ink.toFixed(3) : '-'}`,
+  );
+  const r2 = runCli([shot, '-o', path.join(outDir, 'svg'), '-f', 'svg']);
+  const pngOnly = fs.existsSync(path.join(outDir, 'svg', 'shot.png'));
+  const noSvg = !fs.existsSync(path.join(outDir, 'svg', 'shot.svg'));
+  record(
+    'cli/html-svg-png-only',
+    r2.code === 0 && pngOnly && noSvg && /renders to PNG only/.test(r2.stderr),
+    `exit=${r2.code} png=${pngOnly} svgAbsent=${noSvg} note=${/renders to PNG only/.test(r2.stderr)}`,
+  );
+  fs.rmSync(outDir, { recursive: true, force: true });
+}
+
+{
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mmdx-t-'));
   const r = runCli(
     [...diagramFiles.map((f) => path.join('tests', 'diagrams', f)), path.join('tests', 'edge', 'table.md'), path.join('tests', 'edge', 'list.md'), path.join('tests', 'edge', 'card.md'), '-o', outDir, '-f', 'png', '--quiet', '--jobs', '4'],
   );

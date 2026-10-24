@@ -4,8 +4,11 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioned per [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.4.0] - 2026-10-25
 
+- New `file.html` whole-page input: the page is screenshotted as-is to PNG (fullPage, PNG only), keeping its own styles, scripts and background; `--width` is the layout viewport (an explicit, narrower `body` width wins), `--scale` / `--background` apply — a Playwright-free export backend for hand-drawn HTML workflows (e.g. diagram-design)
+- HTML shots get the offline-Chinese guarantee: the bundled Noto Sans SC is registered as `'Noto Sans SC'` and aliased into the `sans-serif` / `serif` fallbacks for CJK code ranges — declared Latin fonts render untouched, Chinese glyphs stay offline-consistent, and the page's own CJK fonts still win
+- A ` ```html ` fence inside `.md` is still not supported (standalone `.html` / `.htm` files only), so the extension blocks' layout discipline cannot be bypassed; HTML input carries no budget/lint/pixel-screening contract
 - README now shows Pele / mermaid engine collages (`tests/contact-sheet-pele.png`, `tests/contact-sheet-mermaid.png`)
 - skill / AGENT_GUIDE / HUMAN_GUIDE spell out the engine gap: layout and chrome, not palette; ELK is mermaid-flowchart only
 - Follow-up layout/color ideas: [docs/research-layout-color.md](docs/research-layout-color.md) (no second diagram language)

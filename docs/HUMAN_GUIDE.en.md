@@ -14,6 +14,7 @@ This guide targets **human users** and covers installing mmdx, the full CLI refe
 - [Quick start](#quick-start)
 - [Full CLI reference](#full-cli-reference)
 - [Extension blocks](#extension-blocks)
+- [Whole-page HTML screenshots](#whole-page-html-screenshots)
 - [Theming](#theming)
 - [Performance tuning](#performance-tuning)
 - [Troubleshooting](#troubleshooting)
@@ -143,6 +144,19 @@ The `--json` contract:
 Besides mermaid diagrams, common markdown structures render directly into styled images. Extension blocks produce **PNG only** — HTML layout has no portable SVG form. All of them take `--title`/`--subtitle`/`--source`/`--unit` chrome and `--brand` accent.
 
 Syntax, limits, and one sample image per fence: **[extension-block gallery](EXTENSIONS.en.md)**.
+
+## Whole-page HTML screenshots
+
+When a `file.html` is passed as input, the page is **screenshotted as-is to PNG** (fullPage, PNG only): its own styles, scripts and background are kept, `--width` is the layout viewport (an explicit, narrower `body` width wins), and `--scale` / `--background` apply as usual.
+
+```bash
+mmdx page.html -o out/page.png --scale 2
+mmdx page.html --background transparent   # transparent only when explicitly asked
+```
+
+- **CJK font fallback**: the bundled Noto Sans SC is registered under `'Noto Sans SC'` and aliased into the `sans-serif` / `serif` fallbacks for CJK code ranges — declared Latin fonts render untouched, Chinese glyphs stay offline-consistent, and any CJK webfont the page declares still wins.
+- **A rendering tool, not a quality gate**: budgets, lint and pixel screening do not apply to arbitrary HTML. A ` ```html ` fence inside `.md` is **not** supported (that would bypass the extension blocks' layout discipline); only standalone `.html` / `.htm` files are accepted.
+- **Pairs with hand-drawn HTML workflows** (e.g. self-contained diagrams from [diagram-design](https://github.com/cathrynlavery/diagram-design)): mmdx replaces Playwright for the export step — system Edge, no browser download, offline-consistent Chinese.
 
 ## Theming
 

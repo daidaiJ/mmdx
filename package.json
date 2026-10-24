@@ -1,6 +1,6 @@
 {
   "name": "mmdx",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Mermaid → SVG/PNG exporter with tech-doc themes, Pele layout, bundled CJK font, built for AI agents",
   "scripts": {
     "dev": "bun run src/cli.ts",

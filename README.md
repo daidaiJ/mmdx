@@ -72,11 +72,12 @@ echo "graph LR; A-->B" | mmdx - -f svg      # stdin 单图
 ```bash
 mmdx a.md b.md other/*.md -o dist/          # 多文件批量，并行
 mmdx diagram.mmd -o out/arch.svg            # 精确命名，同目录附带 .png
+mmdx page.html -o out/shot.png --scale 2    # 整页 HTML 原样截图（免 Playwright）
 mmdx report.md --index 2 --title "架构总览" --title-pos bottom
 mmdx doc.md -t mocha --background transparent -f png --json
 ```
 
-Markdown 围栏：`mermaid`（图表）以及 `table` / `list` / `card` / `chart` / `kpi` / `compare` / `vs` / `funnel` / `task` / `progress` / `gauge` / `heatmap` / `swimlane`（扩展块，PNG only）。贴 PPT 用 `mmdx doc.md --preset slide --title "…" --source "…"`。贴聊天/窄栏用 `--preset column`。
+Markdown 围栏：`mermaid`（图表）以及 `table` / `list` / `card` / `chart` / `kpi` / `compare` / `vs` / `funnel` / `task` / `progress` / `gauge` / `heatmap` / `swimlane`（扩展块，PNG only）。贴 PPT 用 `mmdx doc.md --preset slide --title "…" --source "…"`。贴聊天/窄栏用 `--preset column`。独立 `.html` 文件可整页截图（保留页面自身样式，内嵌中文字体兜底 CJK），见 [HUMAN_GUIDE](docs/HUMAN_GUIDE.md#html-整页截图)。
 
 **卡片墙** —— ```card 围栏，约定语法：每行一张卡，`emoji | 标题 | 描述`（emoji 与描述可省略）：
 

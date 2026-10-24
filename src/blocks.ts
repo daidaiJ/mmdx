@@ -8,7 +8,7 @@ export type BlockKind =
   | 'chart' | 'kpi' | 'compare' | 'funnel'
   | 'task' | 'progress' | 'swimlane'
   | 'gauge' | 'vs' | 'heatmap'
-  | 'unknown';
+  | 'html' | 'unknown';
 
 export const HTML_KINDS: ReadonlySet<BlockKind> = new Set([
   'table', 'list', 'card', 'kpi', 'compare', 'funnel', 'task', 'progress', 'swimlane',

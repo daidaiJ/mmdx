@@ -206,6 +206,21 @@ export class Renderer {
   }
 
   /**
+   * CJK-range aliases over the generic font families, for authored HTML
+   * documents. Authored families keep every glyph they have; the bundled
+   * Noto subset only fills CJK holes in the sans-serif/serif fallback, so
+   * Chinese renders offline-identical without touching the page's Latin
+   * type. Explicitly declared CJK webfonts still win (their glyphs exist).
+   */
+  private cjkFallbackCss(): string {
+    const src = `src:url(data:font/woff2;base64,${this.assets.fontB64}) format('woff2');`;
+    const range = 'unicode-range:U+3000-303F,U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+FF00-FFEF;';
+    const face = (family: string): string =>
+      `@font-face{font-family:'${family}';${src}font-weight:100 900;font-style:normal;font-display:block;${range}}`;
+    return face('sans-serif') + face('serif');
+  }
+
+  /**
    * Render a standalone HTML fragment (tables, lists) to PNG. setContent
    * replaces the document, so the bundled font is re-injected per call.
    * The mermaid shell is NOT restored here — re-injecting the bundle on every
@@ -231,6 +246,84 @@ export class Renderer {
       await page.bringToFront();
       return (await page.screenshot({
         clip: { x: 0, y: 0, width: box.width, height: box.height },
+        omitBackground: transparent,
+      })) as Buffer;
+    }), label));
+  }
+
+  /**
+   * Screenshot a full authored HTML document (`.html` input) as PNG. Unlike
+   * extension blocks (renderHtml, measured on `.wrap`), the document keeps
+   * its own background, styles and scripts; `--width` is the layout
+   * viewport and the capture is fullPage. A `background` override is only
+   * applied when the user passed --background explicitly.
+   */
+  async renderDocument(html: string, background: string | null, label = ''): Promise<Buffer> {
+    return this.run((page) => this.mark('doc-render', () => screenshotGate(async () => {
+      await page.setViewport({
+        width: this.opts.width,
+        height: Math.max(800, Math.round(this.opts.width * 0.75)),
+        deviceScaleFactor: this.opts.scale,
+      });
+      await page.setContent(html);
+      if (this.assets.fontB64) {
+        await page.addStyleTag({ content: this.fontCss() + this.cjkFallbackCss() });
+      }
+      await page.evaluate(async () => {
+        await document.fonts.ready;
+        // half-loaded remote images would screenshot as blank boxes
+        await Promise.all(
+          Array.from(document.images)
+            .filter((i) => !i.complete)
+            .map((i) => new Promise<void>((r) => { i.onload = () => r(); i.onerror = () => r(); })),
+        );
+      });
+      const transparent = background === 'transparent';
+      if (background) {
+        await page.evaluate((bg) => {
+          document.body.style.background = bg;
+        }, background);
+      }
+      // Shrink-to-fit. Width: an explicit body width narrower than --width
+      // wins (fixed-canvas pages), then the true scroll extent at that
+      // width. Height: body metrics only — documentElement.scrollHeight is
+      // floored at the viewport height and would pad short pages to 800px.
+      // The resize→re-measure pass absorbs reflow from the width change.
+      const bw = (await page.evaluate(() =>
+        Math.ceil(document.body.getBoundingClientRect().width))) as number;
+      const w0 = bw > 0 && bw < this.opts.width ? bw : this.opts.width;
+      await page.setViewport({
+        width: w0,
+        height: Math.max(800, Math.round(w0 * 0.75)),
+        deviceScaleFactor: this.opts.scale,
+      });
+      const extent = (floor: number): Promise<{ w: number; h: number }> =>
+        page.evaluate((f) => {
+          const b = document.body;
+          return {
+            w: Math.ceil(Math.max(f, b.scrollWidth, b.getBoundingClientRect().width)),
+            h: Math.ceil(Math.max(b.scrollHeight, b.getBoundingClientRect().height)),
+          };
+        }, floor) as Promise<{ w: number; h: number }>;
+      let size = await extent(w0);
+      size = { w: Math.max(w0, size.w), h: Math.max(1, size.h) };
+      await page.setViewport({
+        width: size.w,
+        height: size.h,
+        deviceScaleFactor: this.opts.scale,
+      });
+      const re = await extent(size.w);
+      if (re.w > size.w || re.h > size.h) {
+        size = { w: re.w, h: re.h };
+        await page.setViewport({
+          width: size.w,
+          height: size.h,
+          deviceScaleFactor: this.opts.scale,
+        });
+      }
+      await page.bringToFront();
+      return (await page.screenshot({
+        clip: { x: 0, y: 0, width: size.w, height: size.h },
         omitBackground: transparent,
       })) as Buffer;
     }), label));

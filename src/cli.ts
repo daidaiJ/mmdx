@@ -17,7 +17,7 @@ import { Renderer } from './render.ts';
 import { applyBrand, DEFAULT_TOKENS, type Tokens } from './tokens.ts';
 import { applyColumnDensity, applySlideDensity, DEFAULT_THEME, deepMerge, PRESETS, SIZE_PRESETS, type SizePreset } from './themes.ts';
 
-let VERSION = '1.3.0';
+let VERSION = '1.4.0';
 
 type Optimize = (svg: string, opts: unknown) => { data: string };
 let svgoOptimize: Optimize | null = null;
@@ -32,7 +32,7 @@ const help = () => `
 mmdx ${VERSION} — render Mermaid diagrams to SVG + PNG, styled for docs
 
 Usage:
-  mmdx <file.md|file.mmd>... [-o OUT] [options]
+  mmdx <file.md|file.mmd|file.html>... [-o OUT] [options]
   mmdx - < [options]                render mermaid from stdin
 
 Input:
@@ -40,6 +40,12 @@ Input:
             table/list/card/chart/kpi/compare/funnel/task/progress/swimlane/gauge/vs/heatmap
             extension blocks as styled PNG
   file.mmd  a single mermaid diagram
+  file.html a standalone HTML page screenshotted as-is (fullPage, PNG only);
+            keeps its own styles/scripts/background, --width is the layout
+            viewport (an explicit body width wins). The bundled CJK font is
+            registered as 'Noto Sans SC' and fills CJK glyphs through the
+            sans-serif/serif fallbacks, so Chinese stays offline-consistent;
+            declared webfonts still win
   -         mermaid source from stdin (single diagram)
 
 Options:
@@ -227,6 +233,12 @@ interface Block {
 const FENCE_RE = /^[ \t]*```([A-Za-z0-9_-]+)[^\n]*\n([\s\S]*?)^[ \t]*```\s*$/gm;
 
 function extractBlocks(input: string, raw: string): Block[] {
+  if (/\.html?$/i.test(input)) {
+    // authored HTML document: shot as-is, never a fence kind in .md files
+    const code = raw.trim();
+    const base = path.basename(input).replace(/\.html?$/i, '');
+    return code ? [{ input, base, index: 1, line: 1, code, kind: 'html' }] : [];
+  }
   const isMd = /\.md$|\.markdown$/i.test(input);
   if (isMd) {
     const blocks: Block[] = [];
@@ -430,7 +442,7 @@ async function main(): Promise<void> {
   fs.mkdirSync(dir, { recursive: true });
   const outFileFor = (b: Block, ext: string): string => {
     if (exact) return exact.replace(/\.(svg|png)$/i, `.${ext}`);
-    const keepStem = (selected.length === 1 && !o.index) || b.input.endsWith('.mmd');
+    const keepStem = (selected.length === 1 && !o.index) || /\.(mmd|html?)$/i.test(b.input);
     const stem = keepStem ? b.base : `${b.base}-m${b.index}`;
     return path.join(dir, `${stem}.${ext}`);
   };
@@ -514,6 +526,12 @@ async function main(): Promise<void> {
           const html = blockPage(`<div class="fig">${svg}</div>`, { ...pageOptsBase, caption: cap });
           const png = await renderer.renderHtml(html, background, label);
           return { files: writePngOnly(b, png), warnings };
+        }
+
+        if (b.kind === 'html') {
+          // authored document: keep its own background unless --background
+          const png = await renderer.renderDocument(b.code, o.background, label);
+          return { files: writePngOnly(b, png), warnings: [] };
         }
 
         if (HTML_KINDS.has(b.kind)) {
