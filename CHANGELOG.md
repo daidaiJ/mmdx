@@ -12,6 +12,7 @@
 - 文档写明配套用法：skill §1c-4 / AGENT_GUIDE / HUMAN_GUIDE / README 中英——触发词、高保真建议（`--scale 3`、画布宽对齐、显式透明底）、护栏（办公图不手写 HTML）；并确立「场景分级」总口径：高速档=围栏模板（PNG @2x / mermaid SVG，秒级），精美档=手绘 HTML（PNG @3x，分钟级），统一 mmdx 导出，清晰度靠 deviceScaleFactor 超采样一次栅格化（无事后缩放、无 JPEG）
 - 嵌入 [diagram-design](https://github.com/cathrynlavery/diagram-design) skill 规格层到 **skill 目录内** [skill/editorial/](skill/editorial/README.md)（MIT，commit `0b9b10c`；上游 `SKILL.md` 改名 `UPSTREAM-SKILL.md` 避免与主 skill 撞名，63 个 `references/` 原文未改）——随 skill 目录整体分发，宿主安装后离线可用；适配层覆盖：导出走 `mmdx file.html`（替代 Playwright）、离线中文用 `'Noto Sans SC'`、选型仍以 mmdx skill 为准
 - skill 渐进披露重构：`skill/SKILL.md` 收敛为索引 + 热路径（场景分级表、按需加载清单、§1a 选型、写图规则、preset 命令、四类表面路由、自检闭环），冷内容拆到 `skill/references/fences.md`（围栏语法速记/细则/能上会边界）、`references/troubleshooting.md`（报错速诊/warnings 处置/退出码）、`references/themes-engines.md`（主题/双引擎/Pele 配置键），按需读取
+- 新增 `skill/references/recipes.md`：16 种 mermaid 图型最小示例（取自 `tests/diagrams` 已验证 fixture）+ 特殊画法配方——**一图并列双流程（subgraph `direction` LR+TB 混排，实测仅默认 Pele 支持，`--engine mermaid`+ELK 忽略 direction）**、嵌套包含、组织架构树、分层横切；全部示例经 mmdx 实渲染验证（18/18）
 - README 增加 Pele / mermaid 双引擎拼图合集（`tests/contact-sheet-pele.png`、`tests/contact-sheet-mermaid.png`）
 - skill / AGENT_GUIDE / HUMAN_GUIDE 写明两引擎差别：布局和画法，不是配色；ELK 只作用于 mermaid flowchart
 - 调研后续可抽的布局/配色思路：[docs/research-layout-color.md](docs/research-layout-color.md)（不引入第二套图语法）

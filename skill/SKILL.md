@@ -18,7 +18,8 @@ description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 
 
 **按需加载**（默认只读本文件，以下按场景再读，勿预读）：
 
-- [references/fences.md](references/fences.md) — 围栏语法速记 + 每围栏细则 + 能上会边界（写围栏前抄语法时）
+- [references/fences.md](references/fences.md) — 扩展围栏语法速记 + 每围栏细则 + 能上会边界（写围栏前抄语法时）
+- [references/recipes.md](references/recipes.md) — 16 种 mermaid 图型最小示例 + 特殊画法：**一图并列双流程（LR+TB 混排）**、嵌套包含、组织架构、分层横切（写 mermaid 或要组合版式时）
 - [references/troubleshooting.md](references/troubleshooting.md) — 报错速诊 / `--json.warnings` 处置 / 退出码（渲染失败时）
 - [references/themes-engines.md](references/themes-engines.md) — 主题选型 / 双引擎差别 / Pele 配置键（换主题或引擎时）
 - [editorial/](editorial/README.md) — vendored diagram-design 手绘规格（精美档动笔前）
@@ -78,7 +79,7 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 | 概念结构 | mindmap | | |
 | 多维打分 | radar | 维 ≤8、系列 ≤3 | |
 
-围栏语法抄 [references/fences.md](references/fences.md)。超限：拆「总览 + 局部」，或数据图交给 AntV mcp-server-chart。`--json` 的 `warnings` 与上表同一口径；`--strict-chart` 把 mermaid 超限升为错误。` ```chart ` 与版式块超限直接失败（exit 1），同文件其他块照常产出。
+围栏语法抄 [references/fences.md](references/fences.md)，mermaid 图型示例与特殊画法（并列双流程 LR+TB 混排、嵌套包含、组织架构、分层横切）抄 [references/recipes.md](references/recipes.md)。超限：拆「总览 + 局部」，或数据图交给 AntV mcp-server-chart。`--json` 的 `warnings` 与上表同一口径；`--strict-chart` 把 mermaid 超限升为错误。` ```chart ` 与版式块超限直接失败（exit 1），同文件其他块照常产出。
 
 ### 1b. 写图规则
 

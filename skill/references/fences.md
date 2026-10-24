@@ -1,6 +1,6 @@
-# 围栏语法速记与细则（按需读取）
+# 扩展围栏语法速记与细则（按需读取）
 
-> 只在需要抄围栏语法 / 查围栏上限 / 判断"能不能上会"时读本文。选型决策在 [../SKILL.md](../SKILL.md) §1a。样图见仓库 `docs/EXTENSIONS.md`（不随 skill 分发）。
+> 只在需要抄围栏语法 / 查围栏上限 / 判断"能不能上会"时读本文。选型决策在 [../SKILL.md](../SKILL.md) §1a；mermaid 图型示例与特殊画法见 [recipes.md](recipes.md)。样图见仓库 `docs/EXTENSIONS.md`（不随 skill 分发）。
 
 ## 速记（12 种扩展围栏）
 
