@@ -1,6 +1,6 @@
 ---
 name: mermaid
-description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 流程 flowchart, KPI/表格/卡片, 审批与泳道, 半环进度 gauge, 日历热力 heatmap. Use when the user wants 图/图表/流程图/构成图/对比卡/周报贴图/投屏/PPT/上会/渲染/导出图片. NOT for AI image generation (文生图/照片级插画) and NOT for analysis-grade stats (grouped bar, dual axis → AntV).
+description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 流程 flowchart, KPI/表格/卡片, 审批与泳道, 半环进度 gauge, 日历热力 heatmap, HTML 文件截图导出. Use when the user wants 图/图表/流程图/构成图/对比卡/周报贴图/投屏/PPT/上会/渲染/导出图片/HTML 截图/把网页导出成图片. NOT for AI image generation (文生图/照片级插画) and NOT for analysis-grade stats (grouped bar, dual axis → AntV).
 ---
 
 # mmdx — 办公出图（结构图 + 轻量数据图 + 版式块 → PNG）
@@ -18,7 +18,7 @@ CLI 获取（按优先级）：
 
 下文统一写 `mmdx`。渲染需系统 Edge/Chrome；找不到时报 `no Chrome/Edge found`，用 `--browser <path>`。**绝不自动下载浏览器。**
 
-**适用边界**：流程/审批/排期、轻量占比/趋势/对比、KPI/表格/卡片/任务快照 → 用本 skill。反例：文生图；分组柱/双轴/散点 → [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
+**适用边界**：流程/审批/排期、轻量占比/趋势/对比、KPI/表格/卡片/任务快照 → 用本 skill。**已有 HTML 文件要导出图片**（如 diagram-design 产物）→ `mmdx file.html`（见 §1c-4）。反例：文生图；分组柱/双轴/散点 → [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
 
 ## 0. 环境自检（会话内首次使用先跑，30 秒）
 
@@ -150,6 +150,19 @@ mmdx doc.md --preset column --json --quiet
 ```
 
 `--json.warnings` 出现 `column-landscape`（源是 `flowchart LR/RL`）或 `column-shrink`（图本身比 800px 宽、会被 CSS 缩小）→ 改 `flowchart TD`、砍节点或拆图。加大 `--width` 会让缩完的字更小。
+
+### 1c-4. HTML 文件导出（配套 diagram-design 等手绘 HTML）
+
+触发：用户给了或生成了 HTML 文件（diagram-design 产物、报告页原型），要「导出图片 / 截图 / 转 PNG」。
+
+```bash
+mmdx page.html -o out/page.png --scale 3
+```
+
+- 只认独立 `.html` / `.htm` 文件；`.md` 里写 ` ```html ` 围栏**无效**。页面自带样式、脚本、背景全保留，中文字形走内嵌字体兜底，离线一致
+- **高保真**：`--scale 3`（印刷/大屏缩放，diagram-design 官方导出即 3x）；默认 2 够 PPT。固定画布页让 `body` 宽=画布宽（或 `--width` 对齐），避免响应式重排；透明底显式 `--background transparent`
+- **护栏**：办公出图**不要**为绕开围栏纪律去手写 HTML——预算、lint、像素筛查对任意 HTML 全部失效。这条路径只用于「HTML 已经存在」的导出，不是画图路径
+- 偶发需要 **editorial 封面 / 方案插图**（低频、一次性、杂志感）确要手绘时：规格用 vendored 的 [docs/editorial-diagram-design](../docs/editorial-diagram-design/README.md)（diagram-design skill，MIT，原文嵌入）——读它的总则 + 对应 type 文件，导出仍用上面的命令
 
 ### 1d. 自检闭环（渲染后必做）
 

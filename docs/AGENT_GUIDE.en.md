@@ -51,6 +51,19 @@ echo "graph TD; A-->B" | mmdx - -f png --preset column
 
 Chat / narrow-column surfaces: `--preset column` (800px@2, 18px type, 200px label wrap; ≈1/3 of a 2560×1440 display). **Projection / PPT / all-hands / big screen** must use `--preset slide` (18px type + heavier strokes) plus `--title`. Do not hand-tune contrast with `--css`; do not project `mocha`/`openai-dark`. Feishu cards: `square`. Word: `a4`. `both` is for developers embedding Markdown. Explicit `--width`/`--scale`/`-f` override the preset. Brand: `--brand #2563EB` (accent only; skip washed-out light blues on a projector). `column-landscape` / `column-shrink` in `--json.warnings` → switch to `flowchart TD` or split; do not raise `--width`.
 
+## HTML file export (pairs with diagram-design)
+
+Trigger: the user hands over / generates an HTML file and wants it "exported / screenshotted / converted to PNG", or occasionally asks for an editorial cover image.
+
+```bash
+mmdx page.html -o out/page.png --scale 3    # 3x high fidelity (print / big-screen zoom); default 2 is fine for slides
+mmdx page.html --background transparent     # transparent only when explicit
+```
+
+- Standalone `.html` / `.htm` files only; an ` ```html ` fence inside `.md` is **ignored**. The page's own styles, scripts and background are kept; Chinese glyphs fall through to the bundled font (offline-consistent); `--width` is the layout viewport, an explicit narrower `body` width wins
+- **Hand-drawn editorial images** (covers / proposal illustrations, low-frequency high-fidelity): specs live in [editorial-diagram-design](editorial-diagram-design/README.md) (vendored diagram-design skill, MIT) — follow its primer plus the matching `type-*.md`, write the HTML, export with the command above; use `'Noto Sans SC'` for Chinese
+- **Guardrail**: do not hand-write HTML to route around the fences for office diagrams — budgets / lint / pixel screening do not apply to arbitrary HTML; the hand-drawn path is only for "the HTML already exists" or one-off editorial needs
+
 ## Diagram picking
 
 | What the user wants | Use | Cap |

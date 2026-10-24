@@ -51,6 +51,19 @@ echo "graph TD; A-->B" | mmdx - -f png --preset column
 
 聊天/窄栏用 `--preset column`（800px@2，字号 18、标签换行 200px；2K 屏约 1/3 栏宽）。**投屏 / PPT / 上会 / 周会 / 大屏** 必须 `--preset slide`（字号 18 + 加粗描边），并带 `--title`；不要用 `--css` 手调对比度，不要用暗色主题投会议室。飞书卡片 `square`，Word `a4`。`both` 仅开发者嵌 Markdown。显式 `--width`/`--scale`/`-f` 覆盖 preset。跟 VI：`--brand #2563EB`（只改强调色；投影不要用过浅的蓝）。`--json.warnings` 出现 `column-landscape` / `column-shrink` → 改 `flowchart TD` 或拆图，不要加宽 `--width`。
 
+## HTML 文件导出（配套 diagram-design）
+
+触发：用户给了/生成了 HTML 文件要「导出图片 / 截图 / 转 PNG」，或偶发要 editorial 封面图。
+
+```bash
+mmdx page.html -o out/page.png --scale 3    # 3x 高保真（印刷/大屏缩放）；默认 2 够 PPT
+mmdx page.html --background transparent     # 透明底需显式传
+```
+
+- 只认独立 `.html` / `.htm` 文件；`.md` 里写 ` ```html ` 围栏**无效**。页面样式、脚本、背景全保留；中文字形走内嵌字体兜底（离线一致）；`--width` = 布局视口，页面显式更窄的 `body` 宽优先
+- **手绘 editorial 图**（封面 / 方案插图，低频高保真场景）：规格见 [editorial-diagram-design](editorial-diagram-design/README.md)（vendored diagram-design skill，MIT）——按它的总则 + 对应 `type-*.md` 手写 HTML，再用上面命令导出；中文用 `'Noto Sans SC'` 字族名
+- **护栏**：办公出图不要为绕开围栏去手写 HTML——预算 / lint / 像素筛查对任意 HTML 失效；手绘路径只用于「HTML 已存在」或确需 editorial 质感的一次性场景
+
 ## 选型速查
 
 | 用户要表达的 | 用什么 | 上限 |

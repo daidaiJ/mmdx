@@ -26,6 +26,7 @@
 | 🖼 扩展块 | [docs/EXTENSIONS.md](docs/EXTENSIONS.md) | 每种围栏一张工具渲染的 PNG + 语法 |
 | 📜 变更历史 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 | 🔧 引擎/布局调研 | [docs/research-layout-color.md](docs/research-layout-color.md) | Pele vs mermaid 可抽的布局配色旋钮（不引入新语法） |
+| 🖋 手绘 editorial 规格 | [docs/editorial-diagram-design/](docs/editorial-diagram-design/README.md) | vendored diagram-design skill（MIT）：偶发封面/方案插图按其规格手绘 HTML，`mmdx file.html --scale 3` 导出 |
 
 各文档均为中文默认，同名 `.en.md` 为英文版。
 
@@ -38,6 +39,7 @@
 - **像素级均匀留白**：每张图二次裁切到墨迹包围盒，四边留白对称是构造保证，不靠 mermaid 不可靠的 viewBox
 - **扩展块**：```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane 直出 PNG
 - **办公交付**：`--preset slide|a4|square|column`、图题/来源/单位 chrome、`--brand` 强调色；agent 友好的 `--json`（含 `warnings`）
+- **整页 HTML 截图**：`file.html` 原样导出高保真 PNG（`--scale 3` 印刷级）——系统 Edge、免 Playwright、内嵌中文字体兜底 CJK；配套 vendored 的 [diagram-design](docs/editorial-diagram-design/README.md) 规格可手绘 editorial 图再导出
 
 ## 🚀 快速上手
 

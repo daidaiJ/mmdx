@@ -26,6 +26,7 @@ The same `tests/diagrams` fixtures, one collage per engine.
 | 🖼 Extension blocks | [docs/EXTENSIONS.en.md](docs/EXTENSIONS.en.md) | One tool-rendered PNG + syntax per fence |
 | 📜 Changelog | [CHANGELOG.md](CHANGELOG.md) | Release history |
 | 🔧 Engine / layout notes | [docs/research-layout-color.md](docs/research-layout-color.md) | Layout and color knobs worth stealing (no second diagram language) |
+| 🖋 Hand-drawn editorial specs | [docs/editorial-diagram-design/](docs/editorial-diagram-design/README.md) | Vendored diagram-design skill (MIT): for the occasional cover / proposal illustration, hand-draw per its specs and export with `mmdx file.html --scale 3` |
 
 Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 
@@ -38,6 +39,7 @@ Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 - **Pixel-level even padding**: every image is re-cropped to its ink bounding box; symmetric margins are a construction guarantee, not mermaid's unreliable viewBox
 - **Extension blocks**: ```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane straight to PNG
 - **Office delivery**: `--preset slide|a4|square|column`, title/source/unit chrome, `--brand` accent; agent-friendly `--json` (including `warnings`)
+- **Whole-page HTML shots**: `file.html` exports as-is to a high-fidelity PNG (`--scale 3` for print) — system Edge, no Playwright, bundled CJK font fills the fallback; pairs with the vendored [diagram-design](docs/editorial-diagram-design/README.md) specs to hand-draw editorial images and export them
 
 ## 🚀 Quick start
 
