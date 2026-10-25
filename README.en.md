@@ -7,7 +7,7 @@
 
 **A diagram export CLI built for office agents**: batch-render mermaid and office fences (table / chart / kpi / compare / vs / funnel / task / progress / gauge / heatmap / swimlane …) in Markdown into PNG — themes, CJK fonts, layout engine, and padding are all built in. No MCP server, no browser extension, and the machine producing the output doesn't need Node.
 
-**Scene tiers**: high-frequency office diagrams go through fence templates (PNG @2x, vector SVG for mermaid types; seconds, <1.5k tokens per image); the occasional editorial cover / proposal illustration is hand-drawn as HTML per the vendored [diagram-design specs](skill/editorial/README.md) (PNG @3x, minutes) — both tiers export through mmdx, rasterized once at deviceScaleFactor supersampling with no JPEG and an embedded CJK font, so sharpness is a construction guarantee.
+**Scene tiers**: high-frequency office diagrams go through fence templates (PNG @2x, vector SVG for mermaid types; seconds, <1.5k tokens per image); the occasional editorial cover / proposal illustration is hand-drawn as HTML per the vendored [diagram-design specs](skill/editorial/README.md) (PNG @3x, minutes); the occasional **narrative explainer / diff·plan review / recap / slide deck** is assembled from a starter per the vendored [spec-only adaptation of visual-explainer](skill/explain/README.md) (PNG @3x) — all three tiers export through mmdx, rasterized once at deviceScaleFactor supersampling with no JPEG and an embedded CJK font, so sharpness is a construction guarantee.
 
 The same `tests/diagrams` fixtures, one collage per engine.
 
@@ -29,6 +29,8 @@ The same `tests/diagrams` fixtures, one collage per engine.
 | 📜 Changelog | [CHANGELOG.md](CHANGELOG.md) | Release history |
 | 🔧 Engine / layout notes | [docs/research-layout-color.md](docs/research-layout-color.md) | Layout and color knobs worth stealing (no second diagram language) |
 | 🖋 Hand-drawn editorial specs | [skill/editorial/](skill/editorial/README.md) | Vendored diagram-design skill (MIT): for the occasional cover / proposal illustration, hand-draw per its specs and export with `mmdx file.html --scale 3` |
+| 📃 Narrative explainer specs | [skill/explain/](skill/explain/README.md) | Vendored spec-only adaptation of visual-explainer (MIT): explainers / review pages / recaps / slide decks assembled from its starters, exported with the same command |
+| 🔍 Skill selection research | [docs/research-visual-explainer.md](docs/research-visual-explainer.md) (zh) | Community HTML-to-image skill landscape, the license veto (vivid-illustration), the route argument (zero new runtime), and the font strategy with measured sizes |
 | 📖 Rendered showcase | [docs/showcase-vendored-skills.en.md](docs/showcase-vendored-skills.en.md) | One real PNG per vendored skill (editorial / explain) plus the pipeline commands — the new fonts and lint at a glance |
 
 Every doc is Chinese-first with an English `.en.md` sibling of the same name.
@@ -43,6 +45,7 @@ Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 - **Extension blocks**: ```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane straight to PNG
 - **Office delivery**: `--preset slide|a4|square|column`, title/source/unit chrome, `--brand` accent; agent-friendly `--json` (including `warnings`)
 - **Whole-page HTML shots**: `file.html` exports as-is to a high-fidelity PNG (`--scale 3` for print) — system Edge, no Playwright, bundled CJK font fills the fallback; pairs with the vendored [diagram-design](skill/editorial/README.md) specs to hand-draw editorial images and export them
+- **explain narrative tier (vendored, spec-only adaptation of visual-explainer)**: multi-figure explainers / diff·plan review pages / recaps / slide decks — copy one of the 4 register starters (instrument/blueprint/paper/editorial; the kit design system and 153 KB of Latin fonts are already inlined, assets never enter the context) → edit the body → `mmdx --scale 3`. In-page mermaid is pre-rendered by `mmdx - -f svg` and inlined. None of the upstream renderer ships — the skill adapts to mmdx, zero new runtime, zero mmdx core changes
 - **Figure lint (constructive QA for hand-drawn pages)**: exporting a `file.html` inspects every figure — six check families: **overflow** (viewBox clipping, with direction and pixels), **text-on-shape / text-on-text**, **adhesion** (gaps to a node box under max(4px, 35% of font size) — exactly the "label glued to the box" case human eyes miss most), **effective font size <11px**, **missing caption/aria-label**. Messages are LSP-style and self-locating, ready to act on:
 
   ```

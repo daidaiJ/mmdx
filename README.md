@@ -7,7 +7,7 @@
 
 **为 AI agent 打造的办公出图 CLI**：把 Markdown 里的 mermaid 与办公围栏（table / chart / kpi / compare / vs / funnel / task / progress / gauge / heatmap / swimlane …）批量渲染成 PNG——主题、中文字体、布局引擎、留白全部内置，不需要 MCP server、浏览器插件，产物机器上也不需要 Node。
 
-**场景分级**：高频办公图走围栏模板（PNG @2x / mermaid 另有矢量 SVG，秒级、每图 <1.5k token）；偶发 editorial 封面 / 方案插图按内置 vendored 的 [diagram-design 规格](skill/editorial/README.md)手绘 HTML（PNG @3x，分钟级）——两档统一经 mmdx 导出，deviceScaleFactor 超采样一次栅格化、无 JPEG、内嵌中文字体，清晰度是构造保证。
+**场景分级**：高频办公图走围栏模板（PNG @2x / mermaid 另有矢量 SVG，秒级、每图 <1.5k token）；偶发 editorial 封面 / 方案插图按内置 vendored 的 [diagram-design 规格](skill/editorial/README.md)手绘 HTML（PNG @3x，分钟级）；低频**叙事解释页 / diff·plan 评审页 / recap / 幻灯片页**按内置 vendored 的 [visual-explainer 规格化改造版](skill/explain/README.md)用 starter 装配 HTML（PNG @3x）——三档统一经 mmdx 导出，deviceScaleFactor 超采样一次栅格化、无 JPEG、内嵌中文字体，清晰度是构造保证。
 
 同一套 `tests/diagrams` fixture，两种引擎各渲一张拼图。
 
@@ -29,6 +29,8 @@
 | 📜 变更历史 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 | 🔧 引擎/布局调研 | [docs/research-layout-color.md](docs/research-layout-color.md) | Pele vs mermaid 可抽的布局配色旋钮（不引入新语法） |
 | 🖋 手绘 editorial 规格 | [skill/editorial/](skill/editorial/README.md) | vendored diagram-design skill（MIT）：偶发封面/方案插图按其规格手绘 HTML，`mmdx file.html --scale 3` 导出 |
+| 📃 叙事解释页规格 | [skill/explain/](skill/explain/README.md) | vendored visual-explainer 规格化改造版（MIT）：解释页/评审页/recap/幻灯片页按其规格用 starter 装配 HTML，同命令导出 |
+| 🔍 skill 选型调研 | [docs/research-visual-explainer.md](docs/research-visual-explainer.md) | 社区出图 skill 候选全景、许可一票否决（vivid-illustration）、路线论证（渲染零新增）与字体策略实测 |
 | 📖 实渲展示 | [docs/showcase-vendored-skills.md](docs/showcase-vendored-skills.md) | editorial / explain 两个 vendored skill 各一张实渲 PNG + 产线命令（新字体与 lint 效果直观对照） |
 
 各文档均为中文默认，同名 `.en.md` 为英文版。
@@ -43,6 +45,7 @@
 - **扩展块**：```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane 直出 PNG
 - **办公交付**：`--preset slide|a4|square|column`、图题/来源/单位 chrome、`--brand` 强调色；agent 友好的 `--json`（含 `warnings`）
 - **整页 HTML 截图**：`file.html` 原样导出高保真 PNG（`--scale 3` 印刷级）——系统 Edge、免 Playwright、内嵌中文字体兜底 CJK；配套 vendored 的 [diagram-design](skill/editorial/README.md) 规格可手绘 editorial 图再导出
+- **explain 叙事档（vendored visual-explainer 规格化改造版）**：多图解释页 / diff·plan 评审页 / recap / 幻灯片页——复制 4 register starter（instrument/blueprint/paper/editorial，kit 设计系统与 153KB 拉丁字体已内联、资产不进上下文）→ 编辑页身 → `mmdx --scale 3`；页内 mermaid 用 `mmdx - -f svg` 预渲后内联；上游 renderer 零随附——skill 适配 mmdx，渲染零新增、mmdx 核心零改动
 - **figure lint（手绘页的构造质检）**：`file.html` 导出时自动体检每个图，六类检查——**越界**（viewBox 裁切，带方向与超出像素）、**文字压形 / 压字**、**粘连**（与节点框间距 < max(4px, 字高×35%) 即报——「边标签贴着框」这类肉眼最容易漏的场景）、**有效字号 <11px**、**缺 caption / aria-label**。消息 LSP 式自定位，agent 拿到就能改：
 
   ```
