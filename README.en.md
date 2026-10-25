@@ -56,6 +56,12 @@ unzip mmdx-dynamic-v*.zip && cd mmdx-dynamic && bun install && bun run src/cli.t
 
 # Option C: clone & build
 bun run build && ./dist/mmdx-windows-x64.exe --help
+
+# Option D: skill + CLI bundle (recommended for AI agent users)
+#   Download mmdx-skill-<tag>.zip, then copy the contents of the mmdx-skill
+#   directory into your agent's skills dir (e.g. ~/.qwen/skills/mermaid/,
+#   ~/.grok/skills/mermaid/, ~/.claude/skills/mermaid/) — skill installed.
+#   The CLI is embedded at bin/mmdx.exe (windows x64); verify: bin/mmdx.exe --version
 ```
 
 ### Browser dependency

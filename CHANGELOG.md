@@ -4,6 +4,12 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.4.1] - 2026-10-25
+
+- Release 新增 `mmdx-skill-<tag>.zip` 产物：skill 目录 + 内嵌 windows-x64 CLI（`bin/mmdx.exe`）一步到位，解压后把包内内容整体拷进 agent 的 skills 目录（`~/.qwen/skills/mermaid/` 等）即完成 skill 安装，附 `INSTALL.md`（安装路径示例、CLI 验证、非 Windows 指向 dynamic 包）；README 快速上手新增方式 D（中英同步）
+- skill `references/recipes.md` 新增特殊画法「对照式 timeline（事件 vs 对策）」：每时期固定两行（事件 / 处置）的阶段对照叙事，比 flowchart 平行双链省节点预算且无交叉连线，附已验证示例与 `--source "© id"` 署名水印用法
+- skill `editorial/README.md` 新增「简中手绘实践要点（mmdx 语境）」：简中标题/callout 落 sans（`'Noto Sans SC'` 渲染时已注册、离线可靠；serif 标题离线不保证）、sublabel 保持 Latin mono、署名水印两种做法（围栏 `--source` / 手绘页脚 `<text>`）、4px 网格纪律
+
 ## [1.4.0] - 2026-10-25
 
 - 新增 `file.html` 整页输入：HTML 原样截图为 PNG（fullPage，只出 PNG），保留页面自身样式、脚本与背景；`--width` 为布局视口（页面显式更窄的 `body` 宽度优先），`--scale` / `--background` 照常生效——可作为手绘 HTML 工作流（如 diagram-design）的免 Playwright 导出后端

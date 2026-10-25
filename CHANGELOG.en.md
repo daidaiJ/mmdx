@@ -4,6 +4,12 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioned per [Semantic Versioning](https://semver.org/).
 
+## [1.4.1] - 2026-10-25
+
+- New release asset `mmdx-skill-<tag>.zip`: the skill directory plus the embedded windows-x64 CLI (`bin/mmdx.exe`) in one download — copy the contents into an agent's skills dir (`~/.qwen/skills/mermaid/`, etc.) and the skill is installed; ships with an `INSTALL.md` (install paths, CLI verification, non-Windows pointer to the dynamic bundle); README quick start gains Option D (both languages)
+- skill `references/recipes.md` adds the "paired timeline (event vs countermeasure)" recipe: each period carries two lines (event / response) for stage-by-stage comparisons — half the node budget of two parallel flowchart chains, no crossing edges; includes a verified example and the `--source "© id"` credit-watermark usage
+- skill `editorial/README.md` adds "Simplified-Chinese hand-drawn notes (mmdx context)": SC titles/callouts go sans (`'Noto Sans SC'` is registered at render time, reliable offline; serif titles are not guaranteed), sublabels stay Latin mono, two watermark options (fence `--source` / hand-drawn footer `<text>`), 4px grid discipline
+
 ## [1.4.0] - 2026-10-25
 
 - New `file.html` whole-page input: the page is screenshotted as-is to PNG (fullPage, PNG only), keeping its own styles, scripts and background; `--width` is the layout viewport (an explicit, narrower `body` width wins), `--scale` / `--background` apply — a Playwright-free export backend for hand-drawn HTML workflows (e.g. diagram-design)

@@ -56,6 +56,11 @@ unzip mmdx-dynamic-v*.zip && cd mmdx-dynamic && bun install && bun run src/cli.t
 
 # 方式 C：克隆构建
 bun run build && ./dist/mmdx-windows-x64.exe --help
+
+# 方式 D：skill + CLI 一体包（AI agent 用户推荐）
+#   下载 mmdx-skill-<tag>.zip，解压后把 mmdx-skill 目录内容整体拷进 agent 的
+#   skills 目录（如 ~/.qwen/skills/mermaid/、~/.grok/skills/mermaid/、~/.claude/skills/mermaid/）
+#   即装好 skill；CLI 内嵌在包内 bin/mmdx.exe（windows x64），验证：bin/mmdx.exe --version
 ```
 
 ### 浏览器依赖
