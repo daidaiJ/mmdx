@@ -3,7 +3,7 @@
 # Trigger: push an annotated tag (git tag -a v1.0.0 -F release-notes.md && git push origin v1.0.0)
 #   - injects the tag name as the binary version (MMDX_VERSION → embed.generated.ts)
 #   - release notes = the annotated tag message (read via GitHub API)
-#   - assets: mmdx-windows-x64.exe, mmdx-dynamic-<tag>.zip, each with .sha256
+#   - assets: mmdx-windows-x64.exe, mmdx-dynamic-<tag>.zip, mmdx-skill-<tag>.zip, each with .sha256
 
 name: Release
 
@@ -57,10 +57,34 @@ jobs:
           EOF
           cd dist && zip -qr "mmdx-dynamic-${TAG}.zip" mmdx-dynamic
 
+      - name: Assemble skill zip with embedded CLI
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          mkdir -p dist/mmdx-skill/bin
+          cp -r skill/. dist/mmdx-skill/
+          cp dist/mmdx-windows-x64.exe dist/mmdx-skill/bin/mmdx.exe
+          cat > dist/mmdx-skill/INSTALL.md <<'EOF'
+          # mmdx skill + CLI
+
+          One download, two things: the agent skill (SKILL.md, references/,
+          editorial/ at the root of this directory) and the mmdx CLI
+          (bin/mmdx.exe, windows-x64 — same binary as the standalone release asset).
+
+          Install: copy the contents of this directory into your agent tool's
+          skills directory, e.g. ~/.qwen/skills/mermaid/, ~/.grok/skills/mermaid/,
+          ~/.claude/skills/mermaid/, ~/.zcode/skills/mermaid/ (symlink or copy;
+          keeping bin/ alongside is fine, the skill text itself never executes it).
+
+          Verify the CLI: bin/mmdx.exe --version
+          Non-windows or want the bun runtime instead: use mmdx-dynamic-<tag>.zip.
+          EOF
+          cd dist && zip -qr "mmdx-skill-${TAG}.zip" mmdx-skill
+
       - name: Generate checksums
         working-directory: dist
         run: |
-          for f in mmdx-windows-x64.exe mmdx-dynamic-*.zip; do
+          for f in mmdx-windows-x64.exe mmdx-dynamic-*.zip mmdx-skill-*.zip; do
             sha256sum "$f" > "$f.sha256"
           done
 
@@ -89,5 +113,7 @@ jobs:
             dist/mmdx-windows-x64.exe.sha256 \
             dist/mmdx-dynamic-*.zip \
             dist/mmdx-dynamic-*.zip.sha256 \
+            dist/mmdx-skill-*.zip \
+            dist/mmdx-skill-*.zip.sha256 \
             --title "mmdx ${{ github.ref_name }}" \
             --notes-file notes.md
