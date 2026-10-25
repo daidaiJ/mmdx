@@ -19,7 +19,7 @@ description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 
 **按需加载**（默认只读本文件，以下按场景再读，勿预读）：
 
 - [references/fences.md](references/fences.md) — 扩展围栏语法速记 + 每围栏细则 + 能上会边界（写围栏前抄语法时）
-- [references/recipes.md](references/recipes.md) — 16 种 mermaid 图型最小示例 + 特殊画法：**一图并列双流程（LR+TB 混排）**、嵌套包含、组织架构、分层横切（写 mermaid 或要组合版式时）
+- [references/recipes.md](references/recipes.md) — 16 种 mermaid 图型最小示例 + 特殊画法：**一图并列双流程（LR+TB 混排）**、嵌套包含、组织架构、分层横切、**对照式 timeline（事件 vs 对策）**（写 mermaid 或要组合版式时；§1e 回哺的落点）
 - [references/troubleshooting.md](references/troubleshooting.md) — 报错速诊 / `--json.warnings` 处置 / 退出码（渲染失败时）
 - [references/themes-engines.md](references/themes-engines.md) — 主题选型 / 双引擎差别 / Pele 配置键（换主题或引擎时）
 - [editorial/](editorial/README.md) — vendored diagram-design 手绘规格（精美档动笔前）
@@ -168,3 +168,11 @@ mmdx page.html -o out/page.png --scale 3
 2. **Read 看 PNG**：图题/来源/单位在图上（若传了）、文字不截断、类别不过多、连线不穿字、四边留白。流程图折线过多 → 确认没被切到 mermaid+ELK；C4 变成浅色办公卡 → 这是 Pele，要教科书深色块就 `--engine mermaid`
 3. 若砍过密度，补一句保真台账：「18 源节点 → 9 张图」
 4. 问题 → 改图或调 caption → `--index N` 重渲染；最多 2 轮，仍不满意问用户
+
+### 1e. 回哺：新画法沉淀（自检通过后顺手判断）
+
+刚渲染的图是否用了 recipes / fences 都没覆盖的写法组合（新图型用法、新版式组合、新参数模式）？判定标准：不是换了文案或配色的普通图，而是**下次遇到同类需求可以直接抄**的模式（例：对照式 timeline、分层横切）。
+
+- 是 → 建议用户把它沉淀进 [references/recipes.md](references/recipes.md)（mermaid 画法）或 [references/fences.md](references/fences.md)（围栏细则）：条目格式照抄现有节、示例用刚实渲染验证过的源码、开头一句话讲清适用场景与不适用边界
+- **索引维护**：入库同时更新本文件「按需加载」清单里对应文件的描述（新画法要点写进那一行，让下次检索能命中），不要只加正文不动索引
+- 宿主安装的 skill 目录是只读镜像，改动落在 mmdx 仓库 `skill/`（随 release 重新分发；本地镜像要手动同步）
