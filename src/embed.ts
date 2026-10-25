@@ -14,8 +14,12 @@ export interface Assets {
   elkJs: string;
   /** Pele UMD bundle (`vendor/pele.global.js`); '' when not vendored */
   peleJs: string;
-  /** base64 woff2 of the bundled CJK font, or null when not bundled */
+  /** base64 woff2 of the bundled CJK sans, or null when not bundled */
   fontB64: string | null;
+  /** base64 woff2 of the bundled CJK serif (authored HTML pages), or null */
+  fontSerifB64: string | null;
+  /** base64 woff2 of the bundled CJK kai (hand-drawn figure labels), or null */
+  fontKaiB64: string | null;
 }
 
 async function fromGenerated(): Promise<Assets | null> {
@@ -27,12 +31,21 @@ async function fromGenerated(): Promise<Assets | null> {
       ELK_JS: string;
       PELE_JS: string;
       FONT_B64: string | null;
+      FONT_SERIF_B64: string | null;
+      FONT_KAI_B64: string | null;
       BUILD_VERSION?: string | null;
     };
     // the committed stub (and any build predating the pele asset) is empty —
     // that means "not built", so fall back to reading vendor/ from disk
     if (g.MERMAID_JS && g.PELE_JS) {
-      return { mermaidJs: g.MERMAID_JS, elkJs: g.ELK_JS, peleJs: g.PELE_JS, fontB64: g.FONT_B64 };
+      return {
+        mermaidJs: g.MERMAID_JS,
+        elkJs: g.ELK_JS,
+        peleJs: g.PELE_JS,
+        fontB64: g.FONT_B64,
+        fontSerifB64: g.FONT_SERIF_B64,
+        fontKaiB64: g.FONT_KAI_B64,
+      };
     }
     return null;
   } catch {
@@ -61,8 +74,15 @@ export async function loadAssets(): Promise<Assets> {
   const generated = await fromGenerated();
   if (generated) return generated;
   let fontB64: string | null = null;
-  const fontPath = path.join(PKG_DIR, 'assets', 'fonts', 'NotoSansSC-Subset.woff2');
-  if (fs.existsSync(fontPath)) fontB64 = fs.readFileSync(fontPath).toString('base64');
+  let fontSerifB64: string | null = null;
+  let fontKaiB64: string | null = null;
+  const b64Of = (name: string): string | null => {
+    const p = path.join(PKG_DIR, 'assets', 'fonts', name);
+    return fs.existsSync(p) ? fs.readFileSync(p).toString('base64') : null;
+  };
+  fontB64 = b64Of('NotoSansSC-Subset.woff2');
+  fontSerifB64 = b64Of('NotoSerifSC-Subset.woff2');
+  fontKaiB64 = b64Of('LXGWWenKai-Subset.woff2');
   return {
     mermaidJs: read('vendor/mermaid.min.js'),
     elkJs: fs.existsSync(path.join(PKG_DIR, 'vendor/elk.bundle.mjs'))
@@ -72,5 +92,7 @@ export async function loadAssets(): Promise<Assets> {
       ? read('vendor/pele.global.js')
       : '',
     fontB64,
+    fontSerifB64,
+    fontKaiB64,
   };
 }

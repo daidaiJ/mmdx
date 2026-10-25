@@ -27,3 +27,8 @@
 | `column-shrink` | 图内在宽度超 800px 栏宽，会被 CSS 缩小 | 砍节点 / 拆图 / 换 `--preset a4`；**不要**加大 `--width`（缩完字更小） |
 | `pie-sectors` 等 `*-over` | 超 §1a 预算 | 拆「总览 + 局部」或交 AntV；`--strict-chart` 可把 mermaid 超限升为错误 |
 | `brand-contrast` | `--brand` 色在白底上对比度 < 4.5:1（WCAG AA） | 换更深的色；颜色按原样保留未改 |
+| `figure-overflow` | **`file.html` 输入**：figure svg 里有元素越出画布（消息带图号、元素、viewBox 坐标、越出方向与像素） | 按坐标改源码：加宽 `viewBox` 或把元素收进来 |
+| `figure-text-overlap` | figure svg 里文字压在别的形状/文字上（带两侧名称与坐标） | 挪开标签；属于某节点的标签与其形状收进同一 `<g>` |
+| `figure-text-adhesion` | 文字与节点框间距 < max(4px, 字高×35%)，视觉粘连（带方向与间距） | 缩短标签、拉开间距或抬高；骑线标签（halo/chip）对**线**豁免、对**框**不豁免 |
+| `figure-small-text` | svg 被缩小后文字有效字号 <11px | 放大画布或加大字号 |
+| `figure-uncaptioned` / `svg-aria-label` | 图缺 `figcaption` 主张 / svg 缺 aria-label（有 figcaption 即视为满足） | 补 caption（写图的主张，不是描述）；explain/editorial 手绘图补 aria-label |

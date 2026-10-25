@@ -4,6 +4,15 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.4.2] - 2026-10-25
+
+- **新增 explain 叙事档**：vendored [nicobailon/visual-explainer](https://github.com/nicobailon/visual-explainer)（10.6k★，MIT，commit `5f37886` v0.14.0）**规格化改造版**进 [skill/explain/](skill/explain/README.md)——多图叙事解释页 / diff·plan 评审页 / recap / 幻灯片页；上游 renderer 一个文件不随附（路线 D：让 visual-explainer 适配 mmdx，渲染零新增、mmdx 代码零改动），`kit/*.mjs` 运行时、`plan/`、`pptx/`、`video/`、`mcp/` 全部排除，references 与 kit 资产原文保留；调研与论证见 [docs/research-visual-explainer.md](docs/research-visual-explainer.md)
+- explain 用法三步：复制 `kit/starter-<register>.html`（4 register：instrument/blueprint/paper/editorial，已内联 kit.css + defs + 该 register 全部拉丁字体，[scripts/explain-starter.ts](scripts/explain-starter.ts) 生成）→ 编辑 main → `mmdx name.html --scale 3`；kit 资产不进 LLM 上下文；页内 mermaid 用 `mmdx - -f svg` 预渲后原样内联（**不要**给内联 svg 加第二个 style 属性，会因 HTML 重复属性丢弃 `--pele-*` 主题变量全图变黑）；steppers/replay/ve-ask 等 JS 交互态禁用（无 JS 时是幽灵态）
+- **中文三字体家族**：exe 内嵌 Noto Serif SC（可变字重，2.6MB）与霞鹜文楷（1.6MB）GB2312 子集，与 Noto Sans SC 并列注入 HTML 页导出——serif 栈中文自动落宋体（修掉「黑体顶 serif 栈」断档）、手绘标注显式 `'LXGW WenKai'` 楷体；`serif` 泛型的 CJK 兜底 alias 换绑宋体文件；围栏/mermaid 路径维持仅黑体（避免批量渲染注入未用字体）；Latin 字体包（Geist/IBM Plex/Newsreader/Atkinson/Instrument/JetBrains，153KB，全 OFL 随附）由 starter 预嵌 data-URL @font-face，explain 页离线全 register 一致
+- **figure lint（`file.html` 输入）**：导出时自动检查 figure svg——caption/aria 口径吸收自上游 render 闸门，几何检查（viewBox 越界带方向与像素、文字压形/压字、**粘连**间距 < max(4px, 字高×35%)、有效字号 <11px）为手绘场景新增；LSP 式消息带图号/文本/viewBox 坐标；豁免策略防假告警：同组标签、骑线 halo/chip 标签对线豁免对框不豁免、大框居中标签、隐藏文本与 <24px² sliver；结果进 `--json.warnings`（`figure-overflow` / `figure-text-overlap` / `figure-text-adhesion` / `figure-small-text` / `figure-uncaptioned` / `svg-aria-label`，处置表见 skill troubleshooting.md）
+- 根 SKILL.md：场景分级新增**叙事档**、按需加载与适用边界挂载 explain/；editorial README「简中手绘实践要点」修订（serif 标题与楷体标注现已离线可用，几何自检交给 lint）
+- 端到端实证：paper register 中文解释页（宋体标题/黑体正文/楷体旁注/手绘机制图/waffle+bars 手写展开/页内 mermaid 预渲）lint 清零 + 视觉 QA 通过；负样本（越界/压字）三条全中；既有测试 94/94 通过（fixture：tests/explain-e2e/）
+
 ## [1.4.1] - 2026-10-25
 
 - Release 新增 `mmdx-skill-<tag>.zip` 产物：skill 目录 + 内嵌 windows-x64 CLI（`bin/mmdx.exe`）一步到位，解压后把包内内容整体拷进 agent 的 skills 目录（`~/.qwen/skills/mermaid/` 等）即完成 skill 安装，附 `INSTALL.md`（安装路径示例、CLI 验证、非 Windows 指向 dynamic 包）；README 快速上手新增方式 D（中英同步）

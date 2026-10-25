@@ -37,10 +37,11 @@ mmdx diagram.html -o out/diagram.png --scale 3
 
 style-guide 对繁中有完整规则，简中只有一句带过；下面是 mmdx 渲染器语境下的实测结论（出处：Layer Stack 简中主图，`mmdx file.html --scale 3` 渲染 + 视觉模型 QA 通过）：
 
-- **标题和 callout 落 sans，不赌 serif**：mmdx 只注册 `'Noto Sans SC'`（无衬线）；`Instrument Serif` / `Noto Serif SC` 离线都不保证。中文标题用 `font-size 600 权重 + 28px` 的 sans（栈 `'Geist','Noto Sans SC',sans-serif`），italic serif 旁注的中文等价物是 `12px sans + soft 色`，不要硬写 italic。
+- **标题可选 serif（v1.4.2 起）**：mmdx 现注入三套中文字体——正文默认 `'Noto Sans SC'`（黑体）；**serif 栈的中文自动落 `'Noto Serif SC'`（宋体，可变字重）**，中文标题可用 `font-family:'Instrument Serif','Noto Serif SC',serif` 与拉丁 serif 配对；手绘标注/旁注可显式 `'LXGW WenKai'`（楷体，仅 400 字重）配手绘线条。1.4.x 时代的「标题不赌 serif」结论已过时。
 - **sublabel 保持 Latin mono**（端口 / 协议 / sysctl 键天然是 Latin），中文只出现在层名（node-name，≥12px 下限）——与 style-guide 简繁共用的三条规则一致。
 - **署名水印两种做法**：围栏出图用 chrome 的 `--source "© id"`（印在页脚）；手绘 HTML 在右下角放一条 `mono 9px + soft` 的 `<text>© id</text>`，等效 editorial 页脚 credit。
 - **网格纪律照旧**：坐标、尺寸、间距全取 4 的倍数；SVG 宽 1000、层带 64px 高，导出 `--scale 3` 后 2K/4K 屏都够用。
+- **几何自检交给 lint（v1.4.2 起）**：`mmdx file.html` 导出时自动跑 figure lint（越界/压字/粘连，LSP 式消息带图号与坐标，`--json.warnings` 可读）——修到 warnings 清零，再目检一眼即可，见 [references/troubleshooting.md](../references/troubleshooting.md)。
 
 ## 同步上游
 

@@ -29,6 +29,7 @@ The same `tests/diagrams` fixtures, one collage per engine.
 | 📜 Changelog | [CHANGELOG.md](CHANGELOG.md) | Release history |
 | 🔧 Engine / layout notes | [docs/research-layout-color.md](docs/research-layout-color.md) | Layout and color knobs worth stealing (no second diagram language) |
 | 🖋 Hand-drawn editorial specs | [skill/editorial/](skill/editorial/README.md) | Vendored diagram-design skill (MIT): for the occasional cover / proposal illustration, hand-draw per its specs and export with `mmdx file.html --scale 3` |
+| 📖 Rendered showcase | [docs/showcase-vendored-skills.en.md](docs/showcase-vendored-skills.en.md) | One real PNG per vendored skill (editorial / explain) plus the pipeline commands — the new fonts and lint at a glance |
 
 Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 
@@ -36,12 +37,20 @@ Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 
 - **`tech` default theme**: white canvas, shape-coded tinted fills (blue = process, amber = decision, green = state, purple = storage); `--preset slide` thickens strokes and type for projection; 6 more presets; all 20 mermaid diagram types
 - **Pele renderer (default)**: [obsidianmd/pele](https://github.com/obsidianmd/pele) with its own layout + wide S-turn routing, so flowchart edges are curved, not polylines; `--engine mermaid` falls back to Chromium + mermaid.js
-- **Bundled CJK font**: Noto Sans SC subset (full GB2312 + Latin, only 1.9 MB) — identical rendering on any machine, correct wrapping for Chinese labels
+- **Bundled CJK fonts (three families)**: Noto Sans SC / Noto Serif SC (variable weight) + LXGW WenKai subsets (full GB2312 + Latin, ~6.2 MB total) — identical rendering on any machine, correct wrapping for Chinese labels; injected on HTML export: sans body text, serif-stack Chinese resolves to the serif face, hand-drawn annotations can opt into `'LXGW WenKai'` kai
 - **ELK layout engine**: official `@mermaid-js/layout-elk`, lazily loaded for `--engine mermaid` flowcharts only; Pele ships its own layout
 - **Pixel-level even padding**: every image is re-cropped to its ink bounding box; symmetric margins are a construction guarantee, not mermaid's unreliable viewBox
 - **Extension blocks**: ```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane straight to PNG
 - **Office delivery**: `--preset slide|a4|square|column`, title/source/unit chrome, `--brand` accent; agent-friendly `--json` (including `warnings`)
 - **Whole-page HTML shots**: `file.html` exports as-is to a high-fidelity PNG (`--scale 3` for print) — system Edge, no Playwright, bundled CJK font fills the fallback; pairs with the vendored [diagram-design](skill/editorial/README.md) specs to hand-draw editorial images and export them
+- **Figure lint (constructive QA for hand-drawn pages)**: exporting a `file.html` inspects every figure — six check families: **overflow** (viewBox clipping, with direction and pixels), **text-on-shape / text-on-text**, **adhesion** (gaps to a node box under max(4px, 35% of font size) — exactly the "label glued to the box" case human eyes miss most), **effective font size <11px**, **missing caption/aria-label**. Messages are LSP-style and self-locating, ready to act on:
+
+  ```
+  figure-text-adhesion: 图1「读路径」 文字「① GET」(x242,y118) 左侧贴着「客户端」(间距3px)
+  figure-overflow: 图2 文字「6 未命中」(x118,y86) 越出下缘约 3px
+  ```
+
+  Findings surface via `--json.warnings`; fix by coordinates and **ship at zero warnings** — pixel-squinting becomes a machine-readable list. Works for editorial, explain, and any hand-drawn HTML. Exemption strategies keep false positives down: own-group labels, line-riding labels exempt from lines but never boxes, centered in-box labels, hidden texts and sliver intersections
 
 ## 🚀 Quick start
 

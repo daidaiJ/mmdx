@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一次请求要穿过五层</title>
+<!-- editorial (diagram-design) idiom showcase: paper/ink palette, 4px grid,
+     serif zh heading (mmdx-injected Noto Serif SC), kai side note (LXGW WenKai),
+     Latin sublabels in mono. No font embedding: CJK arrives via mmdx injection. -->
+<style>
+  :root { --paper:#F7F4EE; --ink:#1F2328; --muted:#6B7280; --rule:#D8D2C4; --accent:#2563EB; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--paper); color:var(--ink); font-family:Georgia,'Noto Serif SC',serif; padding:64px 0; }
+  main { width:1000px; margin:0 auto; }
+  .eyebrow { font-family:ui-monospace,'Cascadia Mono',monospace; font-size:12px; letter-spacing:.32em; text-transform:uppercase; color:var(--muted); margin-bottom:16px; }
+  h1 { font-family:'Instrument Serif',Georgia,'Noto Serif SC',serif; font-size:44px; font-weight:600; letter-spacing:-.01em; margin-bottom:12px; }
+  .lead { font-size:17px; line-height:1.7; color:var(--ink); max-width:64ch; margin-bottom:8px; }
+  .meta { font-family:ui-monospace,monospace; font-size:12px; color:var(--muted); margin-bottom:48px; }
+  figure { margin:0 0 8px; }
+  figcaption { font-family:ui-monospace,monospace; font-size:12px; color:var(--muted); margin-top:16px; }
+  figcaption b { color:var(--ink); font-weight:600; margin-right:12px; }
+  .credit { font-family:ui-monospace,monospace; font-size:9px; color:var(--muted); text-align:right; margin-top:32px; }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">Architecture · 分层架构</p>
+  <h1>一次请求要穿过五层</h1>
+  <p class="lead">每一层只做一件事：接入层终结 TLS，网关做认证与限流，服务层组装业务，缓存挡住九成读，数据层只保存真相。</p>
+  <p class="meta">user-service · GET /user/:id · 2026-10</p>
+
+  <figure>
+    <svg viewBox="0 0 1000 552" width="1000" role="img" aria-label="一次读请求自上而下穿过接入、网关、服务、缓存、数据五层；命中在缓存层返回，未命中才落到数据层。">
+      <!-- layer bands: ink outlines, paper fill, 4px grid -->
+      <g font-family="Georgia,'Noto Serif SC',serif">
+        <rect x="64" y="24" width="768" height="64" fill="none" stroke="#1F2328" stroke-width="2"/>
+        <text x="88" y="64" font-size="20" font-weight="600">接入层</text>
+        <rect x="64" y="120" width="768" height="64" fill="none" stroke="#1F2328" stroke-width="2"/>
+        <text x="88" y="160" font-size="20" font-weight="600">网关层</text>
+        <rect x="64" y="216" width="768" height="64" fill="none" stroke="#1F2328" stroke-width="2"/>
+        <text x="88" y="256" font-size="20" font-weight="600">服务层</text>
+        <rect x="64" y="312" width="768" height="64" fill="#EDF2FC" stroke="#2563EB" stroke-width="2"/>
+        <text x="88" y="352" font-size="20" font-weight="600">缓存层</text>
+        <rect x="64" y="408" width="768" height="64" fill="none" stroke="#1F2328" stroke-width="2"/>
+        <text x="88" y="448" font-size="20" font-weight="600">数据层</text>
+      </g>
+      <!-- mono sublabels right-aligned inside each band -->
+      <g font-family="ui-monospace,'Cascadia Mono',monospace" font-size="13" fill="#6B7280" text-anchor="end">
+        <text x="808" y="60">edge/nginx · :443 · TLS</text>
+        <text x="808" y="156">api-gateway · :8080 · auth,rate</text>
+        <text x="808" y="252">user-service · :8081</text>
+        <text x="808" y="348">redis · :6379 · TTL 60s</text>
+        <text x="808" y="444">postgres · :5432</text>
+      </g>
+      <!-- request path: down the right rail, hop numbers on the rail -->
+      <g stroke="#2563EB" stroke-width="2" fill="none">
+        <path d="M920 24V504" stroke="#D8D2C4"/>
+        <path d="M920 56V112" marker-end="url(#arr)"/>
+        <path d="M920 152V208" marker-end="url(#arr)"/>
+        <path d="M920 248V304" marker-end="url(#arr)"/>
+        <path d="M920 344V400" marker-end="url(#arr)"/>
+      </g>
+      <g font-family="ui-monospace,monospace" font-size="13" fill="#2563EB">
+        <text x="940" y="90">① ②</text>
+        <text x="940" y="186">③</text>
+        <text x="940" y="282">④</text>
+        <text x="940" y="378">⑤</text>
+      </g>
+      <!-- hit return: leaves at the cache layer, 94% of reads never go deeper -->
+      <g stroke="#2563EB" stroke-width="2" fill="none">
+        <path d="M836 344C880 344 880 504 920 504" stroke-dasharray="6 6" marker-end="url(#arr)"/>
+      </g>
+      <text x="836" y="496" font-family="ui-monospace,monospace" font-size="12" fill="#2563EB" text-anchor="end">94% 在此返回</text>
+      <!-- kai side note: hand-drawn voice, bottom-left free area -->
+      <text x="64" y="512" font-family="'LXGW WenKai'" font-size="18" fill="#1F2328">分层的意义：让慢的东西只被少数请求打扰。</text>
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2563EB"/></marker>
+      </defs>
+    </svg>
+    <figcaption><b>Fig. 1</b>蓝色轨线是一次读请求的路径；虚线是 94% 的命中返回，从不触达数据层。</figcaption>
+  </figure>
+
+  <p class="credit">© mmdx v1.4.2 · editorial (diagram-design) 规格手绘 · mmdx file.html --scale 3</p>
+</main>
+</body>
+</html>

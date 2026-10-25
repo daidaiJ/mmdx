@@ -531,7 +531,11 @@ async function main(): Promise<void> {
         if (b.kind === 'html') {
           // authored document: keep its own background unless --background
           const png = await renderer.renderDocument(b.code, o.background, label);
-          return { files: writePngOnly(b, png), warnings: [] };
+          const lint = renderer.docLintWarnings.map((w) => {
+            const i = w.indexOf(':');
+            return { input: b.input, index: b.index, code: w.slice(0, i), message: w.slice(i + 2) };
+          });
+          return { files: writePngOnly(b, png), warnings: lint };
         }
 
         if (HTML_KINDS.has(b.kind)) {

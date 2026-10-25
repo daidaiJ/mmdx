@@ -42,7 +42,7 @@ jobs:
         run: |
           mkdir -p dist/mmdx-dynamic/assets/fonts
           cp -r src dist/mmdx-dynamic/src
-          cp assets/fonts/NotoSansSC-Subset.woff2 dist/mmdx-dynamic/assets/fonts/
+          cp assets/fonts/*-Subset.woff2 dist/mmdx-dynamic/assets/fonts/
           cp -r skill dist/mmdx-dynamic/skill
           cp package.json tsconfig.json README.md LICENSE dist/mmdx-dynamic/
           cat > dist/mmdx-dynamic/RUNTIME.md <<'EOF'

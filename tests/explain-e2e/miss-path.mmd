@@ -1,0 +1,6 @@
+graph LR
+  客户端 -->|① GET| API
+  API -->|② 查缓存| Redis
+  Redis -->|③ 命中 1ms| API
+  API -->|④ 未命中| Postgres
+  Postgres -->|⑤ 回填 9ms| Redis

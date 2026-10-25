@@ -29,6 +29,7 @@
 | 📜 变更历史 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 | 🔧 引擎/布局调研 | [docs/research-layout-color.md](docs/research-layout-color.md) | Pele vs mermaid 可抽的布局配色旋钮（不引入新语法） |
 | 🖋 手绘 editorial 规格 | [skill/editorial/](skill/editorial/README.md) | vendored diagram-design skill（MIT）：偶发封面/方案插图按其规格手绘 HTML，`mmdx file.html --scale 3` 导出 |
+| 📖 实渲展示 | [docs/showcase-vendored-skills.md](docs/showcase-vendored-skills.md) | editorial / explain 两个 vendored skill 各一张实渲 PNG + 产线命令（新字体与 lint 效果直观对照） |
 
 各文档均为中文默认，同名 `.en.md` 为英文版。
 
@@ -36,12 +37,20 @@
 
 - **tech 默认主题**：白底、形状分色可见填色（蓝=流程、琥珀=判定、绿=状态、紫=存储）；投屏/PPT 用 `--preset slide` 加粗描边和字号；另有 6 套预设，20 种 mermaid 图型全覆盖
 - **Pele 渲染引擎（默认）**：[obsidianmd/pele](https://github.com/obsidianmd/pele) 自研布局 + 宽 S 弯路由，流程图连线默认曲线而非折线；`--engine mermaid` 回退 Chromium + mermaid.js
-- **内置中文字体**：Noto Sans SC 子集（GB2312 全量汉字 + 拉丁，仅 1.9MB），任意机器渲染一致，中文标签换行正确
+- **内置中文字体（三家族）**：Noto Sans SC / Noto Serif SC（可变字重）+ 霞鹜文楷 子集（GB2312 全量汉字 + 拉丁，合计 ~6.2MB），任意机器渲染一致，中文标签换行正确；HTML 页导出自动注入——正文黑体、serif 栈中文落宋体、手绘标注显式 `'LXGW WenKai'` 楷体
 - **ELK 布局引擎**：官方 `@mermaid-js/layout-elk`，仅 `--engine mermaid` 的 flowchart 懒加载；Pele 自带布局
 - **像素级均匀留白**：每张图二次裁切到墨迹包围盒，四边留白对称是构造保证，不靠 mermaid 不可靠的 viewBox
 - **扩展块**：```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane 直出 PNG
 - **办公交付**：`--preset slide|a4|square|column`、图题/来源/单位 chrome、`--brand` 强调色；agent 友好的 `--json`（含 `warnings`）
 - **整页 HTML 截图**：`file.html` 原样导出高保真 PNG（`--scale 3` 印刷级）——系统 Edge、免 Playwright、内嵌中文字体兜底 CJK；配套 vendored 的 [diagram-design](skill/editorial/README.md) 规格可手绘 editorial 图再导出
+- **figure lint（手绘页的构造质检）**：`file.html` 导出时自动体检每个图，六类检查——**越界**（viewBox 裁切，带方向与超出像素）、**文字压形 / 压字**、**粘连**（与节点框间距 < max(4px, 字高×35%) 即报——「边标签贴着框」这类肉眼最容易漏的场景）、**有效字号 <11px**、**缺 caption / aria-label**。消息 LSP 式自定位，agent 拿到就能改：
+
+  ```
+  figure-text-adhesion: 图1「读路径」 文字「① GET」(x242,y118) 左侧贴着「客户端」(间距3px)——缩短标签、拉开间距或抬高
+  figure-overflow: 图2 文字「6 未命中」(x118,y86) 越出下缘约 3px——加宽 viewBox 或收进元素
+  ```
+
+  结果进 `--json.warnings`，按坐标改源码、**修到清零再交付**——肉眼逐图排查升级为机器清单；editorial / explain / 任意手绘 HTML 通用。豁免策略防假告警：同组标签、骑线标签对「线」豁免对「框」不豁免、大框居中标签、隐藏文本与 sliver 交集
 
 ## 🚀 快速上手
 

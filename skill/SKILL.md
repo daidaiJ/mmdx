@@ -13,6 +13,7 @@ description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 
 | --- | --- | --- | --- |
 | **高速**（默认） | 流程/审批/轻量数据图/版式块——周报贴片、投屏、高频可验收 | 围栏（mermaid 图型 + 扩展块），按 §1a 选型 | PNG @2x；mermaid 图型另有矢量 SVG |
 | **精美**（低频） | 封面/方案插图——editorial 质感、一次性 | 手绘 HTML（vendored [diagram-design 规格](editorial/README.md)）→ §1c-4 | PNG @3x |
+| **叙事**（低频） | 多图解释页 / diff·plan 评审页 / recap / 幻灯片页——「十分钟看懂」 | explain 规格（vendored [visual-explainer 改造版](explain/README.md)）→ §1c-4 | PNG @3x |
 
 两档统一经 mmdx 导出。**清晰度是构造保证**：PNG 走 deviceScaleFactor 超采样、一次栅格化，无事后缩放、无 JPEG 压缩，中文内嵌字体——不存在"糊"的来源；要更高保真加 `--scale 3`，不要放大已出的 PNG。办公出图默认高速档，不要为绕开围栏纪律降档手绘。
 
@@ -23,8 +24,9 @@ description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 
 - [references/troubleshooting.md](references/troubleshooting.md) — 报错速诊 / `--json.warnings` 处置 / 退出码（渲染失败时）
 - [references/themes-engines.md](references/themes-engines.md) — 主题选型 / 双引擎差别 / Pele 配置键（换主题或引擎时）
 - [editorial/](editorial/README.md) — vendored diagram-design 手绘规格（精美档动笔前）
+- [explain/](explain/README.md) — vendored visual-explainer 工程解释页规格（叙事档动笔前；starter 装配式写作，页内图禁 JS 交互态）
 
-**适用边界**：流程/审批/排期、轻量占比/趋势/对比、KPI/表格/卡片/任务快照 → 用本 skill。**已有 HTML 文件要导出图片**（如 diagram-design 产物）→ `mmdx file.html`（见 §1c-4）。反例：文生图；分组柱/双轴/散点 → [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
+**适用边界**：流程/审批/排期、轻量占比/趋势/对比、KPI/表格/卡片/任务快照 → 用本 skill。**多图叙事解释页 / diff·plan 评审 / recap / 幻灯片页** → [explain/](explain/README.md)（叙事档）。**已有 HTML 文件要导出图片**（如 diagram-design 产物）→ `mmdx file.html`（见 §1c-4）。反例：文生图；分组柱/双轴/散点 → [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
 
 ## 0. 环境自检（会话内首次使用先跑，30 秒）
 
@@ -161,6 +163,8 @@ mmdx page.html -o out/page.png --scale 3
 - **高保真**：`--scale 3`（印刷/大屏缩放，diagram-design 官方导出即 3x）；默认 2 够 PPT。固定画布页让 `body` 宽=画布宽（或 `--width` 对齐），避免响应式重排；透明底显式 `--background transparent`
 - **护栏**：办公出图**不要**为绕开围栏纪律去手写 HTML——预算、lint、像素筛查对任意 HTML 全部失效。这条路径只用于「HTML 已经存在」的导出，不是画图路径
 - 偶发需要 **editorial 封面 / 方案插图**（低频、一次性、杂志感）确要手绘时：规格用 [editorial/](editorial/README.md)（diagram-design skill 规格层，MIT，随本 skill 分发）——读它的总则 + 对应 type 文件，导出仍用上面的命令
+- 需要**多图叙事解释页 / 评审页 / recap / 幻灯片页**（低频、要「十分钟看懂」）时：规格用 [explain/](explain/README.md)（visual-explainer 规格化改造版，MIT，随本 skill 分发）——复制它的 starter 再编辑页身，导出仍用上面的命令
+- 导出时中文自动兜三套内嵌字体：黑体（默认）/ 宋体 `'Noto Serif SC'`（serif 栈）/ 楷体 `'LXGW WenKai'`（手绘标注，显式声明）——页面无需内嵌 CJK
 
 ### 1d. 自检闭环（渲染后必做）
 

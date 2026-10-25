@@ -34,9 +34,14 @@ fs.copyFileSync(
   path.join(ROOT, 'vendor/pele.global.js'),
 );
 
-// 3. font → base64
-const fontPath = path.join(ROOT, 'assets/fonts/NotoSansSC-Subset.woff2');
-const fontB64 = fs.existsSync(fontPath) ? Buffer.from(fs.readFileSync(fontPath)).toString('base64') : null;
+// 3. fonts → base64 (sans universal; serif/kai for authored HTML pages)
+const fontB64Of = (name: string): string | null => {
+  const p = path.join(ROOT, 'assets/fonts', name);
+  return fs.existsSync(p) ? Buffer.from(fs.readFileSync(p)).toString('base64') : null;
+};
+const fontB64 = fontB64Of('NotoSansSC-Subset.woff2');
+const fontSerifB64 = fontB64Of('NotoSerifSC-Subset.woff2');
+const fontKaiB64 = fontB64Of('LXGWWenKai-Subset.woff2');
 
 // 4. version from tag (CI) or default
 const buildVersion = process.env.MMDX_VERSION ?? null;
@@ -48,6 +53,8 @@ const generated =
   `export const ELK_JS = ${JSON.stringify(elkJs)};\n` +
   `export const PELE_JS = ${JSON.stringify(read('vendor/pele.global.js'))};\n` +
   `export const FONT_B64 = ${JSON.stringify(fontB64)};\n` +
+  `export const FONT_SERIF_B64 = ${JSON.stringify(fontSerifB64)};\n` +
+  `export const FONT_KAI_B64 = ${JSON.stringify(fontKaiB64)};\n` +
   `export const BUILD_VERSION = ${JSON.stringify(buildVersion)};\n`;
 fs.writeFileSync(path.join(ROOT, 'src/embed.generated.ts'), generated);
 

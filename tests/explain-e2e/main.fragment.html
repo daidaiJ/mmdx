@@ -1,0 +1,61 @@
+<main>
+    <header>
+      <p class="eyebrow">读路径 · 缓存</p>
+      <h1><span class="num">94%</span> 的读请求从不碰数据库</h1>
+      <p class="lead"><b>Redis 在约 1 毫秒内</b>应答了它们；只有未命中才落到 Postgres。</p>
+      <p class="meta">user-service · GET /user/:id · 近 7 天至 10 月 1 日</p>
+    </header>
+
+    <figure>
+      <div class="frame">
+        <svg class="ve-svg" viewBox="0 0 800 350" role="img" aria-label="客户端请求 API；API 先查 Redis；命中约 1 毫秒返回；未命中读 Postgres 约 9 毫秒后回填缓存。">
+          <path class="ve-e" d="M180 130H305" marker-end="url(#ve-ah)"/>
+          <text class="ve-el" x="242" y="118">① GET</text>
+          <path class="ve-e" d="M465 105H608" marker-end="url(#ve-ah)"/>
+          <text class="ve-el" x="537" y="95">② 先查缓存</text>
+          <path class="ve-e is-hot" d="M608 155H465" marker-end="url(#ve-ah)"/>
+          <text class="ve-el" x="537" y="178">③ 命中 · 1 ms</text>
+          <path class="ve-e" d="M345 175V235" marker-end="url(#ve-ah)"/>
+          <text class="ve-el" x="222" y="210">④ 未命中: SELECT</text>
+          <path class="ve-e is-async" d="M425 235V175" marker-end="url(#ve-ah)"/>
+          <text class="ve-el" x="470" y="210">⑤ 回填 · TTL 60 s</text>
+
+          <g class="ve-n" transform="translate(30 90)"><rect class="sh" width="150" height="80" rx="6"/><text x="75" y="40">客户端</text><text class="sub" x="75" y="60">浏览器</text></g>
+          <g class="ve-n is-key" transform="translate(305 90)"><rect class="sh" width="160" height="80" rx="6"/><text x="80" y="40">API</text><text class="sub" x="80" y="60">user-service</text></g>
+          <g class="ve-n" transform="translate(608 90)"><rect class="sh" width="165" height="80" rx="6"/><text x="82" y="40">Redis</text><text class="sub" x="82" y="60">TTL 60 s</text></g>
+          <g class="ve-n" transform="translate(305 235)"><path class="sh" d="M0 10V60A75 10 0 0 0 150 60V10"/><ellipse class="sh lid" cx="75" cy="10" rx="75" ry="10"/><text x="75" y="45">Postgres</text><text class="sub" x="75" y="62">9 ms</text></g>
+
+          <text font-family="'LXGW WenKai'" font-size="16" x="35" y="340" fill="var(--accent)">缓存的意义：把慢存储的答案，放在离调用方最近的地方。</text>
+        </svg>
+      </div>
+      <figcaption><span class="fig-n">Fig. 1</span>每一步都有编号与耗时；只有第 ④ 步会落到 Postgres。</figcaption>
+    </figure>
+
+    <section>
+      <div class="sec-head"><p class="ve-label caps">负载</p><h2>Postgres 现在只服务 6% 的读</h2></div>
+      <figure>
+        <div class="kpis">
+          <div class="kpi"><span class="ve-label">命中率 · 7 天</span><span class="val">94<span class="unit">%</span></span>
+            <svg class="ve-waffle" viewBox="0 0 200 100" role="img" aria-label="100 格中 94 格点亮；6 格未命中"><rect width="100" height="90" fill="url(#ve-w-on)"/><rect y="90" width="40" height="10" fill="url(#ve-w-on)"/><rect x="40" y="90" width="60" height="10" fill="url(#ve-w-off)"/><path class="ann" d="M104 91H114"/><text x="118" y="91">6 未命中</text></svg></div>
+          <div class="kpi"><span class="ve-label">p50 读延迟</span><span class="val">1.2<span class="unit"> ms</span></span>
+            <svg class="ve-bars" viewBox="0 0 240 52" role="img" aria-label="命中 1 毫秒；未命中 9 毫秒"><text y="12">命中</text><rect class="hot" x="44" y="5" width="16" height="14" rx="2"/><text x="68" y="12">1 ms</text><text y="40">未命中</text><rect x="64" y="33" width="120" height="14" rx="2"/><text x="192" y="40">9 ms</text></svg></div>
+        </div>
+        <figcaption><span class="fig-n">Fig. 2</span>一格是 1% 的读；一次未命中的代价是命中的 9 倍。</figcaption>
+      </figure>
+    </section>
+
+    <section>
+      <div class="sec-head"><p class="ve-label caps">未命中路径</p><h2>未命中时才走完整链路</h2></div>
+      <figure>
+        <div class="frame">
+          __MERMAID_SVG__
+        </div>
+        <figcaption><span class="fig-n">Fig. 3</span>mermaid 由 mmdx 预渲为 SVG 后内联——引擎、主题与中文字体均来自 mmdx 管线。</figcaption>
+      </figure>
+    </section>
+
+    <section class="sources" aria-label="Sources">
+      <p class="ve-label caps">Sources</p>
+      <p><code>src/cache/user.ts:14–52</code> · <code>src/routes/user.ts:30</code> · 面板「user-service 读路径」，近 7 天。</p>
+    </section>
+  </main>
