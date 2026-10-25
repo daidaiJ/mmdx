@@ -33,6 +33,15 @@ mmdx diagram.html -o out/diagram.png --scale 3
 | 45 种图型随意选 | 选型仍以 mmdx [../SKILL.md](../SKILL.md) §1a 为准；polar / scatter / waterfall / Wardley / medallion 等 mmdx 明确不接（AntV / Infographic 地盘），手绘路径同样不做 |
 | `assets/` 示例做参照 | 未随附；以 `references/` 规格文本为准 |
 
+## 简中手绘实践要点（mmdx 语境，2026-10 实证）
+
+style-guide 对繁中有完整规则，简中只有一句带过；下面是 mmdx 渲染器语境下的实测结论（出处：Layer Stack 简中主图，`mmdx file.html --scale 3` 渲染 + 视觉模型 QA 通过）：
+
+- **标题和 callout 落 sans，不赌 serif**：mmdx 只注册 `'Noto Sans SC'`（无衬线）；`Instrument Serif` / `Noto Serif SC` 离线都不保证。中文标题用 `font-size 600 权重 + 28px` 的 sans（栈 `'Geist','Noto Sans SC',sans-serif`），italic serif 旁注的中文等价物是 `12px sans + soft 色`，不要硬写 italic。
+- **sublabel 保持 Latin mono**（端口 / 协议 / sysctl 键天然是 Latin），中文只出现在层名（node-name，≥12px 下限）——与 style-guide 简繁共用的三条规则一致。
+- **署名水印两种做法**：围栏出图用 chrome 的 `--source "© id"`（印在页脚）；手绘 HTML 在右下角放一条 `mono 9px + soft` 的 `<text>© id</text>`，等效 editorial 页脚 credit。
+- **网格纪律照旧**：坐标、尺寸、间距全取 4 的倍数；SVG 宽 1000、层带 64px 高，导出 `--scale 3` 后 2K/4K 屏都够用。
+
 ## 同步上游
 
 嵌入是快照、不自动追更。需要更新时：

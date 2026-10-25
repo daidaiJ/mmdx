@@ -219,3 +219,23 @@ flowchart TB
 ### 4. 分层横切（层叠 / 泳道式 lanes）
 
 并列命名 subgraph 当层，层内正常连线，层间只留少量关键边；配色交给主题。真正跨部门 handoff 场景改用 ` ```swimlane ` 围栏（见 [fences.md](fences.md)）。
+
+### 5. 对照式 timeline（事件 vs 对策）
+
+每个时期固定两行：第一行写"发生的事"，第二行写"对应的处置"，读者竖着扫任何一列都是完整叙事。适合攻击链 vs 防线、事故 vs 响应、变更 vs 回滚这类**阶段对阶段**的对照——比 flowchart 两条平行链省一半节点数预算，且没有交叉连线。两行的语义要在 `--title` 里点明（如"攻击链 vs 防线"），否则读者不知道第二行是对策。
+
+```mermaid
+timeline
+    扫描端口 : 全端口扫描 : 仅 22 / 8338 可达
+    撞库爆破 : 密码字典与脚本 : 公钥 only 加双轨惩罚
+    初次落地 : 低权限 shell : 无 sudo 可用 无编译器
+    尝试提权 : 内核漏洞利用 : 新内核每日补丁
+    试图常驻 : 后门与定时任务 : journald 审计可回放
+```
+
+出图要作者署名 / 水印，用图题层 `--source` 印在 PNG 页脚（mermaid 图型与扩展围栏通用）：
+
+```bash
+mmdx attack-chain.mmd --preset column --title "自动化攻击链 vs 每层防线" --source "© daidaiJ" -o attack-chain.png
+```
+
