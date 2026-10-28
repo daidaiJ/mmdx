@@ -87,7 +87,7 @@ quadrantChart
     quadrant-2 谨慎评估
     quadrant-3 暂缓
     quadrant-4 快速尝鲜
-    ELK布局: [0.3, 0.8]
+    Pele布局: [0.3, 0.8]
     draw.io: [0.7, 0.4]
 ```
 
@@ -116,7 +116,7 @@ timeline
     title 版本历史
     2026-08 : 立项
     2026-09 : 内置主题
-            : ELK 布局
+            : Pele 布局
     未来    : 二进制分发
 ```
 

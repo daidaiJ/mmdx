@@ -95,7 +95,7 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 6. 不写 `style`/`classDef` 调全局色；仅强调个别节点（每图 ≤2）
 7. emoji 每图 ≤ 3；品牌图标 `A@{icon: logos:react}` + `--icon logos`
 8. 中文标签 ≥ 12px；细环/细箭头里只放数字，名称放图例
-9. 标题/来源/单位用 `--title` / `--subtitle` / `--source` / `--unit`（印在 PNG 上），不手写 mermaid frontmatter
+9. 标题/来源/单位用 `--title` / `--subtitle` / `--source` / `--unit`（印在 PNG 上），不手写 mermaid frontmatter；图题默认在图上方，`--title-pos bottom` 移到下方
 10. 跟 VI 用 `--brand #RRGGBB`（只改强调色，不重涂 flowchart 形状分色）。投屏请用深色 hex，默认 accent 已是 `#2563EB`
 
 ### 1c. 渲染
@@ -110,6 +110,7 @@ mmdx doc.md --preset slide --title "Q1 销售构成" --unit 万元 --source "财
 # L1 批量/定向
 mmdx a.md b.md -o dist/ --preset column
 mmdx doc.md --index 2 -f png
+mmdx doc.md --list                      # 只列出识别到的围栏块，不出图（先探再渲）
 # L2 精确命名 / stdin
 mmdx doc.md -o out/arch.png
 echo "graph TD; A-->B" | mmdx - -f png --preset column

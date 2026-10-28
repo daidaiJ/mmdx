@@ -105,6 +105,8 @@ mmdx card --in note.md \
 
 超过 `--max-height`（默认 1200 CSS px）会自动拆成多张，文件名追加 `-1`、`-2`。需要更长的单张时调大 `--max-height`；不要为了塞内容把字号压到 12px 以下。
 
+命令行也能覆盖 frontmatter：`--title` / `--kicker` / `--deck` / `--source`，品牌色用 `--brand <hex>`（只改强调色，配色仍由 `--theme` 决定）。
+
 ### 6. 自检
 
 1. `--json` 的 `failed` 不存在、`cards === files.length`。
