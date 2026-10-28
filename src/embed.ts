@@ -18,6 +18,10 @@ export interface Assets {
   roughJs: string;
   /** base64 woff2 of the bundled CJK font, or null when not bundled */
   fontB64: string | null;
+  /** base64 woff2 of the serif CJK subset (authored HTML documents only) */
+  fontSerifB64: string | null;
+  /** base64 woff2 of the kai CJK subset (hand-drawn figure labels) */
+  fontKaiB64: string | null;
 }
 
 async function fromGenerated(): Promise<Assets | null> {
@@ -30,6 +34,8 @@ async function fromGenerated(): Promise<Assets | null> {
       PELE_JS?: string;
       ROUGH_JS?: string;
       FONT_B64: string | null;
+      FONT_SERIF_B64?: string | null;
+      FONT_KAI_B64?: string | null;
       BUILD_VERSION?: string | null;
     };
     // the committed stub is empty — that means "not built", fall back to files
@@ -40,6 +46,8 @@ async function fromGenerated(): Promise<Assets | null> {
         peleJs: g.PELE_JS ?? '',
         roughJs: g.ROUGH_JS ?? '',
         fontB64: g.FONT_B64,
+        fontSerifB64: g.FONT_SERIF_B64 ?? null,
+        fontKaiB64: g.FONT_KAI_B64 ?? null,
       };
     }
     return null;
@@ -71,6 +79,10 @@ export async function loadAssets(): Promise<Assets> {
   let fontB64: string | null = null;
   const fontPath = path.join(PKG_DIR, 'assets', 'fonts', 'NotoSansSC-Subset.woff2');
   if (fs.existsSync(fontPath)) fontB64 = fs.readFileSync(fontPath).toString('base64');
+  const optionalFont = (file: string): string | null => {
+    const p = path.join(PKG_DIR, 'assets', 'fonts', file);
+    return fs.existsSync(p) ? fs.readFileSync(p).toString('base64') : null;
+  };
   return {
     mermaidJs: read('vendor/mermaid.min.js'),
     elkJs: fs.existsSync(path.join(PKG_DIR, 'vendor/elk.bundle.mjs'))
@@ -83,5 +95,7 @@ export async function loadAssets(): Promise<Assets> {
       ? read('vendor/rough.js')
       : '',
     fontB64,
+    fontSerifB64: optionalFont('NotoSerifSC-Subset.woff2'),
+    fontKaiB64: optionalFont('LXGWWenKai-Subset.woff2'),
   };
 }

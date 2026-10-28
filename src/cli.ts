@@ -12,7 +12,7 @@ import {
 } from './blocks.ts';
 import { chartToMermaid, parseChart } from './chart.ts';
 import { getBuildVersion, loadAssets } from './embed.ts';
-import { scanLimits, type LimitHit } from './limits.ts';
+import { scanColumnHints, scanLimits, type LimitHit } from './limits.ts';
 import { Renderer } from './render.ts';
 import { accentTint, applyBrand, type Tokens } from './tokens.ts';
 import {
@@ -37,7 +37,7 @@ const help = () => `
 mmdx ${VERSION} — render Mermaid diagrams to SVG + PNG, styled for docs
 
 Usage:
-  mmdx <file.md|file.mmd>... [-o OUT] [options]
+  mmdx <file.md|file.mmd|file.html>... [-o OUT] [options]
   mmdx - < [options]                render mermaid from stdin
   mmdx card --in <file.md> [-o OUT] [options]
                                     render a Markdown/URL info card (PNG)
@@ -47,6 +47,12 @@ Input:
             table/list/card/chart/kpi/compare/funnel/task/progress/swimlane/gauge/vs/heatmap
             extension blocks as styled PNG
   file.mmd  a single mermaid diagram
+  file.html a standalone HTML page screenshotted as-is (fullPage, PNG only);
+            keeps its own styles/scripts/background, --width is the layout
+            viewport (an explicit body width wins). The bundled CJK font is
+            registered as 'Noto Sans SC' and fills CJK glyphs through the
+            sans-serif/serif fallbacks, so Chinese stays offline-consistent;
+            declared webfonts still win
   -         mermaid source from stdin (single diagram)
 
 Options:
@@ -285,6 +291,12 @@ interface Block {
 const FENCE_RE = /^[ \t]*```([A-Za-z0-9_-]+)[^\n]*\n([\s\S]*?)^[ \t]*```\s*$/gm;
 
 function extractBlocks(input: string, raw: string): Block[] {
+  if (/\.html?$/i.test(input)) {
+    // authored HTML document: shot as-is, never a fence kind in .md files
+    const code = raw.trim();
+    const base = path.basename(input).replace(/\.html?$/i, '');
+    return code ? [{ input, base, index: 1, line: 1, code, kind: 'html' }] : [];
+  }
   const isMd = /\.md$|\.markdown$/i.test(input);
   if (isMd) {
     const blocks: Block[] = [];
@@ -419,6 +431,34 @@ interface JsonWarning {
   index: number;
   code: string;
   message: string;
+}
+
+/** CSS px width mermaid wrote on the root svg (after our viewBox rewrite). */
+function svgUserWidth(svg: string): number | null {
+  const tag = /<svg\b[^>]*>/.exec(svg)?.[0];
+  if (!tag) return null;
+  const wAttr = /\bwidth="([\d.]+)(?:px)?"/.exec(tag);
+  if (wAttr) {
+    const n = Number(wAttr[1]);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  const vb = /\bviewBox="\s*[-\d.]+\s+[-\d.]+\s+([\d.]+)\s+[-\d.]+/.exec(tag);
+  if (vb) {
+    const n = Number(vb[1]);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return null;
+}
+
+function columnShrinkHit(input: string, index: number, svg: string, colW: number): JsonWarning | null {
+  const w = svgUserWidth(svg);
+  if (w == null || w <= colW * 1.05) return null;
+  return {
+    input,
+    index,
+    code: 'column-shrink',
+    message: `diagram intrinsic width ${Math.round(w)}px exceeds column ${colW}px and will be scaled down; use flowchart TD, fewer nodes, or --preset a4`,
+  };
 }
 
 async function main(): Promise<void> {
@@ -654,9 +694,26 @@ async function main(): Promise<void> {
           const mermaid = chartToMermaid(spec);
           const cap = mergeCaption(cliCaption, { title: spec.title, source: spec.source, unit: spec.unit });
           const { svg, engine } = await renderDiagram(mermaid, false, label);
+          if (o.preset === 'column') {
+            const hit = columnShrinkHit(b.input, b.index, svg, o.width);
+            if (hit) {
+              warnings.push(hit);
+              log(o.quiet || o.json, `mmdx: ${label} ${hit.message}`);
+            }
+          }
           const html = blockPage(`<div class="fig">${svg}</div>`, { ...pageOptsBase, caption: cap });
           const png = await renderer.renderHtml(html, background, label);
           return { files: writePngOnly(b, png), warnings, engine };
+        }
+
+        if (b.kind === 'html') {
+          // authored document: keep its own background unless --background
+          const png = await renderer.renderDocument(b.code, o.background, label);
+          const lint = renderer.docLintWarnings.map((w) => {
+            const i = w.indexOf(':');
+            return { input: b.input, index: b.index, code: w.slice(0, i), message: w.slice(i + 2) };
+          });
+          return { files: writePngOnly(b, png), warnings: lint };
         }
 
         if (HTML_KINDS.has(b.kind)) {
@@ -674,9 +731,22 @@ async function main(): Promise<void> {
         if (o.strictChart && hits.length) {
           throw new Error(hits.map((h) => h.message).join('; '));
         }
+        if (o.preset === 'column') {
+          for (const h of scanColumnHints(b.code)) {
+            warnings.push({ input: b.input, index: b.index, code: h.code, message: h.message });
+            log(o.quiet || o.json, `mmdx: ${label} ${h.message}`);
+          }
+        }
 
         if (wrapMermaid) {
           const { svg, engine } = await renderDiagram(b.code, false, label);
+          if (o.preset === 'column') {
+            const hit = columnShrinkHit(b.input, b.index, svg, o.width);
+            if (hit) {
+              warnings.push(hit);
+              log(o.quiet || o.json, `mmdx: ${label} ${hit.message}`);
+            }
+          }
           const html = blockPage(`<div class="fig">${svg}</div>`, { ...pageOptsBase, caption: cliCaption });
           const files: string[] = [];
           if (wantSvg) {
@@ -700,6 +770,13 @@ async function main(): Promise<void> {
         const { svg, png, engine } = await renderDiagram(
           b.code, wantPng, label, frontTitle(b.code),
         );
+        if (o.preset === 'column') {
+          const hit = columnShrinkHit(b.input, b.index, svg, o.width);
+          if (hit) {
+            warnings.push(hit);
+            log(o.quiet || o.json, `mmdx: ${label} ${hit.message}`);
+          }
+        }
         const files: string[] = [];
         if (wantSvg) {
           const f = outFileFor(b, 'svg');
