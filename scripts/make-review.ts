@@ -3,27 +3,35 @@
 // (the gallery in docs/EXTENSIONS.md). Run: bun scripts/make-review.ts
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { blockPage, htmlKindToInner, mergeCaption, type BlockKind } from '../src/blocks.ts';
 import { chartToMermaid, parseChart } from '../src/chart.ts';
 import { loadAssets } from '../src/embed.ts';
 import { Renderer } from '../src/render.ts';
-import { DEFAULT_THEME, PRESETS } from '../src/themes.ts';
+import { DEFAULT_THEME, getTheme, PRESETS } from '../src/themes.ts';
 
-const ROOT = path.join(import.meta.dir, '..');
+const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const OUT = path.join(ROOT, 'review');
 const DOCS = path.join(ROOT, 'docs');
 fs.mkdirSync(OUT, { recursive: true });
 
 const preset = PRESETS[DEFAULT_THEME as keyof typeof PRESETS];
 const config = JSON.parse(JSON.stringify(preset.config)) as Record<string, unknown>;
-const r = await Renderer.create(await loadAssets(), { layout: 'elk', engine: 'pele', scale: 2, width: 1200 });
+const theme = getTheme(DEFAULT_THEME);
+const r = await Renderer.create(await loadAssets(), { layout: 'elk', scale: 2, width: 1200 });
+const render = (code: string, needPng: boolean): Promise<{ svg: string; png?: Buffer }> =>
+  r.render({
+    code, engine: 'pele', background: '#FFFFFF', needPng, scale: 2, width: 1200,
+    layout: 'elk', theme, mermaidConfig: config, fontSize: 15, padding: 0,
+    svgThemeable: false, titlePos: 'top', titleText: '', remap: preset.remap,
+  });
 
 for (const f of fs.readdirSync(path.join(ROOT, 'tests', 'diagrams')).filter((x) => x.endsWith('.md'))) {
   const src = fs.readFileSync(path.join(ROOT, 'tests', 'diagrams', f), 'utf8');
   const m = src.match(/```mermaid\n([\s\S]*?)```/);
   if (!m) continue;
   try {
-    const { png } = await r.render(m[1], config, '#FFFFFF', true, undefined, undefined, preset.remap);
+    const { png } = await render(m[1], true);
     if (png) fs.writeFileSync(path.join(OUT, `${f.replace('.md', '')}.png`), png);
     console.log('ok', f);
   } catch (e) { console.log('ERR', f, e instanceof Error ? e.message.slice(0, 60) : e); }
@@ -62,7 +70,7 @@ for (const { file, kind, out } of EXT) {
   try {
     if (kind === 'chart') {
       const spec = parseChart(code);
-      const { svg } = await r.render(chartToMermaid(spec), config, '#FFFFFF', false, 'top', '', preset.remap);
+      const { svg } = await render(chartToMermaid(spec), false);
       const cap = mergeCaption({}, { title: spec.title, source: spec.source, unit: spec.unit });
       const png = await r.renderHtml(blockPage(`<div class="fig">${svg}</div>`, { caption: cap }), '#FFFFFF');
       writeExt(out, png);

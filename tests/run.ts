@@ -12,16 +12,20 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
 import { blockPage, htmlKindToInner, type BlockKind } from '../src/blocks.ts';
+import { cardPage, extractCardHtml, parseCardMarkdown } from '../src/card.ts';
 import { chartToMermaid, parseChart } from '../src/chart.ts';
 import { loadAssets } from '../src/embed.ts';
-import { scanColumnHints, scanLimits } from '../src/limits.ts';
+import { scanLimits } from '../src/limits.ts';
+import { bottomBlankLimit, diffPng } from '../src/lint.ts';
 import { Renderer } from '../src/render.ts';
-import { applyColumnDensity, applySlideDensity, DEFAULT_THEME, PRESETS } from '../src/themes.ts';
-import { applyBrand, normalizeHex } from '../src/tokens.ts';
+import { applySlideDensity, DEFAULT_THEME, getTheme, peleCss, PRESETS, type ThemeSpec } from '../src/themes.ts';
+import type { EngineId } from '../src/engine/types.ts';
+import { accentTint, applyBrand, contrastRatio, normalizeHex } from '../src/tokens.ts';
 
-const ROOT = path.dirname(import.meta.dir);
+const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const CLI = path.join(ROOT, 'src', 'cli.ts');
 const KEEP = path.join(ROOT, 'tests', 'artifacts');
 try {
@@ -51,7 +55,7 @@ const record = (name: string, ok: boolean, detail: string): void => {
   const pie = `pie showData\n    "A" : 1\n    "B" : 2\n    "C" : 3\n    "D" : 4\n    "E" : 5\n    "F" : 6\n    "G" : 7`;
   const hits = scanLimits(pie);
   record('unit/pie-over-warn', hits.some((h) => h.code === 'pie-sectors'), hits.map((h) => h.code).join(',') || 'none');
-  const okPie = scanLimits(fs.readFileSync(path.join(ROOT, 'tests', 'diagrams', 'pie.md'), 'utf8').match(/```mermaid\n([\s\S]*?)```/)![1]);
+  const okPie = scanLimits(fs.readFileSync(path.join(ROOT, 'tests', 'diagrams', 'pie.md'), 'utf8').match(/```mermaid\r?\n([\s\S]*?)```/)![1]);
   record('unit/pie-in-range', okPie.length === 0, okPie.map((h) => h.message).join('; ') || 'ok');
   try {
     parseChart('type: pie\nA,1\nB,2\nC,3\nD,4\nE,5\nF,6\nG,7');
@@ -71,19 +75,6 @@ const record = (name: string, ok: boolean, detail: string): void => {
       c.fontSize === 18 && /stroke-width: 2px/.test(css),
       `fontSize=${String(c.fontSize)} css=${/stroke-width: 2px/.test(css)}`,
     );
-  }
-  {
-    const c = JSON.parse(JSON.stringify(PRESETS.tech.config)) as Record<string, unknown>;
-    applyColumnDensity(c);
-    const fc = c.flowchart as { wrappingWidth?: number };
-    record(
-      'unit/column-density',
-      c.fontSize === 18 && fc.wrappingWidth === 200,
-      `fontSize=${String(c.fontSize)} wrap=${String(fc.wrappingWidth)}`,
-    );
-    const lr = scanColumnHints('flowchart LR\n  A-->B');
-    const td = scanColumnHints('flowchart TD\n  A-->B');
-    record('unit/column-landscape', lr.some((h) => h.code === 'column-landscape') && td.length === 0, lr.map((h) => h.code).join(',') || 'none');
   }
   record('unit/brand-bad', normalizeHex('nope') === null, 'null');
   const pale = applyBrand('#EEEEEE');
@@ -119,12 +110,119 @@ const record = (name: string, ok: boolean, detail: string): void => {
 }
 
 // ---------------------------------------------------------------------------
+// 1. style contract
+// ---------------------------------------------------------------------------
+
+{
+  const ex = getTheme('excalidraw');
+  record('unit/excalidraw-contract',
+    ex.style?.rough === true && ex.style?.fillStyle === 'solid' && ex.style?.seed === 41 && !!ex.blockCss,
+    `rough=${ex.style?.rough} fill=${ex.style?.fillStyle} seed=${ex.style?.seed}`);
+  const exCss = peleCss(ex, { strokeWidth: 1.5 });
+  record('unit/excalidraw-shapes',
+    /pele-shape-fr-rect/.test(exCss) && /pele-class > rect/.test(exCss) && /pele-state-start circle/.test(exCss),
+    `frRect=${/pele-shape-fr-rect/.test(exCss)} class=${/pele-class > rect/.test(exCss)} stateStart=${/pele-state-start circle/.test(exCss)}`);
+  const techCss = peleCss(getTheme('tech'), { strokeWidth: 1.5 });
+  record('unit/tech-no-shape-expansion', !/pele-shape-fr-rect/.test(techCss), 'old theme keeps its shape rules');
+  const page = blockPage('<div class="card">x</div>', { blockCss: '.card{outline:1px solid red}' });
+  record('unit/block-css', page.includes('.card{outline:1px solid red}'), 'blockCss appended');
+
+  const paperPage = blockPage('<div class="card">x</div>', { tone: 'paper' });
+  const productPage = blockPage('<div class="card">x</div>', { tone: 'product' });
+  record('unit/tone-css',
+    paperPage.includes('--tone-heading-font') && paperPage.includes('16px') &&
+    productPage.includes('--tone-heading-font') && productPage.includes('6px') &&
+    paperPage !== productPage,
+    `paper=${paperPage.length}B product=${productPage.length}B`);
+
+  {
+    const doc = parseCardMarkdown(fs.readFileSync(path.join(ROOT, 'tests', 'edge', 'card-info.md'), 'utf8'));
+    record('unit/card-parse',
+      doc.title === '发布复盘' && doc.kicker === '工程周报 · 2026-10' &&
+      doc.blocks.some((b) => b.type === 'ul') && doc.blocks.some((b) => b.type === 'quote') &&
+      doc.blocks.some((b) => b.type === 'code'),
+      `${doc.title} blocks=${doc.blocks.map((b) => b.type).join(',')}`);
+    const extracted = extractCardHtml(
+      '<html><head><title>Fallback</title><meta property="og:title" content="页面标题">' +
+      '<meta name="description" content="摘要文本"></head><body><nav>菜单</nav>' +
+      '<article><h1>正文标题</h1><p>第一段内容。</p><ul><li>条目一</li></ul></article></body></html>',
+    );
+    record('unit/card-extract',
+      extracted.title === '页面标题' && extracted.description === '摘要文本' &&
+      extracted.markdown.includes('正文标题') && extracted.markdown.includes('条目一') &&
+      !extracted.markdown.includes('菜单'),
+      `${extracted.title} / ${extracted.description} / ${extracted.markdown.length}B`);
+  }
+
+  {
+    const pages = [
+      'GALLERY.md', 'GALLERY.en.md',
+      ...fs.readdirSync(path.join(ROOT, 'docs', 'gallery'))
+        .filter((f) => f.endsWith('.md'))
+        .map((f) => `gallery/${f}`),
+    ];
+    const missing: string[] = [];
+    let refs = 0;
+    for (const rel of pages) {
+      const text = fs.readFileSync(path.join(ROOT, 'docs', rel), 'utf8');
+      const found = new Set(
+        [...text.matchAll(/\]\(([^)]+)\)/g)]
+          .map((m) => m[1].split('#')[0])
+          .filter((ref) => /\.(md|png)$/.test(ref) && !/^https?:/.test(ref)),
+      );
+      refs += found.size;
+      for (const ref of found) {
+        const target = path.resolve(path.dirname(path.join(ROOT, 'docs', rel)), ref);
+        if (!fs.existsSync(target)) missing.push(`${rel}:${ref}`);
+      }
+    }
+    record('unit/gallery-links', pages.length >= 8 && refs >= 30 && missing.length === 0,
+      `${pages.length} pages, ${refs} links, missing=${missing.join(',') || 'none'}`);
+  }
+
+  {
+    const docs = ['THIRD_PARTY_NOTICES.md', 'docs/QUALITY.md', 'docs/QUALITY.en.md'];
+    const missing: string[] = [];
+    let refs = 0;
+    for (const rel of docs) {
+      const text = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+      const found = new Set(
+        [...text.matchAll(/\]\(([^)]+)\)/g)]
+          .map((m) => m[1].split('#')[0])
+          .filter((ref) => ref && !/^https?:/.test(ref)),
+      );
+      refs += found.size;
+      for (const ref of found) {
+        if (!fs.existsSync(path.resolve(path.dirname(path.join(ROOT, rel)), ref))) {
+          missing.push(`${rel}:${ref}`);
+        }
+      }
+    }
+    record('unit/notices-links', refs >= 10 && missing.length === 0,
+      `${docs.length} docs, ${refs} links, missing=${missing.join(',') || 'none'}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 1. library-level screening
 // ---------------------------------------------------------------------------
 
 const assets = await loadAssets();
-const renderer = await Renderer.create(assets, { layout: 'elk', engine: 'pele', scale: 2, width: 1200, profile: true });
+const renderer = await Renderer.create(assets, { layout: 'elk', scale: 2, width: 1200, profile: true });
 const tech = PRESETS[DEFAULT_THEME].config;
+const themeSpec = getTheme(DEFAULT_THEME);
+
+const renderPng = (
+  code: string,
+  engine: EngineId = 'pele',
+  spec: ThemeSpec = themeSpec,
+): Promise<{ svg: string; png?: Buffer }> =>
+  renderer.render({
+    code, engine, background: spec.background, needPng: true, scale: 2, width: 1200,
+    layout: 'elk', theme: spec, mermaidConfig: tech as Record<string, unknown>,
+    fontSize: 15, padding: 0, svgThemeable: false, titlePos: 'top', titleText: '',
+    remap: PRESETS[DEFAULT_THEME].remap,
+  });
 
 interface Analysis {
   w: number;
@@ -162,15 +260,23 @@ function analyze(file: string): Analysis {
   };
 }
 
+// A long page must not bake the viewport height into the PNG. Fixed padding is
+// fine; a large empty band below the last ink row is not.
+const bottomBlankOk = (a: Analysis): boolean => a.margins.b <= bottomBlankLimit(a.h);
+const edgeClipped = (a: Analysis): string | null => {
+  const hit = (['l', 'r', 't', 'b'] as const).filter((k) => a.margins[k] <= 0);
+  return hit.length ? hit.join('') : null;
+};
+
 const diagramFiles = fs.readdirSync(path.join(ROOT, 'tests', 'diagrams')).filter((f) => f.endsWith('.md'));
 const source = (f: string): string =>
-  /\S/.test(f) ? fs.readFileSync(path.join(ROOT, 'tests', 'diagrams', f), 'utf8').match(/```mermaid\n([\s\S]*?)```/)![1] : '';
+  /\S/.test(f) ? fs.readFileSync(path.join(ROOT, 'tests', 'diagrams', f), 'utf8').match(/```mermaid\r?\n([\s\S]*?)```/)![1] : '';
 
 for (const f of diagramFiles) {
   const name = f.replace(/\.md$/, '');
   const file = path.join(KEEP, `${name}.png`);
   try {
-    const { png } = await renderer.render(source(f), tech as Record<string, unknown>, '#FFFFFF', true);
+    const { png } = await renderPng(source(f));
     fs.writeFileSync(file, png);
     const a = analyze(file);
     const lr = Math.abs(a.margins.l - a.margins.r);
@@ -178,6 +284,9 @@ for (const f of diagramFiles) {
     const problems: string[] = [];
     if (lr > 16) problems.push(`L/R margins ${a.margins.l}/${a.margins.r}`);
     if (tb > 16) problems.push(`T/B margins ${a.margins.t}/${a.margins.b}`);
+    if (!bottomBlankOk(a)) problems.push(`bottom blank ${a.margins.b}px > ${bottomBlankLimit(a.h)}px`);
+    const edge = edgeClipped(a);
+    if (edge) problems.push(`edge clip ${edge}`);
     if (a.ink < 0.005) problems.push('near-blank');
     if (a.ink > 0.85 && name !== 'treemap') problems.push('overfull');
     record(`screen/${name}`, problems.length === 0, problems.join('; ') || `${a.w}x${a.h} ink=${(a.ink * 100).toFixed(1)}% margins L${a.margins.l} R${a.margins.r} T${a.margins.t} B${a.margins.b}`);
@@ -196,7 +305,8 @@ async function screenBlock(name: string, lang: BlockKind, file: string, lrMax = 
   fs.writeFileSync(out, png);
   const a = analyze(out);
   const lr = Math.abs(a.margins.l - a.margins.r);
-  record(`screen/${name}`, lr <= lrMax && a.ink > 0.01, `${a.w}x${a.h} L/R diff=${lr} ink=${(a.ink * 100).toFixed(1)}%`);
+  record(`screen/${name}`, lr <= lrMax && a.ink > 0.01 && bottomBlankOk(a),
+    `${a.w}x${a.h} L/R diff=${lr} bottom=${a.margins.b}/${bottomBlankLimit(a.h)} ink=${(a.ink * 100).toFixed(1)}%`);
 }
 
 await screenBlock('table', 'table', 'table.md');
@@ -206,7 +316,18 @@ await screenBlock('table', 'table', 'table.md');
   const png = await renderer.renderHtml(blockPage(htmlKindToInner('list', listSrc)), '#FFFFFF');
   fs.writeFileSync(file, png);
   const a = analyze(file);
-  record('screen/list', a.ink > 0.005, `${a.w}x${a.h} ink=${(a.ink * 100).toFixed(1)}%`);
+  record('screen/list', a.ink > 0.005 && bottomBlankOk(a),
+    `${a.w}x${a.h} ink=${(a.ink * 100).toFixed(1)}% bottom=${a.margins.b}/${bottomBlankLimit(a.h)}`);
+}
+{
+  // taller than the initial viewport: catches viewport-height blank bands
+  const longList = Array.from({ length: 40 }, (_, i) => `- 条目 ${i + 1}：一段用于撑高页面的说明文字`).join('\n');
+  const file = path.join(KEEP, 'long-list.png');
+  const png = await renderer.renderHtml(blockPage(htmlKindToInner('list', longList), { wrapWidth: 600 }), '#FFFFFF');
+  fs.writeFileSync(file, png);
+  const a = analyze(file);
+  record('screen/long-list', a.h > 1600 && a.ink > 0.01 && bottomBlankOk(a),
+    `${a.w}x${a.h} ink=${(a.ink * 100).toFixed(1)}% bottom=${a.margins.b}/${bottomBlankLimit(a.h)}`);
 }
 await screenBlock('card', 'card', 'card.md');
 await screenBlock('kpi', 'kpi', 'kpi.md');
@@ -223,10 +344,11 @@ await screenBlock('heatmap', 'heatmap', 'heatmap.md', 16);
 {
   const spec = parseChart(fenceSrc('chart-bar.md', 'chart'));
   const file = path.join(KEEP, 'chart-bar.png');
-  const { png } = await renderer.render(chartToMermaid(spec), tech as Record<string, unknown>, '#FFFFFF', true);
+  const { png } = await renderPng(chartToMermaid(spec));
   fs.writeFileSync(file, png);
   const a = analyze(file);
-  record('screen/chart-bar', a.ink > 0.01, `${a.w}x${a.h} ink=${(a.ink * 100).toFixed(1)}%`);
+  record('screen/chart-bar', a.ink > 0.01 && bottomBlankOk(a),
+    `${a.w}x${a.h} ink=${(a.ink * 100).toFixed(1)}% bottom=${a.margins.b}/${bottomBlankLimit(a.h)}`);
 }
 
 {
@@ -238,7 +360,8 @@ await screenBlock('heatmap', 'heatmap', 'heatmap.md', 16);
   fs.writeFileSync(file, png);
   const a = analyze(file);
   const lr = Math.abs(a.margins.l - a.margins.r);
-  record('screen/caption-table', lr <= 8 && a.ink > 0.01 && a.h > 80, `${a.w}x${a.h} L/R diff=${lr}`);
+  record('screen/caption-table', lr <= 8 && a.ink > 0.01 && a.h > 80 && bottomBlankOk(a),
+    `${a.w}x${a.h} L/R diff=${lr} bottom=${a.margins.b}/${bottomBlankLimit(a.h)}`);
 }
 
 {
@@ -263,6 +386,7 @@ await screenBlock('heatmap', 'heatmap', 'heatmap.md', 16);
   // block, hung screenshot), not 10% jitter across machines.
   const BUDGET: Record<string, { maxMs: number; maxCount?: number }> = {
     'page-init': { maxMs: 20_000, maxCount: 2 },
+    'init-pele': { maxMs: 8_000, maxCount: 3 },
     'init-mermaid': { maxMs: 8_000, maxCount: 3 },
     'init-font': { maxMs: 5_000, maxCount: 3 },
     'page-restore': { maxMs: 12_000, maxCount: 2 },
@@ -286,9 +410,226 @@ await screenBlock('heatmap', 'heatmap', 'heatmap.md', 16);
   // mermaid → HTML → chart-bar: one cheap DOM reset, not a mermaid re-inject per HTML block
   record(
     'perf/page-reset-after-html',
-    (agg['page-reset']?.count ?? 0) === 1 && (agg['init-mermaid']?.count ?? 0) <= 2,
-    `reset=${agg['page-reset']?.count ?? 0} init-mermaid=${agg['init-mermaid']?.count ?? 0}`,
+    (agg['page-reset']?.count ?? 0) === 1 && (agg['init-pele']?.count ?? 0) <= 2,
+    `reset=${agg['page-reset']?.count ?? 0} init-pele=${agg['init-pele']?.count ?? 0}`,
   );
+}
+
+// ---------------------------------------------------------------------------
+// every preset: diagram + block geometry under Pele
+// ---------------------------------------------------------------------------
+
+for (const styleName of Object.keys(PRESETS)) {
+  const spec = getTheme(styleName);
+  for (const name of ['flowchart', 'state', 'class', 'er']) {
+    try {
+      const { png } = await renderPng(source(`${name}.md`), 'pele', spec);
+      const file = path.join(KEEP, `style-${styleName}-${name}.png`);
+      fs.writeFileSync(file, png);
+      const a = analyze(file);
+      const lr = Math.abs(a.margins.l - a.margins.r);
+      const tb = Math.abs(a.margins.t - a.margins.b);
+      const edge = edgeClipped(a);
+      record(
+        `style/${styleName}/${name}`,
+        lr <= 20 && tb <= 20 && !edge && a.ink > 0.005 && a.ink < 0.85 && bottomBlankOk(a),
+        `${a.w}x${a.h} ink=${(a.ink * 100).toFixed(1)}% margins L${a.margins.l} R${a.margins.r} T${a.margins.t} B${a.margins.b}/${bottomBlankLimit(a.h)}${edge ? ` edge=${edge}` : ''}`,
+      );
+    } catch (e) {
+      record(`style/${styleName}/${name}`, false, (e as Error).message.slice(0, 120));
+    }
+  }
+  for (const [kind, file] of [['card', 'card.md'], ['kpi', 'kpi.md'], ['table', 'table.md']] as Array<[BlockKind, string]>) {
+    try {
+      const inner = htmlKindToInner(kind, fenceSrc(file, kind));
+      const png = await renderer.renderHtml(blockPage(inner, { blockCss: spec.blockCss }), '#FFFFFF');
+      const out = path.join(KEEP, `style-${styleName}-${kind}.png`);
+      fs.writeFileSync(out, png);
+      const a = analyze(out);
+      const lr = Math.abs(a.margins.l - a.margins.r);
+      record(
+        `style/${styleName}/block-${kind}`,
+        lr <= 40 && a.ink > 0.01 && bottomBlankOk(a),
+        `${a.w}x${a.h} ink=${(a.ink * 100).toFixed(1)}% L/R diff=${lr} bottom=${a.margins.b}/${bottomBlankLimit(a.h)}`,
+      );
+    } catch (e) {
+      record(`style/${styleName}/block-${kind}`, false, (e as Error).message.slice(0, 120));
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 1b. visual lint: DOM geometry, determinism, contrast
+// ---------------------------------------------------------------------------
+
+{
+  const problems: string[] = [];
+  const clean: string[] = [];
+  for (const name of Object.keys(PRESETS)) {
+    const spec = getTheme(name);
+    for (const [kind, file] of [['card', 'card.md'], ['kpi', 'kpi.md'], ['table', 'table.md']] as Array<[BlockKind, string]>) {
+      const inner = htmlKindToInner(kind, fenceSrc(file, kind));
+      const { issues } = await renderer.renderHtmlAudit(
+        blockPage(inner, { blockCss: spec.blockCss, tone: 'neutral' }),
+        spec.background,
+      );
+      if (issues.length) {
+        problems.push(`${name}/${kind}:${issues.slice(0, 3).map((i) => `${i.kind}@${i.selector}(${i.detail})`).join(',')}`);
+      } else {
+        clean.push(`${name}/${kind}`);
+      }
+    }
+  }
+  record('lint/layout-blocks', problems.length === 0,
+    problems.join('; ') || `clean=${clean.join(',')}`);
+}
+
+{
+  const html = blockPage(
+    '<div class="card" style="width:400px"><div class="card-title">宽卡片</div></div>' +
+    '<div style="width:40px;overflow:hidden;white-space:nowrap">这段文字一定会被裁切</div>',
+    { wrapWidth: 200 },
+  );
+  const { issues } = await renderer.renderHtmlAudit(html, '#FFFFFF');
+  const kinds = new Set(issues.map((i) => i.kind));
+  record('lint/layout-detects-overflow',
+    kinds.has('root-overflow') && kinds.has('text-overflow'),
+    [...kinds].join(',') || 'no issues');
+}
+
+{
+  const html = '<!doctype html><html><head><meta charset="utf-8"><style>' +
+    'body{margin:0}.wrap{position:relative;width:240px;padding:16px}' +
+    '.caption-head{position:absolute;top:0;left:16px}.card{padding:24px;border:1px solid #ddd}' +
+    '</style></head><body><div class="wrap">' +
+    '<header class="caption-head"><div class="caption-title">重叠标题</div></header>' +
+    '<div class="card">正文内容</div></div></body></html>';
+  const { issues } = await renderer.renderHtmlAudit(html, '#FFFFFF');
+  record('lint/layout-detects-overlap',
+    issues.some((i) => i.kind === 'caption-overlap'),
+    issues.map((i) => i.kind).join(',') || 'no issues');
+}
+
+{
+  const spec = getTheme('openai');
+  const doc = parseCardMarkdown(fs.readFileSync(path.join(ROOT, 'tests', 'edge', 'card-info.md'), 'utf8'));
+  const tokens = {
+    paper: spec.vars.bg, ink: spec.vars.fg, muted: spec.vars.muted,
+    rule: spec.vars.border, accent: spec.vars.accent,
+    accentTint: accentTint(spec.vars.accent), paper2: spec.vars.surfaceAlt,
+  };
+  const problems: string[] = [];
+  for (const tone of ['paper', 'neutral', 'product'] as const) {
+    const html = cardPage(doc, doc.blocks, tone, 600, spec.fontFamily ?? 'sans-serif', 0, tokens);
+    const { issues } = await renderer.renderHtmlAudit(html, spec.background);
+    if (issues.length) problems.push(`${tone}:${issues.slice(0, 2).map((i) => `${i.kind}@${i.selector}`).join(',')}`);
+  }
+  record('lint/card-layout', problems.length === 0, problems.join('; ') || 'paper/neutral/product clean');
+}
+
+{
+  const reportInner = '<div style="display:flex;flex-direction:column;gap:22px;align-items:flex-start">' +
+    htmlKindToInner('kpi', fenceSrc('kpi.md', 'kpi')) +
+    htmlKindToInner('card', fenceSrc('card.md', 'card')) +
+    htmlKindToInner('table', fenceSrc('table.md', 'table')) +
+    '</div>';
+  const problems: string[] = [];
+  for (const name of Object.keys(PRESETS)) {
+    const spec = getTheme(name);
+    const { issues } = await renderer.renderHtmlAudit(
+      blockPage(reportInner, {
+        blockCss: spec.blockCss,
+        tone: 'neutral',
+        caption: { title: '发布复盘报告', subtitle: 'HTML 报告卡 skill', source: '示例' },
+      }),
+      spec.background,
+    );
+    if (issues.length) {
+      problems.push(`${name}:${issues.slice(0, 2).map((i) => `${i.kind}@${i.selector}`).join(',')}`);
+    }
+  }
+  record('lint/html-report', problems.length === 0, problems.join('; ') || 'all presets clean');
+}
+
+{
+  const spec = getTheme('excalidraw');
+  const { svg } = await renderPng(source('flowchart.md'), 'pele', spec);
+  const { issues } = await renderer.renderHtmlAudit(
+    blockPage(`<div class="fig">${svg}</div>`, {
+      tone: 'neutral',
+      tokens: {
+        paper: spec.vars.bg, ink: spec.vars.fg, muted: spec.vars.muted,
+        rule: spec.vars.border, accent: spec.vars.accent,
+        accentTint: accentTint(spec.vars.accent), paper2: spec.vars.surfaceAlt,
+      },
+    }),
+    spec.background,
+  );
+  const bad = issues.filter((i) => i.kind === 'text-overflow' || i.kind === 'low-contrast');
+  record('lint/svg-labels-excalidraw', bad.length === 0,
+    bad.slice(0, 3).map((i) => `${i.kind}:${i.detail}`).join('; ') || 'labels fit and pass 3:1');
+}
+
+{
+  const html = '<!doctype html><html><head><meta charset="utf-8"><style>' +
+    'body{margin:0;background:#fff}.wrap{padding:16px}' +
+    '</style></head><body><div class="wrap"><svg width="200" height="80">' +
+    '<g class="pele-node"><rect x="0" y="0" width="40" height="24"/>' +
+    '<text x="2" y="18" font-size="14">THIS LABEL IS TOO LONG</text></g></svg></div></body></html>';
+  const { issues } = await renderer.renderHtmlAudit(html, '#FFFFFF');
+  record('lint/svg-text-detects-overflow',
+    issues.some((i) => i.kind === 'text-overflow'),
+    issues.map((i) => i.kind).join(',') || 'no issues');
+}
+
+for (const name of Object.keys(PRESETS)) {
+  const spec = getTheme(name);
+  const first = await renderPng(source('flowchart.md'), 'pele', spec);
+  const second = await renderPng(source('flowchart.md'), 'pele', spec);
+  if (!first.png || !second.png) {
+    record(`lint/deterministic-${name}`, false, 'no PNG');
+    continue;
+  }
+  const diff = diffPng(first.png, second.png);
+  record(`lint/deterministic-${name}`,
+    !diff.sizeMismatch && diff.ratio <= 0.0005,
+    `${diff.width}x${diff.height} diff=${diff.diffPixels} ratio=${diff.ratio.toFixed(5)}`);
+}
+
+{
+  const first = fs.readFileSync(path.join(KEEP, 'style-excalidraw-flowchart.png'));
+  const { png } = await renderPng(source('flowchart.md'), 'pele', getTheme('excalidraw'));
+  if (!png) throw new Error('no PNG for determinism check');
+  fs.writeFileSync(path.join(KEEP, 'style-excalidraw-flowchart-repeat.png'), png);
+  const diff = diffPng(first, png);
+  record('lint/rough-deterministic',
+    !diff.sizeMismatch && diff.ratio <= 0.0005,
+    `${diff.width}x${diff.height} diff=${diff.diffPixels} ratio=${diff.ratio.toFixed(5)}`);
+}
+
+{
+  const lows: string[] = [];
+  let minMuted = 100;
+  let minMutedName = '';
+  for (const name of Object.keys(PRESETS)) {
+    const t = getTheme(name);
+    const fg = contrastRatio(t.vars.fg, t.vars.bg);
+    if (fg < 4.5) lows.push(`${name} fg ${fg.toFixed(2)}`);
+    for (const [key, value] of [
+      ['muted', t.vars.muted],
+      ['accent', t.vars.accent],
+      ['critical', t.vars.critical],
+    ] as const) {
+      const c = contrastRatio(value, t.vars.bg);
+      if (key === 'muted' && c < minMuted) {
+        minMuted = c;
+        minMutedName = name;
+      }
+      if (c < 3.0) lows.push(`${name} ${key} ${c.toFixed(2)}`);
+    }
+  }
+  record('lint/theme-contrast', lows.length === 0,
+    lows.join('; ') || `fg>=4.5; min muted ${minMuted.toFixed(2)} (${minMutedName})`);
 }
 
 await renderer.close();
@@ -298,7 +639,11 @@ await renderer.close();
 // ---------------------------------------------------------------------------
 
 function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdout: string; stderr: string } {
-  const r = spawnSync(process.execPath, ['run', CLI, ...args], {
+  const bun = process.versions.bun !== undefined;
+  const argv = bun
+    ? ['run', CLI, ...args]
+    : ['--experimental-transform-types', '--no-warnings', CLI, ...args];
+  const r = spawnSync(process.execPath, argv, {
     cwd: ROOT,
     input: opts?.stdin,
     encoding: 'utf8',
@@ -309,8 +654,7 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
 
 {
   const help = runCli(['-h']);
-  record('cli/help-preset-index', help.code === 0 && help.stdout.includes('--preset') && help.stdout.includes('column') && help.stdout.includes('--index') && help.stdout.includes('--brand') && help.stdout.includes('--subtitle'), `exit=${help.code}`);
-  record('cli/help-engine', help.code === 0 && help.stdout.includes('--engine') && help.stdout.includes('pele'), `exit=${help.code}`);
+  record('cli/help-preset-index', help.code === 0 && help.stdout.includes('--preset') && help.stdout.includes('--index') && help.stdout.includes('--brand') && help.stdout.includes('--subtitle'), `exit=${help.code}`);
 }
 
 {
@@ -326,28 +670,6 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
   record('cli/stdin', r4.code === 0 && fs.existsSync(path.join(outDir, 's', 'diagram.svg')), `exit=${r4.code}`);
   const r5 = runCli([path.join('tests', 'edge', 'table.md'), '-o', path.join(outDir, 't'), '--quiet']);
   record('cli/table-png', r5.code === 0 && fs.existsSync(path.join(outDir, 't', 'table.png')), `exit=${r5.code}`);
-  fs.rmSync(outDir, { recursive: true, force: true });
-}
-
-{
-  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mmdx-t-'));
-  const shot = path.join('tests', 'edge', 'shot.html');
-  const r = runCli([shot, '-o', path.join(outDir, 'shot.png'), '--json', '--quiet']);
-  const j = JSON.parse(r.stdout) as { rendered: number; failed: number; files: string[] };
-  const a = j.files[0] ? analyze(j.files[0]) : null;
-  record(
-    'cli/html-shot-fullpage',
-    r.code === 0 && j.rendered === 1 && !!a && a.w === 960 && a.h >= 260 && a.h <= 440 && a.ink > 0.005,
-    `exit=${r.code} w=${a?.w} h=${a?.h} ink=${a ? a.ink.toFixed(3) : '-'}`,
-  );
-  const r2 = runCli([shot, '-o', path.join(outDir, 'svg'), '-f', 'svg']);
-  const pngOnly = fs.existsSync(path.join(outDir, 'svg', 'shot.png'));
-  const noSvg = !fs.existsSync(path.join(outDir, 'svg', 'shot.svg'));
-  record(
-    'cli/html-svg-png-only',
-    r2.code === 0 && pngOnly && noSvg && /renders to PNG only/.test(r2.stderr),
-    `exit=${r2.code} png=${pngOnly} svgAbsent=${noSvg} note=${/renders to PNG only/.test(r2.stderr)}`,
-  );
   fs.rmSync(outDir, { recursive: true, force: true });
 }
 
@@ -382,12 +704,6 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
   const oj = JSON.parse(ov.stdout) as { files: string[] };
   const ow = oj.files[0] ? PNG.sync.read(fs.readFileSync(oj.files[0])).width : 0;
   record('cli/preset-width-override', ov.code === 0 && ow === 1600, `exit=${ov.code} w=${ow}`);
-
-  const col = runCli([path.join('tests', 'diagrams', 'flowchart.md'), '--preset', 'column', '--json', '--quiet', '-o', path.join(outDir, 'col')]);
-  const cj = JSON.parse(col.stdout) as { format: string; preset?: string; files: string[]; warnings: Array<{ code: string }> };
-  const cw = cj.files[0] ? PNG.sync.read(fs.readFileSync(cj.files[0])).width : 0;
-  record('cli/preset-column', col.code === 0 && cj.format === 'png' && cj.preset === 'column' && cw === 1600, `exit=${col.code} format=${cj.format} w=${cw}`);
-  record('cli/preset-column-lr-warn', cj.warnings.some((w) => w.code === 'column-landscape'), cj.warnings.map((w) => w.code).join(',') || 'none');
   fs.rmSync(outDir, { recursive: true, force: true });
 }
 
@@ -406,6 +722,64 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
   ]);
   const tj = JSON.parse(t.stdout) as { files: string[] };
   record('cli/caption-table', t.code === 0 && tj.files.length === 1, `exit=${t.code}`);
+  fs.rmSync(outDir, { recursive: true, force: true });
+}
+
+{
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mmdx-card-'));
+  const card = path.join('tests', 'edge', 'card-info.md');
+  const r = runCli([
+    'card', '--in', card, '-t', 'excalidraw', '--tone', 'neutral',
+    '--width', '600', '-o', path.join(outDir, 'card.png'), '--json',
+  ]);
+  const j = JSON.parse(r.stdout || '{}') as {
+    command?: string; cards?: number; files?: string[]; tone?: string;
+    pages?: Array<{ width: number; height: number }>;
+  };
+  const w = j.files?.[0] ? PNG.sync.read(fs.readFileSync(j.files[0])).width : 0;
+  const h = j.files?.[0] ? PNG.sync.read(fs.readFileSync(j.files[0])).height : 0;
+  record('cli/card-render',
+    r.code === 0 && j.command === 'card' && j.tone === 'neutral' &&
+    j.cards === 1 && w === 1200 && h > 400 && h <= 2400,
+    `exit=${r.code} cards=${j.cards} w=${w} h=${h}`);
+
+  const paper = runCli([
+    'card', '--in', card, '--tone', 'paper', '-o', path.join(outDir, 'paper.png'), '--json',
+  ]);
+  const product = runCli([
+    'card', '--in', card, '--tone', 'product', '-o', path.join(outDir, 'product.png'), '--json',
+  ]);
+  const pj = JSON.parse(paper.stdout || '{}') as { files?: string[] };
+  const qj = JSON.parse(product.stdout || '{}') as { files?: string[] };
+  const pd = pj.files?.[0] && qj.files?.[0]
+    ? diffPng(fs.readFileSync(pj.files[0]), fs.readFileSync(qj.files[0]))
+    : null;
+  record('cli/card-tone-diff',
+    paper.code === 0 && product.code === 0 && !!pd && (pd.sizeMismatch || pd.ratio > 0.005),
+    `exit=${paper.code}/${product.code} ratio=${pd?.ratio.toFixed(4)} sizeMismatch=${pd?.sizeMismatch}`);
+
+  const narrow = runCli([
+    'card', '--in', card, '--width', '480', '-o', path.join(outDir, 'narrow.png'), '--json',
+  ]);
+  const nj = JSON.parse(narrow.stdout || '{}') as { files?: string[] };
+  const nw = nj.files?.[0] ? PNG.sync.read(fs.readFileSync(nj.files[0])).width : 0;
+  record('cli/card-width', narrow.code === 0 && nw === 960, `exit=${narrow.code} w=${nw}`);
+
+  const long = path.join(outDir, 'long.md');
+  fs.writeFileSync(long, `---\ntitle: 长文拆分\n---\n` + Array.from({ length: 14 }, (_, i) =>
+    `## 小节 ${i + 1}\n\n这是一段用于撑高信息卡的内容，包含足够的文字来触发分页逻辑。`.repeat(2),
+  ).join('\n\n'));
+  const split = runCli([
+    'card', '--in', long, '--max-height', '600', '-o', path.join(outDir, 'split.png'), '--json',
+  ]);
+  const sj = JSON.parse(split.stdout || '{}') as { cards?: number; files?: string[] };
+  record('cli/card-split',
+    split.code === 0 && (sj.cards ?? 0) >= 2 && (sj.files?.length ?? 0) === sj.cards,
+    `exit=${split.code} cards=${sj.cards}`);
+
+  const badTone = runCli(['card', '--in', card, '--tone', 'nope']);
+  record('cli/card-tone-bad', badTone.code === 2 && /paper\|neutral\|product/.test(badTone.stderr),
+    `exit=${badTone.code}`);
   fs.rmSync(outDir, { recursive: true, force: true });
 }
 
@@ -467,25 +841,6 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
 
 {
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mmdx-t-'));
-  const dflt = runCli([path.join('tests', 'diagrams', 'flowchart.md'), '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'p')]);
-  const dj = JSON.parse(dflt.stdout) as { engine?: string; files: string[] };
-  record('cli/engine-default-pele', dflt.code === 0 && dj.engine === 'pele' && dj.files.length === 1, `exit=${dflt.code} engine=${dj.engine}`);
-
-  const mer = runCli([path.join('tests', 'diagrams', 'flowchart.md'), '--engine', 'mermaid', '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'm')]);
-  const mj = JSON.parse(mer.stdout) as { engine?: string; files: string[] };
-  record('cli/engine-mermaid', mer.code === 0 && mj.engine === 'mermaid' && mj.files.length === 1, `exit=${mer.code} engine=${mj.engine}`);
-
-  const bad = runCli([path.join('tests', 'edge', 'table.md'), '--engine', 'nope', '-f', 'png', '-o', outDir]);
-  record('cli/engine-bad-exit2', bad.code === 2, `exit=${bad.code}`);
-
-  const sk = runCli([path.join('tests', 'diagrams', 'flowchart.md'), '-t', 'sketch', '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'sk')]);
-  const sj = JSON.parse(sk.stdout) as { engine?: string };
-  record('cli/sketch-forces-mermaid', sk.code === 0 && sj.engine === 'mermaid', `exit=${sk.code} engine=${sj.engine}`);
-  fs.rmSync(outDir, { recursive: true, force: true });
-}
-
-{
-  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mmdx-t-'));
   const r = runCli([
     path.join('tests', 'diagrams', 'flowchart.md'),
     path.join('tests', 'edge', 'table.md'),
@@ -493,13 +848,96 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
     '-o', path.join(outDir, 'pf'),
   ]);
   const j = JSON.parse(r.stdout || '{}') as { profile?: Record<string, { count: number }> };
-  const initN = j.profile?.['init-mermaid']?.count ?? 0;
-  const renders = (j.profile?.['pele-render']?.count ?? 0) + (j.profile?.['mermaid-render']?.count ?? 0);
+  const initN = j.profile?.['init-pele']?.count ?? 0;
   record(
     'cli/profile-hotspots',
-    r.code === 0 && renders >= 1 && initN > 0 && initN <= 3,
-    `exit=${r.code} init-mermaid=${initN} stages=${Object.keys(j.profile || {}).join(',')}`,
+    r.code === 0 && (j.profile?.['pele-render']?.count ?? 0) >= 1 && initN > 0 && initN <= 3,
+    `exit=${r.code} init-pele=${initN} stages=${Object.keys(j.profile || {}).join(',')}`,
   );
+  fs.rmSync(outDir, { recursive: true, force: true });
+}
+
+// ---------------------------------------------------------------------------
+// v2 engine / theme contract
+// ---------------------------------------------------------------------------
+
+{
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mmdx-v2-'));
+  const flow = path.join('tests', 'diagrams', 'flowchart.md');
+
+  const mermaidRun = runCli([flow, '--engine', 'mermaid', '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'm')]);
+  const mj = JSON.parse(mermaidRun.stdout || '{}') as { engine?: string; rendered?: number };
+  record('cli/engine-mermaid', mermaidRun.code === 0 && mj.engine === 'mermaid' && mj.rendered === 1,
+    `exit=${mermaidRun.code} engine=${mj.engine} rendered=${mj.rendered}`);
+
+  const flatRun = runCli([flow, '-f', 'svg', '--json', '--quiet', '-o', path.join(outDir, 'flat')]);
+  const flat = fs.readFileSync(path.join(outDir, 'flat', 'flowchart.svg'), 'utf8');
+  record('cli/svg-flat', flatRun.code === 0 && !/fill="var\(/.test(flat) && /fill:#d7e4f4/i.test(flat),
+    `exit=${flatRun.code} attrVar=${/fill="var\(/.test(flat)} processFill=${/fill:#d7e4f4/i.test(flat)}`);
+
+  const themeRun = runCli([flow, '-f', 'svg', '--svg-themeable', '--json', '--quiet', '-o', path.join(outDir, 'th')]);
+  const th = fs.readFileSync(path.join(outDir, 'th', 'flowchart.svg'), 'utf8');
+  record('cli/svg-themeable', themeRun.code === 0 && th.includes('<style') && th.includes('--pele-bg'),
+    `exit=${themeRun.code} style=${th.includes('<style')} vars=${th.includes('--pele-bg')}`);
+
+  const v2 = path.join(outDir, 'v2.js');
+  fs.writeFileSync(v2, `(theme) => { theme.vars.accent = '#B91C1C'; theme.shapes.process.fill = '#FEE2E2'; return theme; }`);
+  const v2Run = runCli([flow, '--theme-js', v2, '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'v2')]);
+  record('cli/theme-js-v2', v2Run.code === 0, `exit=${v2Run.code}`);
+
+  const v1 = path.join(outDir, 'v1.js');
+  fs.writeFileSync(v1, `(config) => { config.themeVariables.primaryColor = '#FF0000'; return config; }`);
+  const v1Run = runCli([flow, '--theme-js', v1, '-f', 'png', '--quiet', '-o', path.join(outDir, 'v1')]);
+  record('cli/theme-js-v1-error', v1Run.code === 2 && /ThemeSpec/.test(v1Run.stderr), `exit=${v1Run.code}`);
+
+  const cfg = path.join(outDir, 'cfg.json');
+  fs.writeFileSync(cfg, JSON.stringify({ fontSize: 18, themeVariables: { primaryColor: '#FF0000' } }));
+  const cfgRun = runCli([flow, '--config', cfg, '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'cfg')]);
+  const cj = JSON.parse(cfgRun.stdout || '{}') as { warnings?: Array<{ code: string }> };
+  record('cli/config-warning', cfgRun.code === 0 && !!cj.warnings?.some((w) => w.code === 'config-ignored'),
+    `exit=${cfgRun.code} warnings=${(cj.warnings || []).map((w) => w.code).join(',')}`);
+
+  const big = path.join(outDir, 'big.mmd');
+  fs.writeFileSync(big, 'flowchart LR\n%% ' + 'x'.repeat(51_000) + '\nA-->B\n');
+  const autoRun = runCli([big, '--engine', 'auto', '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'auto')]);
+  const aj = JSON.parse(autoRun.stdout || '{}') as { fallbacks?: number; rendered?: number };
+  record('cli/engine-auto-fallback', autoRun.code === 0 && aj.fallbacks === 1 && aj.rendered === 1,
+    `exit=${autoRun.code} fallbacks=${aj.fallbacks} rendered=${aj.rendered}`);
+
+  const layoutRun = runCli([flow, '--layout', 'elk', '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'elk')]);
+  const lj = JSON.parse(layoutRun.stdout || '{}') as { engine?: string };
+  record('cli/layout-selects-mermaid', layoutRun.code === 0 && lj.engine === 'mermaid',
+    `exit=${layoutRun.code} engine=${lj.engine}`);
+
+  const conflictRun = runCli([flow, '--engine', 'pele', '--layout', 'elk', '--quiet']);
+  record('cli/layout-conflict', conflictRun.code === 2 && /mermaid engine/.test(conflictRun.stderr),
+    `exit=${conflictRun.code}`);
+
+  const solidRun = runCli([flow, '-t', 'excalidraw', '-f', 'svg', '--json', '--quiet', '-o', path.join(outDir, 'ex-solid')]);
+  const hachureRun = runCli([flow, '-t', 'excalidraw', '--style-fill', 'hachure', '-f', 'svg', '--json', '--quiet', '-o', path.join(outDir, 'ex-hachure')]);
+  const solidPath = path.join(outDir, 'ex-solid', 'flowchart.svg');
+  const hachurePath = path.join(outDir, 'ex-hachure', 'flowchart.svg');
+  const solidSize = fs.existsSync(solidPath) ? fs.statSync(solidPath).size : 0;
+  const hachureSize = fs.existsSync(hachurePath) ? fs.statSync(hachurePath).size : 0;
+  record('cli/style-fill-hachure', solidRun.code === 0 && hachureRun.code === 0 && hachureSize > solidSize,
+    `solid=${solidSize} hachure=${hachureSize}`);
+
+  const badFill = runCli([flow, '-t', 'excalidraw', '--style-fill', 'nope', '--quiet']);
+  record('cli/style-fill-bad', badFill.code === 2 && /solid\|hachure/.test(badFill.stderr), `exit=${badFill.code}`);
+
+  const badTone = runCli([flow, '--tone', 'nope', '--quiet']);
+  record('cli/tone-bad', badTone.code === 2 && /paper\|neutral\|product/.test(badTone.stderr), `exit=${badTone.code}`);
+
+  const wrongFill = runCli([flow, '-t', 'tech', '--style-fill', 'hachure', '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'wrong-fill')]);
+  const wj = JSON.parse(wrongFill.stdout || '{}') as { warnings?: Array<{ code: string; message: string }> };
+  record('cli/style-fill-warning', wrongFill.code === 0 && !!wj.warnings?.some((w) => /only applies to the excalidraw/.test(w.message)),
+    `exit=${wrongFill.code} warnings=${(wj.warnings || []).length}`);
+
+  const exMermaid = runCli([flow, '-t', 'excalidraw', '--engine', 'mermaid', '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'ex-mermaid')]);
+  const emj = JSON.parse(exMermaid.stdout || '{}') as { rendered?: number; failed?: number };
+  record('cli/excalidraw-mermaid', exMermaid.code === 0 && emj.rendered === 1 && emj.failed === 0,
+    `exit=${exMermaid.code} rendered=${emj.rendered} failed=${emj.failed}`);
+
   fs.rmSync(outDir, { recursive: true, force: true });
 }
 

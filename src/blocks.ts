@@ -2,6 +2,7 @@
 // Chromium pipeline. PNG only — HTML layout has no portable standalone SVG.
 
 import { DEFAULT_TOKENS, tokenCss, type Tokens } from './tokens.ts';
+import { toneCss, type ToneName } from './tone.ts';
 
 export type BlockKind =
   | 'mermaid' | 'table' | 'list' | 'card'
@@ -37,9 +38,11 @@ export function fenceKind(lang: string): BlockKind {
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-function inlineMd(s: string): string {
+export function inlineMd(s: string): string {
   return esc(s)
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>')
     .replace(/`([^`]+)`/g, '<code>$1</code>');
 }
 
@@ -150,7 +153,7 @@ interface ListItem {
 
 export function listToHtml(src: string): string {
   const items: ListItem[] = [];
-  for (const raw of src.split('\n')) {
+  for (const raw of src.replace(/\r\n/g, '\n').split('\n')) {
     const m = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/.exec(raw);
     if (!m) continue;
     items.push({
@@ -798,10 +801,15 @@ export interface PageOpts {
   density?: 'standard' | 'slide' | 'column';
   caption?: Caption;
   tokens?: Tokens;
+  /** style-specific CSS appended after PAGE_CSS */
+  blockCss?: string;
+  /** structural tone for imported templates; appended after blockCss */
+  tone?: ToneName;
 }
 
 const PAGE_CSS = `
 :root { color-scheme: light; }
+*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }
 body { margin: 0; background: var(--paper, #ffffff); }
 .wrap {
   display: inline-block; box-sizing: border-box;
@@ -989,6 +997,8 @@ export function blockPage(inner: string, opts: PageOpts = {}): string {
     : `${cap.head}${inner}${cap.foot}`;
   const cls = ['wrap', density === 'slide' ? 'slide' : '', density === 'column' ? 'column' : '', width ? 'fixed' : ''].filter(Boolean).join(' ');
   const widthCss = width ? `.wrap.fixed{width:${width}px;}` : '';
-  return `<!doctype html><html><head><meta charset="utf-8"><style>${tokenCss(tokens)}${PAGE_CSS}${widthCss}</style></head>` +
+  const blockCss = opts.blockCss ?? '';
+  const tone = opts.tone ? toneCss(opts.tone) : '';
+  return `<!doctype html><html><head><meta charset="utf-8"><style>${tokenCss(tokens)}${PAGE_CSS}${blockCss}${tone}${widthCss}</style></head>` +
     `<body><div class="${cls}">${body}</div></body></html>`;
 }

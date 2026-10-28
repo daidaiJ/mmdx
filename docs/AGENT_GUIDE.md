@@ -2,20 +2,9 @@
 
 # mmdx — Agent Guide
 
-办公出图 CLI。把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG；主题、中文字体、Pele 布局、留白全部内置。**不要在图代码里手工调样式。**
+办公出图 CLI。把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG；主题、中文字体、Pele 布局、留白全部内置。**不要在图代码里手工调样式，不要用手绘 SVG。**
 
 > 人类阅读版：[HUMAN_GUIDE.md](HUMAN_GUIDE.md) · 扩展块图鉴：[EXTENSIONS.md](EXTENSIONS.md) · 项目概览：[README](../README.md)
-
-## 场景分级（先选档，再动笔）
-
-| 档位 | 场景 | 路径 | 产物 | 单图成本 |
-| --- | --- | --- | --- | --- |
-| **高速**（默认） | 流程/审批/轻量数据图/版式块——周报贴片、投屏、高频可验收 | 围栏（mermaid 图型 + 扩展块），按[选型速查](#选型速查) | PNG @2x；mermaid 图型另有矢量 SVG | ~0.3–1.5k token，秒级 |
-| **精美**（低频） | 封面/方案插图——editorial 质感、一次性 | 手绘 HTML（[vendored diagram-design 规格](../skill/editorial/README.md)）→ [HTML 文件导出](#html-文件导出配套-diagram-design) | PNG @3x | ~10–20k token，分钟级 |
-
-统一经 mmdx 导出。**清晰度是构造保证**：PNG 走 deviceScaleFactor 超采样、一次栅格化，无事后缩放、无 JPEG 压缩，中文内嵌字体——不存在"糊"的来源。要更高保真加 `--scale 3`（印刷/4K 全屏），不要放大已出的 PNG；全屏贴片让图宽对准目标（如 `--width 1600`）。
-
-**护栏**：办公出图默认高速档；不要为绕开围栏纪律降档手绘（预算/lint/像素筛查只在围栏体系内生效）。精美档仅用于「HTML 已存在」的导出或确需 editorial 质感的一次性场景。
 
 ## 获取（按优先级）
 
@@ -49,31 +38,20 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 ## 命令档位
 
 ```bash
-# L0 聊天/窄栏：PNG + 800px 栏宽（2K 约 1/3）
-mmdx doc.md --preset column
-# L0b 投屏/PPT
+# L0 办公默认：PNG + 幻灯片画幅
 mmdx doc.md --preset slide --title "Q1 销售构成" --unit 万元 --source "财务月报"
 # L1 批量/定向
-mmdx a.md b.md -o dist/ --preset column
+mmdx a.md b.md -o dist/ --preset slide
 mmdx doc.md --index 2 -f png
 # L2 精确命名 / stdin
-echo "graph TD; A-->B" | mmdx - -f png --preset column
+echo "graph LR; A-->B" | mmdx - -f png
+# 信息卡（Markdown 或 URL；--tone 控制结构）
+mmdx card --in note.md -t openai --tone neutral --width 600 -o card.png
 ```
 
-聊天/窄栏用 `--preset column`（800px@2，字号 18、标签换行 200px；2K 屏约 1/3 栏宽）。**投屏 / PPT / 上会 / 周会 / 大屏** 必须 `--preset slide`（字号 18 + 加粗描边），并带 `--title`；不要用 `--css` 手调对比度，不要用暗色主题投会议室。飞书卡片 `square`，Word `a4`。`both` 仅开发者嵌 Markdown。显式 `--width`/`--scale`/`-f` 覆盖 preset。跟 VI：`--brand #2563EB`（只改强调色；投影不要用过浅的蓝）。`--json.warnings` 出现 `column-landscape` / `column-shrink` → 改 `flowchart TD` 或拆图，不要加宽 `--width`。
+聊天/幻灯片 `-f png` 或 `--preset slide|a4|square`（preset 未显式 `-f` 时默认 png）。**投屏 / PPT / 上会 / 周会 / 大屏** 必须 `--preset slide`（字号 18 + 加粗描边），并带 `--title`；不要用 `--css` 手调对比度，也不要把深色页面投会议室。飞书卡片 `square`，Word `a4`。`both` 仅开发者嵌 Markdown。显式 `--width`/`--scale`/`-f` 覆盖 preset。跟 VI：`--brand #2563EB`（只改强调色；投影不要用过浅的蓝）。
 
-## HTML 文件导出（配套 diagram-design）
-
-触发：用户给了/生成了 HTML 文件要「导出图片 / 截图 / 转 PNG」，或偶发要 editorial 封面图。
-
-```bash
-mmdx page.html -o out/page.png --scale 3    # 3x 高保真（印刷/大屏缩放）；默认 2 够 PPT
-mmdx page.html --background transparent     # 透明底需显式传
-```
-
-- 只认独立 `.html` / `.htm` 文件；`.md` 里写 ` ```html ` 围栏**无效**。页面样式、脚本、背景全保留；中文字形走内嵌字体兜底（离线一致）；`--width` = 布局视口，页面显式更窄的 `body` 宽优先
-- **手绘 editorial 图**（封面 / 方案插图，低频高保真场景）：规格见 [skill/editorial](../skill/editorial/README.md)（vendored diagram-design skill，MIT）——按它的总则 + 对应 `type-*.md` 手写 HTML，再用上面命令导出；中文用 `'Noto Sans SC'` 字族名
-- **护栏**：办公出图不要为绕开围栏去手写 HTML——预算 / lint / 像素筛查对任意 HTML 失效；手绘路径只用于「HTML 已存在」或确需 editorial 质感的一次性场景
+默认 `--engine pele`。需要 ELK 或 Mermaid 专属语法：`--engine mermaid`（或 `--layout elk`，会自动选中 Mermaid）；不确定时 `--engine auto`。`-f svg` 默认烘焙颜色，`--svg-themeable` 才保留 CSS 变量。
 
 ## 选型速查
 
@@ -100,26 +78,23 @@ mmdx page.html --background transparent     # 透明底需显式传
 ## 写图规则
 
 1. 节点标签 ≤ 12 中文字；细节放边线/note/正文
-2. 标签含 `()`/`[]` 等括号必须整体加引号：`A["O(1) 开销"]`——裸写会断在 `(` 报 Parsing error
-3. 总览 ≤9 节点 / ≤12 边 / 强调 ≤2；sequence 生命线 ≤5。降级：装饰 → 副本合并 → 叶子簇折叠 → 度-1 汇点 → 横切基础设施 → 拆图
-4. **禁一条龙长链**：≥6 节点串成一条线（无论 TD/LR）画布细长、嵌入文档难布局 → 按阶段拆 2-4 个 `subgraph`（聊天用外层 `TD`；投屏宽屏才外层 `LR`、组内 `direction TB`）；纯线性叙事改 timeline
-5. 不写全局 `style`/`classDef`；仅强调个别节点
-6. `subgraph` 要命名；跨部门交接优先 swimlane
-7. 标题/来源/单位用 `--title`/`--subtitle`/`--source`/`--unit`，不手写 frontmatter
-8. 中文 ≥ 12px；细环/细箭头里只放数字
-9. **投屏 5 米测试**（Read PNG）：眯眼能分清形状分色、图题在、字不截断。失败则砍节点，不加 `--css`
+2. 总览 ≤9 节点 / ≤12 边 / 强调 ≤2；sequence 生命线 ≤5。降级：装饰 → 副本合并 → 叶子簇折叠 → 度-1 汇点 → 横切基础设施 → 拆图
+3. 不写全局 `style`/`classDef`；仅强调个别节点
+4. `subgraph` 要命名；跨部门交接优先 swimlane
+5. 标题/来源/单位用 `--title`/`--subtitle`/`--source`/`--unit`，不手写 frontmatter
+6. 中文 ≥ 12px；细环/细箭头里只放数字
+7. **投屏 5 米测试**（Read PNG）：眯眼能分清形状分色、图题在、字不截断。失败则砍节点，不加 `--css`
 
 ## 自检闭环
 
 1. `--json`：`failed:0`；`warnings` 非空则拆图或换 AntV（`--strict-chart` 升为错误）
-2. **Read PNG**：图题/来源可见、文字不截断、不超限、留白均匀。流程图折线过多 → 你在 mermaid+ELK；C4 浅色卡 → Pele（要深色块就 `--engine mermaid`）
-3. **sequence 必查底部**：Note 框/生命线收尾完整——放大字号见「常见坑」的 sequence 字号条目
-4. 若砍过密度，保真一句：「18 源节点 → 9 张图」
-5. `--index N` 重渲染；最多 2 轮
+2. **Read PNG**：图题/来源可见、文字不截断、不超限、留白均匀
+3. 若砍过密度，保真一句：「18 源节点 → 9 张图」
+4. `--index N` 重渲染；最多 2 轮
 
 ## JSON 契约（--json）
 
-stdout 单份 JSON：`theme/layout/format/background/preset?/brand?/caption?/blocks/rendered/failed/files[]/errors[]/warnings[{input,index,code,message}]`；加 `--profile` 时附 `profile`。非 JSON 模式 stdout 逐行产物路径。
+stdout 单份 JSON：`theme/engine/layout/format/background/preset?/brand?/fallbacks?/caption?/blocks/rendered/failed/files[]/errors[]/warnings[{input,index,code,message}]`；加 `--profile` 时附 `profile`。非 JSON 模式 stdout 逐行产物路径。
 
 ## 错误速诊
 
@@ -129,29 +104,36 @@ stdout 单份 JSON：`theme/layout/format/background/preset?/brand?/caption?/blo
 | `render timed out after 60s` | 资源紧张/假死 | CLI 已自动重试；持续则 `--jobs 1` |
 | `icon pack "xxx" not found` | 网络不通（unpkg） | 去掉 `--icon` 或先联网跑一次用缓存 |
 | 中文变方块 | 不应发生（内置字体） | 检查 `--config`/`--theme-js` 是否覆盖 fontFamily |
-| `Parsing error` / 超限信息（exit 1） | **图或围栏写错** | 按信息修图，其他块不受影响；卡在 `(`/`[` 多为标签含括号没加引号（写图规则 2） |
+| `Parsing error` / `pele: Parse error` / 超限信息（exit 1） | **图或围栏写错** | 按信息修图；Pele 不支持的写法加 `--engine mermaid` 或 `--engine auto` |
+| `--layout belongs to the mermaid engine` | 参数冲突 | 去掉 `--layout`，或改 `--engine mermaid` |
+| `--theme-js v2 receives a ThemeSpec` | 1.x 换色脚本 | 改 `theme.vars` / `theme.shapes` |
+| `config "…" is not supported by the pele engine` | `--config` 白名单外 | 颜色用 `--theme-js`，字号/间距用 `fontSize` / `flowchart.*` |
 | exit 2 | 参数用法错误 | `mmdx --help` 对照 |
-| SVG 在非浏览器工具文字消失 | svg 是 HTML 实现 | 改 `-f png` |
-| sequence 底部被裁（Note/收尾缺一截） | 全局 `fontSize` 不参与 sequence 布局计算 | `--config` 同改 `sequence.actorFontSize/messageFontSize/noteFontSize`；勿用 `overflow:visible` 兜底（生命线会穿透页面） |
+| SVG 在 Office 颜色丢失 | 用了 `--svg-themeable` | 去掉该 flag，或改 `-f png` |
 
 总原则：**exit 2 = 参数错；exit 1 = 图写错或超限；报错先查表，别盲目重装环境**。
 
 ## 主题速记
 
-`-t`：`tech`（默认，形状分色 + 可见填色，适合文档和投屏）· `openai`/`openai-dark` · `minimal` · `latte`/`mocha` · `sketch`。
-叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。`--brand` 不重涂 flowchart 判定菱形。投屏不要换 `mocha`/`openai-dark`。
+`-t`：`tech`（默认，形状分色 + 可见填色，适合文档和投屏）· `openai`（干净工程师文档：纯白、墨黑、薄荷绿点缀、发丝边框）· `excalidraw`（手绘线条 + 粉彩填色）。
+`excalidraw` 默认实心填色；`--style-fill hachure` 切斜线。块页和信息卡用 `--tone paper|neutral|product` 控制结构，配色仍由主题决定。叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。`--brand` 不重涂 flowchart 判定菱形。
 
-## 渲染引擎
+| 场景 | 首选 | 备选 | tone |
+| --- | --- | --- | --- |
+| 方案 / 周报 / 投屏 | `tech` | `openai` | `neutral` |
+| 工程师文档 / README | `openai` | `tech` | `neutral` |
+| 发布说明 / 工程博客 | `openai` | `tech` | `product` |
+| 对外报告 / 打印 | `openai` | `tech` | `paper` |
+| 金融 / 商业报告 | `openai` | `tech` | `paper` |
+| 知识库 / 长文 | `tech` | `openai` | `neutral` |
+| 企业架构 / 合规 | `tech` | `openai` | `product` |
+| 产品评审 | `openai` | `tech` | `product` |
+| 白板 / 脑暴 | `excalidraw` | `openai` | `neutral` |
+| 轻松分享 | `excalidraw` | `tech` | `paper` |
 
-差别在**布局和画法**，flowchart 形状分色是同一套 `tech` token。`--layout elk` **只作用于 mermaid 的 flowchart**。拼图：[Pele](../tests/contact-sheet-pele.png) / [mermaid](../tests/contact-sheet-mermaid.png)。
+信息卡：对外/打印用 `openai` + `paper`；工程文档用 `tech` + `neutral`；发布/产品用 `openai` + `product`。详见 `skill/info-card-designer/SKILL.md`。
 
-| 要什么 | 引擎 |
-| --- | --- |
-| 流程 / 时序 / 状态（默认） | `pele`：宽 S 弯；subgraph 成员更贴源码；sequence 带序号、长中文能换行 |
-| C4 深色块 + 小人、思维导图按枝上色盒子、`@{icon}` | `mermaid`：C4 吃主题 `c4` 节；flowchart 才走 ELK |
-| 手绘 | `-t sketch`（自动 mermaid） |
-
-Pele 下 `--config` 只认 `flowchart.nodeSpacing/rankSpacing/wrappingWidth/curve`、`fontSize`、`padding`；`themeCSS` / `look` / `layoutAlgorithm` / `sequence.*` 忽略。扩展块与像素裁切仍走 Chromium。后续可抽的布局/配色思路见 [research-layout-color.md](research-layout-color.md)（不引入第二套图语法）。
+`--theme-js` 是 v2 契约：`(theme) => theme`，改 `theme.vars` / `theme.shapes` / `theme.css`，不要再碰 Mermaid 的 `themeVariables`。
 
 ## 退出码
 
@@ -161,7 +143,5 @@ Pele 下 `--config` 只认 `flowchart.nodeSpacing/rankSpacing/wrappingWidth/curv
 
 - 批量 >30 块 → `--jobs 4`（默认 2；单浏览器页池，别更高）
 - 同名 md 导出到同一 `-o` 目录互相覆盖 → 分目录或 `--index`
-- `--config` 的 JSON 要落成真实文件（Windows 无进程替换）
+- `--config` 的 JSON 要落成真实文件（Windows 无进程替换）；只接受 `fontSize` / `padding` / `flowchart.spacing`
 - 手写 `xychart-beta` 容易出丑 → 改用 ` ```chart `
-- **sequence 放大字号**：全局 `themeVariables.fontSize` 只放大文字不参与布局，必须配 `sequence:{actorFontSize,messageFontSize,noteFontSize}` 同值，否则底部被裁
-- **SVG 嵌 HTML/PDF**：产物带固定像素宽且 `max-width:none` → 容器 CSS 需 `svg{max-width:100%!important;height:auto!important}`；无 `viewBox` 的（部分 sequence）按宽高注入；打印加 `break-inside:avoid` 防跨页截断

@@ -6,8 +6,8 @@ mindmap
       PNG
     主题
       tech
-      mocha
-      sketch
+      openai
+      excalidraw
     生态
       CLI
       Skill

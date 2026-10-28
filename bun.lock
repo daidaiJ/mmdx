@@ -9,6 +9,7 @@
         "mermaid": "^11.17.2",
         "pele": "1.9.0",
         "pngjs": "^7.0.0",
+        "roughjs": "^4.6.6",
         "puppeteer-core": "^25.10.0",
         "svgo": "^4.1.0",
       },

@@ -3,11 +3,11 @@ examples/out/
 *.png
 *.svg
 vendor/
-src/embed.generated.ts
 dist/
 probe-j.ts
 probe*.ts
 !docs/*.png
+!docs/gallery/*.png
 !tests/contact-sheet.png
 !tests/contact-sheet-pele.png
 !tests/contact-sheet-mermaid.png
@@ -18,6 +18,9 @@ tests/verify-*.jpg
 
 # per-diagram visual review output
 review/
+
+# local cross-session handoff records
+.handoff/
 
 # planning / local working docs (may be symlinks, e.g. issues -> wiki repo)
 issues

@@ -5,12 +5,13 @@
 // Run after tests/run.ts: bun scripts/theme-census.ts
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
 import { loadAssets } from '../src/embed.ts';
 import { Renderer } from '../src/render.ts';
-import { DEFAULT_THEME, PRESETS } from '../src/themes.ts';
+import { DEFAULT_THEME, getTheme, PRESETS } from '../src/themes.ts';
 
-const ROOT = path.join(import.meta.dir, '..');
+const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 // 1. allowed palette = every hex literal in themes.ts + black/white
 const themeSrc = fs.readFileSync(path.join(ROOT, 'src', 'themes.ts'), 'utf8');
@@ -21,7 +22,14 @@ for (const m of themeSrc.matchAll(/#([0-9a-fA-F]{6})\b/g)) allowed.add('#' + m[1
 const dir = path.join(ROOT, 'tests', 'diagrams');
 const preset = PRESETS[DEFAULT_THEME as keyof typeof PRESETS];
 const config = JSON.parse(JSON.stringify(preset.config)) as Record<string, unknown>;
-const r = await Renderer.create(await loadAssets(), { layout: 'elk', engine: 'mermaid', scale: 2, width: 1200 });
+const theme = getTheme(DEFAULT_THEME);
+const r = await Renderer.create(await loadAssets(), { layout: 'elk', scale: 2, width: 1200 });
+const render = (code: string): Promise<{ svg: string; png?: Buffer }> =>
+  r.render({
+    code, engine: 'pele', background: '#FFFFFF', needPng: true, scale: 2, width: 1200,
+    layout: 'elk', theme, mermaidConfig: config, fontSize: 15, padding: 0,
+    svgThemeable: false, titlePos: 'top', titleText: '', remap: preset.remap,
+  });
 let flagged = 0;
 for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.md'))) {
   const src = fs.readFileSync(path.join(dir, f), 'utf8');
@@ -29,7 +37,7 @@ for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.md'))) {
   if (!m) continue;
   const base = f.replace('.md', '');
   try {
-    const { png } = await r.render(m[1], config, '#FFFFFF', true, undefined, undefined, preset.remap);
+    const { png } = await render(m[1]);
     if (!png) continue;
     fs.writeFileSync(path.join(ROOT, '.tmp-audit', `${base}.png`), png);
     const img = PNG.sync.read(Buffer.from(png));

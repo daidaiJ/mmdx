@@ -14,7 +14,6 @@ This guide targets **human users** and covers installing mmdx, the full CLI refe
 - [Quick start](#quick-start)
 - [Full CLI reference](#full-cli-reference)
 - [Extension blocks](#extension-blocks)
-- [Whole-page HTML screenshots](#whole-page-html-screenshots)
 - [Theming](#theming)
 - [Performance tuning](#performance-tuning)
 - [Troubleshooting](#troubleshooting)
@@ -71,8 +70,7 @@ mmdx a.md b.md other/*.md -o dist/          # multi-file batch, parallel
 mmdx diagram.mmd -o out/arch.svg            # exact name; sibling .png written alongside
 echo "graph LR; A-->B" | mmdx - -f svg      # single diagram from stdin
 mmdx report.md --preset slide --title "Architecture" --unit "ms" --source "bench"
-mmdx doc.md --preset column                    # chat / narrow column
-mmdx doc.md -t mocha --background transparent -f png --json
+mmdx doc.md -t tech --background transparent -f png --json
 mmdx doc.md --brand #E4572E --preset square
 mmdx doc.md --list                          # list the fenced blocks found, no rendering
 ```
@@ -93,13 +91,16 @@ Output naming: by default next to the input, `<name>-m<N>.svg/.png` numbered by 
 | --- | --- |
 | `-o, --out <path>` | Output directory; exact filename when input has one diagram (default: next to input) |
 | `-f, --format <fmt>` | `svg` \| `png` \| `both` (default both; `--preset` defaults to png unless `-f` is explicit) |
-| `-t, --theme <name>` | `tech` (default) · `openai` · `openai-dark` · `minimal` · `latte` · `mocha` · `sketch` |
-| `--preset <name>` | `slide` (projection/PPT: 1600px@2, 18px type, heavier strokes, ~80px footer) \| `a4` (900px@2) \| `square` (1080px@2) \| `column` (chat/narrow column: 800px@2, ≈1/3 of 2560×1440, 18px type, 200px label wrap). Explicit `--width`/`--scale`/`-f` win |
-| `--background <color>` | Page background, e.g. `white` \| `transparent` \| `#1A1A1A` (dark themes bake in their own background) |
-| `--engine <name>` | `pele` (default: own layout + wide S-turn routing, curved flowchart edges) \| `mermaid` (Chromium + mermaid.js fallback) |
-| `--layout <engine>` | `elk` (default) \| `dagre`. **`--engine mermaid` only** (Pele has its own layout); ELK loads for flowcharts only |
+| `-t, --theme <name>` | `tech` (default) · `openai` · `excalidraw` |
+| `--tone <name>` | `paper` \| `neutral` \| `product`; structural block overrides only (radius/shadow/display type/table headers), palette stays with the theme |
+| `--style-fill <mode>` | `solid` (default) \| `hachure`; `excalidraw` only |
+| `--preset <name>` | `slide` (projection/PPT: 1600px@2, 18px type, heavier strokes, ~80px footer) \| `a4` (900px@2) \| `square` (1080px@2). Explicit `--width`/`--scale`/`-f` win |
+| `--background <color>` | Page background, e.g. `white` \| `transparent` \| `#1A1A1A` (pass it explicitly for a dark page) |
+| `--engine <name>` | `pele` (default; fast, CSS-variable themes) \| `mermaid` (legacy, ELK) \| `auto` (Pele, then Mermaid fallback) |
+| `--layout <engine>` | `elk` \| `dagre`; Mermaid-only — passing it selects `--engine mermaid` |
+| `--svg-themeable` | Keep `--pele-*` CSS variables in SVG; default bakes hex for Office/PPT |
 | `--scale <n>` | PNG scale factor (default 2) |
-| `--width <px>` | Layout viewport width (default 1200) |
+| `--width <px>` | Layout viewport width (default 1200; Pele uses it as `maxWidth` without flipping direction) |
 | `--title <text>` | Figure title (PNG chrome; no longer injected as mermaid frontmatter) |
 | `--subtitle <text>` | Subtitle |
 | `--source <text>` | Source line in the footer |
@@ -108,13 +109,13 @@ Output naming: by default next to the input, `<name>-m<N>.svg/.png` numbered by 
 | `--index <n[,n…]>` | Render only these 1-based block indexes |
 | `--brand <hex>` | Accent for extension blocks (default `#2563EB`; `2563EB` also works); does not recolor flowchart shapes. Use a deep hex on a projector |
 | `--strict-chart` | Promote mermaid pie/xychart/radar/flowchart/sequence budget hits to errors (default: warn) |
-| `--icon <pack>` | Iconify pack for `A@{icon: logos:react}` nodes (repeatable; fetched then cached). **`--engine mermaid` only** |
-| `--config <file.json>` | Native mermaid config, deep-merged over the theme |
-| `--theme-js <file.js>` | JS theming; file body is a `(config, ctx) => config` function |
-| `--css <file.css>` | Extra CSS (mermaid: themeCSS; Pele: in-SVG `<style>`) |
+| `--icon <pack>` | Iconify pack for `A@{icon: logos:react}` nodes (repeatable; fetched then cached) |
+| `--config <file.json>` | Pele whitelist: `fontSize` / `padding` / `flowchart.nodeSpacing` / `rankSpacing` / `padding`; other keys warn. Deep-merged into native config on Mermaid fallback |
+| `--theme-js <file.js>` | v2 theming: `(theme, ctx) => theme`, where theme is a `ThemeSpec` (`vars` / `shapes` / `css`) |
+| `--css <file.css>` | Extra CSS appended after the theme (target Pele class names) |
 | `--browser <path>` | Browser executable override (default: auto-detect Edge/Chrome) |
 | `--jobs <n>` | Parallel render count (default 2; single-browser page pool — don't go high) |
-| `--profile` | Per-stage timing summary (browser-launch / page-init / pele-render / mermaid-render / screenshot / svgo) |
+| `--profile` | Per-stage timing summary (browser-launch / page-init / init-pele / pele-render / screenshot / svgo) |
 | `--list` | List the fenced blocks found and exit, no rendering |
 | `--json` | One machine-readable JSON on stdout (files + errors) |
 | `-q, --quiet` | Suppress progress lines on stderr |
@@ -127,37 +128,34 @@ The `--json` contract:
 ```json
 {
   "theme": "tech", "engine": "pele", "layout": "elk", "format": "png", "background": "#FFFFFF",
-  "preset": "slide", "brand": "#E4572E",
+  "preset": "slide", "brand": "#E4572E", "fallbacks": 0,
   "caption": { "title": "Q1 mix", "subtitle": null, "source": "Finance", "unit": "CNY wan" },
   "blocks": 3, "rendered": 3, "failed": 0,
   "files": ["doc-m1.png", "…"],
   "errors": [],
   "warnings": [{ "input": "doc.md", "index": 1, "code": "pie-sectors", "message": "…" }],
-  "profile": { "mermaid-render": { "count": 3, "totalMs": 285, "avgMs": 95, "maxMs": 120, "maxLabel": "doc#2" } }
+  "profile": { "pele-render": { "count": 3, "totalMs": 78, "avgMs": 26, "maxMs": 40, "maxLabel": "doc#2" } }
 }
 ```
 
 (`preset`/`brand`/`caption` appear only when those flags are used; `warnings` is always an array; `profile` appears only when `--profile` is also passed.)
+
+## Info cards (`mmdx card`)
+
+Turn Markdown or a web article into one or more styled info cards. `--theme` picks the palette, `--tone` picks the structure, `--width` sets the canvas (480/600/900 and so on). Content above `--max-height` (default 1200 CSS px) splits into additional cards.
+
+```bash
+mmdx card --in note.md -t openai --tone neutral --width 600 -o note-card.png
+mmdx card --url https://example.com/post -t openai --tone paper --json
+```
+
+`--json` reports `cards`, `files` and pixel sizes. `--url` uses lightweight extraction (`article` / `main` / `body`); log-in walls and JS-only pages should be saved as Markdown first.
 
 ## Extension blocks
 
 Besides mermaid diagrams, common markdown structures render directly into styled images. Extension blocks produce **PNG only** — HTML layout has no portable SVG form. All of them take `--title`/`--subtitle`/`--source`/`--unit` chrome and `--brand` accent.
 
 Syntax, limits, and one sample image per fence: **[extension-block gallery](EXTENSIONS.en.md)**.
-
-## Whole-page HTML screenshots
-
-When a `file.html` is passed as input, the page is **screenshotted as-is to PNG** (fullPage, PNG only): its own styles, scripts and background are kept, `--width` is the layout viewport (an explicit, narrower `body` width wins), and `--scale` / `--background` apply as usual.
-
-```bash
-mmdx page.html -o out/page.png --scale 2
-mmdx page.html --background transparent   # transparent only when explicitly asked
-```
-
-- **CJK font fallback**: the bundled Noto Sans SC is registered under `'Noto Sans SC'` and aliased into the `sans-serif` / `serif` fallbacks for CJK code ranges — declared Latin fonts render untouched, Chinese glyphs stay offline-consistent, and any CJK webfont the page declares still wins.
-- **High-fidelity tips**: use `--scale 3` for print / big-screen zoom (default 2 is fine for slides); on fixed-canvas pages set the `body` width to the canvas width (or pass a matching `--width`) to avoid responsive reflow; pass `--background transparent` only when transparency is wanted; webfont and image loading is awaited automatically. PNG is the fidelity form of this tier — fonts and supersampling are baked into pixels, identical on every viewing machine; if you truly need editable vectors, follow the [upstream export spec](../skill/editorial/references/export.md) to extract SVG by hand (its text depends on viewer-side fonts, so Chinese consistency is not guaranteed).
-- **A rendering tool, not a quality gate**: budgets, lint and pixel screening do not apply to arbitrary HTML. A ` ```html ` fence inside `.md` is **not** supported (that would bypass the extension blocks' layout discipline); only standalone `.html` / `.htm` files are accepted.
-- **Pairs with hand-drawn HTML workflows**: after [diagram-design](https://github.com/cathrynlavery/diagram-design) produces a self-contained diagram, mmdx replaces Playwright for the export step — system Edge, no browser download, offline-consistent Chinese. Its skill specs are vendored verbatim at [skill/editorial/](../skill/editorial/README.md) (MIT, with mmdx adaptation notes); for the occasional editorial cover / proposal illustration, hand-draw per those specs and export with this command.
 
 ## Theming
 
@@ -166,87 +164,86 @@ mmdx page.html --background transparent   # transparent only when explicitly ask
 | Scenario | `-t` |
 | --- | --- |
 | Design docs / architecture / projection (default) | `tech` (shape-coded tinted fills) |
-| Minimal open-source README | `openai` / `openai-dark` |
-| Obsidian notes | `minimal` |
-| Dark docs site / dark UI | `mocha` (or `openai-dark`) |
-| Casual sharing / blog | `sketch` (hand-drawn) |
-
-### Renderer (--engine)
-
-The gap is **layout and chrome**, not a prettier default palette. Flowchart blue / amber / green / purple is the same `tech` token set mapped onto Pele `.pele-shape-*`. `--layout elk` applies to **mermaid flowcharts only**; sequence, C4, mindmap, and gitgraph never used ELK — each engine lays those out itself. Collages: [Pele](../tests/contact-sheet-pele.png) · [mermaid](../tests/contact-sheet-mermaid.png).
-
-| Type | Pele (default) | mermaid + ELK |
-| --- | --- | --- |
-| flowchart | Wide S-turns; subgraph membership follows the source (a worker outside the cluster stays outside) | Layered ELK + kinky edges; `curve: basis` still feels polyline |
-| sequence | Numbered messages, CJK wraps, thin activations | Hyphenation artifacts, giant activation dots |
-| C4 | Light office cards, dashed external box; **ignores** theme `c4` fills | Dark blocks + person glyph, closer to C4 textbooks |
-| mindmap | Organic curves, leaves as plain text | Boxes colored by branch |
-| gitgraph / state | Thinner, tighter | Thick orthogonal git lines; more dramatic state arcs |
-| `@{icon}` / `-t sketch` | No icon resolver; no hand-drawn look | `--icon` works; `sketch` forces this path |
-
-- `--engine mermaid`: Chromium + mermaid.js. `--layout elk|dagre` **only in this mode, and only for flowcharts**
-- `-t sketch` has no Pele hand-drawn look: auto-falls back to mermaid with a stderr note
-- Under Pele, `--config` **honors** `flowchart.nodeSpacing` / `rankSpacing` / `wrappingWidth` / `curve`, `fontSize`, `padding`; **ignores** `themeCSS`, `look`, `layoutAlgorithm`, `sequence.*`, `c4.*`. `--css` appends to the in-svg `<style>` — use `.pele-shape-*` / `.pele-edges`, not `.edgePath .path`
-- Extension blocks and the pixel crop stay on Chromium
-- Layout/color ideas worth stealing later (no second diagram language): [research-layout-color.md](research-layout-color.md)
+| Engineering docs / README / architecture (clean) | `openai` (white, ink, mint accent, hairline borders) |
+| External reports / print / compliance delivery | `openai` with `--tone paper` (serif captions, 16px radii; best printed with `--preset a4`) |
+| Knowledge bases / internal notes / long reads | `tech` (highest information density) |
+| Whiteboard / brainstorm / casual sharing | `excalidraw` (hand-drawn strokes + pastel fills; `--style-fill hachure`) |
+| A dark page | `openai` or `tech` plus `--background '#1A1A1A'` (do not project a dark page in a meeting room) |
 
 ### Fine-tuning (--css snippet library, appended after the theme)
 
-Default Pele uses `.pele-shape-*` / `.pele-edges path`. The selectors below are for the mermaid engine (`--engine mermaid` or `-t sketch`):
+Pele class names are stable; target a shape explicitly:
 
 ```css
-/* larger corner radius */   .node rect { rx: 14px; ry: 14px; }
-/* subtle node shadow */     .node rect { filter: drop-shadow(0 1px 2px rgba(0,0,0,.10)); }
-/* thicker border */         .node rect, .node polygon { stroke-width: 2px; }
-/* thicker edges */          .edgePath .path { stroke-width: 2px; }
+/* larger corner radius */   .pele-flowchart .pele-shape-rect rect { rx: 14px; ry: 14px; }
+/* subtle node shadow */     .pele-node { filter: drop-shadow(0 1px 2px rgba(0,0,0,.10)); }
+/* thicker decision border */ .pele-shape-diam polygon { stroke-width: 2px; }
+/* thicker edges */          .pele-edge path { stroke-width: 2px; }
+/* bolder labels */          .pele-label { font-weight: 600; }
 ```
 
-Font size / line color go through `--config` (native mermaid variables; the JSON must be a real file — no process substitution on Windows):
+Font size / spacing go through `--config` (the JSON must be a real file — no process substitution on Windows):
+
+```json
+{ "fontSize": 18, "flowchart": { "nodeSpacing": 88, "rankSpacing": 88, "padding": 22 } }
+```
 
 ```bash
-echo '{"themeVariables":{"fontSize":"17px","lineColor":"#4E5969"}}' > mq.json
 mmdx doc.md --config mq.json
 ```
 
-### Full recolor (--theme-js, file body is the function body)
+Pele ignores `themeVariables` / `themeCSS`; those keys produce a `config-ignored` warning. Use `--theme-js` or `--css` for colors.
+
+### Full recolor (--theme-js v2)
 
 ```js
 // brand.js — usage: mmdx doc.md --theme-js brand.js
-export default (config, ctx) => {
-  // ctx.theme = current theme name; brand colors example
-  const ink = '#0D1B2A', brand = '#E4572E', soft = '#FDF0E5';
-  config.themeVariables.primaryTextColor = ink;
-  config.themeVariables.lineColor = ink;
-  config.themeCSS += `
-    .node rect { fill: ${soft}; stroke: ${brand}; }
-    .node polygon { fill: ${soft}; stroke: ${brand}; }`;
-  return config;   // must return config
+export default (theme) => {
+  const brand = '#E4572E';
+  theme.vars.accent = brand;
+  theme.vars.line = '#0D1B2A';
+  theme.shapes.process.fill = '#FDF0E5';
+  theme.shapes.process.stroke = brand;
+  theme.shapes.decision.fill = '#FFF4D6';
+  theme.shapes.decision.stroke = '#A87428';
+  theme.css += `.pele-label { font-weight: 600; }`;
+  return theme;   // must return a ThemeSpec
 };
 ```
 
-Deeper needs (layout params, disabling mirrored actors…) use `--config` deep-merge over native settings (`flowchart.curve`, `sequence.mirrorActors`…).
+`theme.vars` maps to `--pele-bg/fg/muted/line/surface/surface-alt/border/accent/critical/radius/font/series`; `theme.shapes` has `process` / `decision` / `state` / `store` / `cluster`.
 
-**Layering order**: theme → `--brand` → `--theme-js` → `--config` → `--css`. `--brand` only remaps accent / accent-tint; flowchart shape coding stays. Low-contrast accents warn but are not rewritten.
+**Layering order**: theme → `--brand` → `--theme-js` → `--config` → `--css`. `--brand` only changes `theme.vars.accent`. Low-contrast accents warn but are not rewritten.
+
+### Migrating from 1.x (v2 breaking changes)
+
+| 1.x usage | v2 behavior |
+| --- | --- |
+| `--theme-js` mutating `config.themeVariables` | Errors with a migration hint to `theme.vars` / `theme.shapes` |
+| `--config` with `themeVariables` / `themeCSS` | Ignored by Pele; `config-ignored` warning |
+| `--layout elk` | Selects `--engine mermaid`; `--engine pele --layout elk` is a parameter conflict |
+| `excalidraw` lines are still straight | Check `-t excalidraw`; `rough.js asset missing` means `vendor/rough.js` was not bundled into the build |
+| Default `-f svg` colors | Still baked to hex; add `--svg-themeable` for a re-themeable SVG |
+| `--title-pos bottom` + frontmatter title | Pele keeps the in-diagram title at the top; use `--title` chrome for a bottom caption |
 
 ## Performance tuning
 
 `--profile` reports per-stage timings — look at the data before touching anything:
 
 ```
-browser-launch  ~0.5s ×1      mermaid-render ~95ms ×diagram
-page-init       ~1.2s ×page   screenshot      ~90ms ×diagram (incl. pixel-level re-crop)
+browser-launch  ~0.5s ×1      pele-render     ~26ms ×diagram
+page-init       ~1.0s ×page   screenshot      ~90ms ×diagram (incl. pixel-level re-crop)
 ```
 
 | Lever | Advice |
 | --- | --- |
 | Batch > 30 blocks | `--jobs 4`; the default 2 is enough — single-browser page pool, diminishing returns and memory pressure beyond that |
 | PNG too large | Lower `--scale` (default 2; 1 is fine for chat); PNG is lossless, typical architecture diagram 20–80 KB |
-| Tiny type in chat / a narrow column | `--preset column` and `flowchart TD`; do not raise `--width` (a wider canvas shrinks even smaller) |
-| Fill a projector / wide doc | `--preset slide`, or raise `--width` for a horizontal flowchart |
+| Wide diagram squashed | Raise `--width` (default 1200); horizontal flowcharts tolerate 1600+ |
 | SVG only | `-f svg` skips the screenshot stage |
 | First image slow | browser-launch + page-init is fixed cost (~1.7s), amortized over batches; normal for single images |
 
-Pipeline facts: one Chromium instance + page pool + bounded workers; ELK (7 MB bundle) lazily loads for flowchart/graph only, zero cost for sequence/pie/gantt etc.; screenshots serialize across pages (headless Chrome serves one active tab); a hung render trips a 60s circuit breaker, each diagram retried once.
+Pipeline facts: one Chromium instance + page pool + bounded workers; the Pele bundle (~700 KB) is injected on demand, while Mermaid (3.5 MB) and ELK (7 MB bundle) are parsed only for `--engine mermaid` / `--engine auto` fallback; screenshots serialize across pages (headless Chrome serves one active tab); a hung render trips a 60s circuit breaker, each diagram retried once.
 
 ## Troubleshooting
 
@@ -256,9 +253,12 @@ Pipeline facts: one Chromium instance + page pool + bounded workers; ELK (7 MB b
 | `render timed out after 60s` | Resource pressure / browser hang | CLI already retried; rerun the whole command, or isolate with `--jobs 1` if persistent |
 | `icon pack "xxx" not found` | Network down (unpkg) | Drop `--icon`, or run once online to warm the cache |
 | Chinese glyphs turn into boxes | Shouldn't happen (font bundled) | Check whether `--config`/`--theme-js` overrode fontFamily |
-| `Parsing error` (exit 1) | **Diagram syntax error** | Fix per the mermaid line info; other blocks are unaffected |
+| `Parsing error` / `pele: Parse error` (exit 1) | **Diagram syntax error** | Fix per the line info; for syntax Pele does not support, add `--engine mermaid` or `--engine auto` |
+| `--layout belongs to the mermaid engine` | Parameter conflict | Drop `--layout`, or use `--engine mermaid` |
+| `--theme-js v2 receives a ThemeSpec` | 1.x recolor script | Move to `theme.vars` / `theme.shapes` |
+| `config "…" is not supported by the pele engine` | Key outside the whitelist | Colors via `--theme-js`; size/spacing via `fontSize` / `flowchart.*` |
 | exit 2 | Usage error | Compare against `mmdx --help` |
-| SVG text disappears in non-browser tools (Inkscape etc.) | The svg is HTML-implemented | Use `-f png` instead |
+| SVG loses color in Office | `--svg-themeable` was used | Drop the flag (hex is baked by default), or use `-f png` |
 | Text overlapped by edges | Manual `style` changed the background, defeating the theme's label mask | Remove manual styles; use classDef only to emphasize individual nodes |
 | Same-named md files overwriting each other in one `-o` dir | Naming collision | Separate directories, or use `--index` to export specific blocks |
 
@@ -266,10 +266,11 @@ Rule of thumb: **exit 2 = wrong flags; Parsing error = wrong diagram; look the e
 
 ## Testing
 
-`bun run tests/run.ts`, three layers — visual review only looks at items the script flags as suspicious:
+`bun run tests/run.ts`, four layers — visual review only looks at items the script flags as suspicious:
 
 1. **Library sweep**: 20 mermaid diagram types + extension blocks, rendered in one browser session, then pixel-analyzed (margin symmetry, content ratio, blank-image detection)
-2. **CLI behavior**: exit codes, preset widths, caption, brand, over-limit warnings/`--strict-chart`, bad-block isolation, stdin, JSON contract
-3. **Profile probes**: Renderer `profile` on; fail if `page-reset` / `init-mermaid` counts or per-stage maxMs blow the budget (must not re-inject mermaid after every HTML block)
+2. **CLI behavior**: exit codes, preset widths, caption, brand, over-limit warnings/`--strict-chart`, bad-block isolation, stdin, JSON contract, info-card splitting and tone
+3. **Profile probes**: Renderer `profile` on; fail if `page-reset` / `init-pele` counts or per-stage maxMs blow the budget (must not re-inject an engine after every HTML block)
+4. **Visual lint**: bottom blank band, DOM overflow/outside elements/caption overlap, SVG label overflow, rendered contrast, PNG edge clipping, two-run determinism; rules in [QUALITY.en.md](QUALITY.en.md)
 
-Visual samples: `bun scripts/make-contact-sheet.ts` (Pele / mermaid engine collages) and `bun scripts/make-review.ts` (`docs/ext-*.png`).
+Visual samples: `bun scripts/make-contact-sheet.ts` (mermaid collage) and `bun scripts/make-review.ts` (`docs/ext-*.png`).
