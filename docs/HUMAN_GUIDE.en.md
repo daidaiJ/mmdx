@@ -14,6 +14,7 @@ This guide targets **human users** and covers installing mmdx, the full CLI refe
 - [Quick start](#quick-start)
 - [Full CLI reference](#full-cli-reference)
 - [Extension blocks](#extension-blocks)
+- [Whole-page HTML screenshots](#whole-page-html-screenshots)
 - [Theming](#theming)
 - [Performance tuning](#performance-tuning)
 - [Troubleshooting](#troubleshooting)
@@ -70,17 +71,19 @@ mmdx a.md b.md other/*.md -o dist/          # multi-file batch, parallel
 mmdx diagram.mmd -o out/arch.svg            # exact name; sibling .png written alongside
 echo "graph LR; A-->B" | mmdx - -f svg      # single diagram from stdin
 mmdx report.md --preset slide --title "Architecture" --unit "ms" --source "bench"
+mmdx doc.md --preset column                 # chat / narrow column (800px@2)
 mmdx doc.md -t tech --background transparent -f png --json
 mmdx doc.md --brand #E4572E --preset square
 mmdx doc.md --list                          # list the fenced blocks found, no rendering
 ```
 
-Three input forms:
+Four input forms:
 
 | Input | Behavior |
 |---|---|
 | `.md` file | Renders all ```mermaid fences plus extension fences (table/list/card/chart/kpi/compare/funnel/task/progress/swimlane/gauge/vs/heatmap) |
 | `.mmd` file | Renders a single mermaid diagram |
+| `.html` / `.htm` file | Screenshots the page as-is to PNG (fullPage, PNG only) — see [Whole-page HTML screenshots](#whole-page-html-screenshots) |
 | `-` (stdin) | Reads a single mermaid diagram from standard input |
 
 Output naming: by default next to the input, `<name>-m<N>.svg/.png` numbered by block order; `-o` sets the output directory; when the input holds exactly one diagram, `-o` may be an exact filename.
@@ -94,7 +97,7 @@ Output naming: by default next to the input, `<name>-m<N>.svg/.png` numbered by 
 | `-t, --theme <name>` | `tech` (default) · `openai` · `excalidraw` |
 | `--tone <name>` | `paper` \| `neutral` \| `product`; structural block overrides only (radius/shadow/display type/table headers), palette stays with the theme |
 | `--style-fill <mode>` | `solid` (default) \| `hachure`; `excalidraw` only |
-| `--preset <name>` | `slide` (projection/PPT: 1600px@2, 18px type, heavier strokes, ~80px footer) \| `a4` (900px@2) \| `square` (1080px@2). Explicit `--width`/`--scale`/`-f` win |
+| `--preset <name>` | `slide` (projection/PPT: 1600px@2, 18px type, heavier strokes, ~80px footer) \| `a4` (900px@2) \| `square` (1080px@2) \| `column` (chat/narrow column: 800px@2, about 1/3 of a 2560×1440 display, 18px type, 200px label wrap). Explicit `--width`/`--scale`/`-f` win |
 | `--background <color>` | Page background, e.g. `white` \| `transparent` \| `#1A1A1A` (pass it explicitly for a dark page) |
 | `--engine <name>` | `pele` (default; fast, CSS-variable themes) \| `mermaid` (legacy, ELK) \| `auto` (Pele, then Mermaid fallback) |
 | `--layout <engine>` | `elk` \| `dagre`; Mermaid-only — passing it selects `--engine mermaid` |
@@ -156,6 +159,34 @@ mmdx card --url https://example.com/post -t openai --tone paper --json
 Besides mermaid diagrams, common markdown structures render directly into styled images. Extension blocks produce **PNG only** — HTML layout has no portable SVG form. All of them take `--title`/`--subtitle`/`--source`/`--unit` chrome and `--brand` accent.
 
 Syntax, limits, and one sample image per fence: **[extension-block gallery](EXTENSIONS.en.md)**.
+
+## Whole-page HTML screenshots
+
+A `file.html` input screenshots the whole page **as-is to PNG** (fullPage, PNG only): the page keeps its own styles, scripts, and background; `--width` is the layout viewport (an explicit narrower `body` width wins); `--scale` / `--background` still apply. Passing `-f svg` still writes PNG and prints `... renders to PNG only` on stderr.
+
+```bash
+mmdx page.html -o out/page.png --scale 3
+mmdx page.html --background transparent   # transparent only when passed explicitly
+```
+
+- **CJK fallback (three families)**: the bundled Noto Sans SC / Noto Serif SC (variable weight) / LXGW WenKai are aliased over the CJK ranges of the `sans-serif` / `serif` fallback chains — the page's declared Latin type renders as-is, Chinese body text resolves to the sans face, serif-stack Chinese to the serif face, and hand-drawn annotations get kai via `'LXGW WenKai'`, offline-identical; CJK webfonts the page declares itself still win. Fences and mermaid keep the sans face alone and never load the other two.
+- **Figure lint**: every figure is inspected on export; findings land in `--json.warnings` with figure number, text, viewBox coordinates, and direction — fix the source by coordinates and ship at zero.
+- **Fidelity advice**: use `--scale 3` for print or large-screen scaling (the default 2 is enough for PPT); on fixed-canvas pages set `body` width = canvas width (or align `--width` to the design width) to avoid responsive reflow; pass `--background transparent` only when you need transparency; webfont and image loading is awaited automatically. PNG is this tier's fidelity form — type and supersampling are baked into pixels, identical on any viewing machine.
+- **A renderer, not a layout gate**: budgets, over-limit warnings, and pixel sweeps apply to fences only. A ` ```html ` fence inside `.md` is **not supported** (it would bypass extension-block discipline); only standalone `.html` / `.htm` files are recognized.
+- **Paired hand-drawn HTML workflows**: two vendored specs (MIT) — occasional editorial covers / proposal art per [skill/editorial/](../skill/editorial/README.md) (diagram-design); narrative explainers / review pages / recaps / slide decks per [skill/explain/](../skill/explain/README.md) (spec-only adaptation of visual-explainer: copy `kit/starter-<register>.html` → edit the body → `mmdx name.html --scale 3`). Starters are generated by `bun run scripts/explain-starter.ts`, which uses `import.meta.dir` and therefore needs bun; run it only when regenerating starters.
+
+Warning codes:
+
+| Code | Meaning |
+| --- | --- |
+| `figure-overflow` | An element escapes the figure canvas (direction and pixels included) |
+| `figure-text-overlap` | Text sits on another shape or on other text |
+| `figure-text-adhesion` | Text-to-box gap under max(4px, 35% of the font size) — visually glued |
+| `figure-small-text` | Effective font size under 11px after the svg is scaled down |
+| `figure-uncaptioned` | A `<figure>` lacks a `figcaption` |
+| `svg-aria-label` | A figure svg lacks an `aria-label` (and has no figcaption to fall back on) |
+
+Exemptions keep false positives down: own-group labels, line-riding labels (exempt from lines, never from boxes), centered in-box labels, hidden text, and sliver intersections.
 
 ## Theming
 
@@ -239,6 +270,7 @@ page-init       ~1.0s ×page   screenshot      ~90ms ×diagram (incl. pixel-leve
 | --- | --- |
 | Batch > 30 blocks | `--jobs 4`; the default 2 is enough — single-browser page pool, diminishing returns and memory pressure beyond that |
 | PNG too large | Lower `--scale` (default 2; 1 is fine for chat); PNG is lossless, typical architecture diagram 20–80 KB |
+| Type too small in chat / a narrow column | `--preset column` (800px@2) with `flowchart TD`; do not raise `--width` (wider canvas, smaller type after scaling) |
 | Wide diagram squashed | Raise `--width` (default 1200); horizontal flowcharts tolerate 1600+ |
 | SVG only | `-f svg` skips the screenshot stage |
 | First image slow | browser-launch + page-init is fixed cost (~1.7s), amortized over batches; normal for single images |
@@ -261,6 +293,10 @@ Pipeline facts: one Chromium instance + page pool + bounded workers; the Pele bu
 | SVG loses color in Office | `--svg-themeable` was used | Drop the flag (hex is baked by default), or use `-f png` |
 | Text overlapped by edges | Manual `style` changed the background, defeating the theme's label mask | Remove manual styles; use classDef only to emphasize individual nodes |
 | Same-named md files overwriting each other in one `-o` dir | Naming collision | Separate directories, or use `--index` to export specific blocks |
+| `.html` input with `-f svg` prints `renders to PNG only` | Normal degradation | Whole-page shots are PNG only; use mermaid SVG when you need vectors |
+| `.html` input ignores `-t` / `--tone` / `--title` | Those are fence flags | The page carries its own styles and layout; theme and caption chrome are not overlaid |
+| `--json.warnings` shows `figure-*` / `svg-aria-label` | Hand-drawn figure geometry or structure | Fix the source by the figure number and coordinates, see [whole-page HTML screenshots](#whole-page-html-screenshots) |
+| `column-landscape` / `column-shrink` | Flowchart too wide under `--preset column` | Switch to `flowchart TD` or split; do not raise `--width` |
 
 Rule of thumb: **exit 2 = wrong flags; Parsing error = wrong diagram; look the error up in the table before reinstalling anything**.
 
@@ -269,7 +305,7 @@ Rule of thumb: **exit 2 = wrong flags; Parsing error = wrong diagram; look the e
 `bun run tests/run.ts`, four layers — visual review only looks at items the script flags as suspicious:
 
 1. **Library sweep**: 20 mermaid diagram types + extension blocks, rendered in one browser session, then pixel-analyzed (margin symmetry, content ratio, blank-image detection)
-2. **CLI behavior**: exit codes, preset widths, caption, brand, over-limit warnings/`--strict-chart`, bad-block isolation, stdin, JSON contract, info-card splitting and tone
+2. **CLI behavior**: exit codes, preset widths, caption, brand, over-limit warnings/`--strict-chart`, bad-block isolation, stdin, JSON contract, info-card splitting and tone, `.html` input and figure lint
 3. **Profile probes**: Renderer `profile` on; fail if `page-reset` / `init-pele` counts or per-stage maxMs blow the budget (must not re-inject an engine after every HTML block)
 4. **Visual lint**: bottom blank band, DOM overflow/outside elements/caption overlap, SVG label overflow, rendered contrast, PNG edge clipping, two-run determinism; rules in [QUALITY.en.md](QUALITY.en.md)
 

@@ -18,6 +18,9 @@
 | 🖼 扩展块 | [docs/EXTENSIONS.md](docs/EXTENSIONS.md) | 每种围栏一张工具渲染的 PNG + 语法 |
 | 🎭 风格画廊 | [docs/GALLERY.md](docs/GALLERY.md) | 同一案例在三种风格下的流程图 / KPI / 卡片 / 表格对照 |
 | 🧪 质量门禁 | [docs/QUALITY.md](docs/QUALITY.md) | 像素 lint 覆盖、已知盲区、发布前许可证清单 |
+| 🖋 手绘 editorial 规格 | [skill/editorial/](skill/editorial/README.md) | vendored diagram-design 规格（MIT）：偶发封面 / 方案插图按其规格手绘 HTML，`mmdx file.html --scale 3` 导出 |
+| 📃 叙事解释页规格 | [skill/explain/](skill/explain/README.md) | vendored visual-explainer 规格化改造版（MIT）：解释页 / 评审页 / recap / 幻灯片页用 starter 装配 HTML，同命令导出 |
+| 📚 skill 参考速查 | [skill/references/](skill/references/) | 围栏语法、图型示例、主题与引擎、排障四篇按需读取 |
 | 📜 变更历史 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 
 各文档均为中文默认，同名 `.en.md` 为英文版。
@@ -26,10 +29,13 @@
 
 - **Pele 默认引擎**：Obsidian 开源的 Mermaid→SVG 渲染器，单图 SVG 生成 1–50ms；Mermaid 11 + ELK 保留为 `--engine mermaid` 回退
 - **CSS 变量主题**：Pele 把颜色/字体/圆角全部外置为 `--pele-*` 变量，`-f svg` 默认烘焙成 hex，`--svg-themeable` 保留可换肤 SVG；三套预设共用形状分色（蓝=流程、琥珀=判定、绿=状态、紫=存储）
-- **内置中文字体**：Noto Sans SC 子集（GB2312 全量汉字 + 拉丁，仅 1.9MB），任意机器渲染一致，中文标签换行正确
+- **内置中文字体（三家族）**：Noto Sans SC（通用）/ Noto Serif SC（衬线栈）/ 霞鹜文楷（楷体标注）的 GB2312 全量子集，合计约 6.2MB，任意机器渲染一致，中文标签换行正确；后两者与 `sans-serif`/`serif` 的 CJK 兜底 alias 只为手写 HTML 文档注入，围栏与 mermaid 仍只用黑体
 - **像素级均匀留白**：每张图二次裁切到墨迹包围盒，四边留白对称是构造保证，不靠引擎不可靠的 viewBox
 - **扩展块**：```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane 直出 PNG
-- **办公交付**：`--preset slide|a4|square`、图题/来源/单位 chrome、`--brand` 强调色；agent 友好的 `--json`（含 `warnings`）
+- **办公交付**：`--preset slide|a4|square|column`、图题/来源/单位 chrome、`--brand` 强调色；agent 友好的 `--json`（含 `warnings`）
+- **整页 HTML 截图**：`mmdx page.html` 原样截图为 PNG（fullPage，只出 PNG）——系统 Edge、免 Playwright、保留页面自身样式/脚本/背景；配套 vendored 的 [diagram-design](skill/editorial/README.md) 规格可手绘 editorial 图再导出
+- **figure lint**：`.html` 输入导出时自动体检 figure——越界（`figure-overflow`）、压字/压形（`figure-text-overlap`）、粘连（`figure-text-adhesion`）、有效字号 <11px（`figure-small-text`）、缺 caption（`figure-uncaptioned`）、缺 `aria-label`（`svg-aria-label`），消息带坐标进 `--json.warnings`
+- **explain 叙事档**：`skill/explain/` 提供 instrument / blueprint / paper / editorial 四个 register starter（已内联 kit 设计系统与拉丁字体），复制 → 编辑页身 → `mmdx name.html --scale 3`
 
 ## 🚀 快速上手
 
@@ -66,11 +72,12 @@ echo "graph LR; A-->B" | mmdx - -f svg      # stdin 单图
 ```bash
 mmdx a.md b.md other/*.md -o dist/          # 多文件批量，并行
 mmdx diagram.mmd -o out/arch.svg            # 精确命名，同目录附带 .png
+mmdx page.html -o out/page.png --scale 2    # 整页 HTML 原样截图（免 Playwright）
 mmdx report.md --index 2 --title "架构总览" --title-pos bottom
 mmdx doc.md -t tech --background transparent -f png --json
 ```
 
-Markdown 围栏：`mermaid`（图表）以及 `table` / `list` / `card` / `chart` / `kpi` / `compare` / `vs` / `funnel` / `task` / `progress` / `gauge` / `heatmap` / `swimlane`（扩展块，PNG only）。贴 PPT 用 `mmdx doc.md --preset slide --title "…" --source "…"`。
+Markdown 围栏：`mermaid`（图表）以及 `table` / `list` / `card` / `chart` / `kpi` / `compare` / `vs` / `funnel` / `task` / `progress` / `gauge` / `heatmap` / `swimlane`（扩展块，PNG only）。贴 PPT 用 `mmdx doc.md --preset slide --title "…" --source "…"`。贴聊天/窄栏用 `--preset column`。独立 `.html` 文件整页截图（保留页面自身样式与背景，内嵌中文字体兜底 CJK），见 [HUMAN_GUIDE](docs/HUMAN_GUIDE.md#html-整页截图)。
 
 **卡片墙** —— ```card 围栏，约定语法：每行一张卡，`emoji | 标题 | 描述`（emoji 与描述可省略）：
 
@@ -99,6 +106,17 @@ mmdx card --url https://example.com/post -t openai --tone paper
 ```
 
 叠加顺序：预设 → `--brand` → `--theme-js` → `--config` → `--css`。v2 的 `--theme-js` 接收 `ThemeSpec`（`theme.vars` / `theme.shapes` / `theme.css`），示例见 [HUMAN_GUIDE 主题定制](docs/HUMAN_GUIDE.md#主题定制)。
+
+## 🖋 手绘 HTML 与 explain
+
+`mmdx page.html --scale 3` 是手绘 HTML 的统一出口：页面原样截图，自身样式/脚本/背景保留，中文由内置三家族兜底。两条 vendored 规格（MIT）按档位挂载：
+
+| 档位 | 规格 | 用法 |
+| --- | --- | --- |
+| editorial 封面 / 方案插图 | [skill/editorial/](skill/editorial/README.md)（diagram-design） | 按其总则 + `references/type-*.md` 手写自包含 HTML → `mmdx name.html --scale 3` |
+| 叙事解释页 / 评审页 / recap / 幻灯片页 | [skill/explain/](skill/explain/README.md)（visual-explainer 规格化改造版） | 复制 `skill/explain/kit/starter-<register>.html`（instrument / blueprint / paper / editorial）→ 编辑页身 → `mmdx name.html --scale 3` |
+
+starter 已内联 kit 设计系统与该 register 的拉丁字体，head 不用动；页内 mermaid 用 `mmdx - -f svg` 预渲后原样内联。导出时自动跑 figure lint，按 `--json.warnings` 修到清零再交付。starter 的生成脚本 `scripts/explain-starter.ts` 依赖 bun 的 `import.meta.dir`，仅在重新生成 starter 时需要。
 
 ## 🎭 风格画廊
 
@@ -131,7 +149,7 @@ page-init       ~1.0s ×页     screenshot      ~90ms ×图（含像素级二次
 `bun run tests/run.ts`，四层设计——视觉审查只看脚本标记出的可疑项：
 
 1. **库级筛查**：20 种 mermaid 图型 + 表格/列表/卡片，单浏览器会话渲染后做像素分析（边距对称 ±8px、内容占比、底部空白、白图检测）
-2. **CLI 行为**：退出码、`--index` 命名、坏块隔离、stdin、JSON 契约、多文件 4 并发批次
+2. **CLI 行为**：退出码、`--index` 命名、坏块隔离、stdin、JSON 契约、`.html` 输入的 figure lint 告警、多文件 4 并发批次
 3. **信息卡**：Markdown/网页提取、宽度、实际像素分页、tone 结构差异
 4. **视觉 lint**：DOM 溢出/越界/图题重叠、SVG 标签溢出、渲染态对比度、PNG 边缘裁切、双跑确定性；规则见 [docs/QUALITY.md](docs/QUALITY.md)
 

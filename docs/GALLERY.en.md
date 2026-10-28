@@ -60,7 +60,7 @@ The overview stays on these three built-in themes. A new theme adds a page and a
 node --experimental-transform-types --no-warnings scripts/make-gallery.ts
 ```
 
-The script writes the per-theme scene pages, the report card and info card, 3 info-card tones, and both overview strips. `vendored-*.png` are the original v1.4.2 hand-drawn HTML samples.
+The script writes the per-theme scene pages, the report card and info card, 3 info-card tones, and both overview strips. `vendored-*.png` are the original v1.4.2 hand-drawn HTML samples; regenerate them from the `tests/` sources with `mmdx tests/editorial-showcase/layer-stack.html --scale 3` and the equivalent.
 
 Render one scene yourself:
 

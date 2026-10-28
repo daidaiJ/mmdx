@@ -1,11 +1,11 @@
 ---
 name: mermaid
-description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 流程 flowchart, KPI/表格/卡片, 审批与泳道, 半环进度 gauge, 日历热力 heatmap. Use when the user wants 图/图表/流程图/构成图/对比卡/周报贴图/投屏/PPT/上会/渲染/导出图片. NOT for AI image generation (文生图/照片级插画) and NOT for analysis-grade stats (grouped bar, dual axis → AntV).
+description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 流程 flowchart, KPI/表格/卡片, 审批与泳道, 半环进度 gauge, 日历热力 heatmap, HTML 文件截图导出. Use when the user wants 图/图表/流程图/构成图/对比卡/周报贴图/投屏/PPT/上会/渲染/导出图片/HTML 截图/把网页导出成图片. NOT for AI image generation (文生图/照片级插画) and NOT for analysis-grade stats (grouped bar, dual axis → AntV).
 ---
 
 # mmdx — 办公出图（结构图 + 轻量数据图 + 版式块 → PNG）
 
-把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG。主题、中文字体、Pele 布局、留白全部内置；默认 Pele 引擎，Mermaid + ELK 作为回退。**不要在图代码里手工调样式，不要用 VSCode 插件，不要让模型手绘 SVG。**
+把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG。主题、中文字体、Pele 布局、留白全部内置；默认 Pele 引擎，Mermaid + ELK 作为回退。**围栏路径不要手工调样式、不要让模型手绘 SVG、不要用 VSCode 插件**；手绘 HTML 只在外来 `.html` 导出与 editorial / explain 两条低频规格里用（§1c-4）。
 
 CLI 获取（按优先级）：
 
@@ -18,7 +18,17 @@ CLI 获取（按优先级）：
 
 下文统一写 `mmdx`。渲染需系统 Edge/Chrome；找不到时报 `no Chrome/Edge found`，用 `--browser <path>`。**绝不自动下载浏览器。**
 
-**适用边界**：流程/审批/排期、轻量占比/趋势/对比、KPI/表格/卡片/任务快照 → 用本 skill。反例：文生图；分组柱/双轴/散点 → [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
+**按需加载**（默认只读本文件，以下按场景再读，勿预读）：
+
+- [`references/fences.md`](references/fences.md) — 扩展围栏语法速记 + 每围栏细则 + 能上会边界（写围栏前抄语法时）
+- [`references/recipes.md`](references/recipes.md) — 16 种 mermaid 图型最小示例 + 特殊画法（LR+TB 并列双流程、嵌套包含、组织架构、分层横切、对照式 timeline）
+- [`references/troubleshooting.md`](references/troubleshooting.md) — 报错速诊 / `--json.warnings` 处置 / 退出码（渲染失败时）
+- [`references/themes-engines.md`](references/themes-engines.md) — 主题选型 / 双引擎差别 / Pele 配置键（换主题或引擎时）
+- [`explain/`](explain/README.md) — vendored visual-explainer 工程解释页规格（多图叙事页 / 评审页 / recap 动笔前；starter 装配式写作，页内图禁 JS 交互态）
+- [`editorial/`](editorial/README.md) — vendored diagram-design 手绘规格（偶发封面 / 方案插图动笔前）
+- [`info-card-designer/`](info-card-designer/SKILL.md) — URL / 文本 → 杂志感信息卡（`mmdx card`，见 §5b）
+
+**适用边界**：流程/审批/排期、轻量占比/趋势/对比、KPI/表格/卡片/任务快照 → 用本 skill。**多图叙事解释页 / diff·plan 评审 / recap / 幻灯片页** → [explain/](explain/README.md)。**已有 HTML 文件要导出图片**（如 diagram-design 产物）→ `mmdx page.html`（见 §1c-4）。反例：文生图；分组柱/双轴/散点 → [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
 
 ## 0. 环境自检（会话内首次使用先跑，30 秒）
 
@@ -49,7 +59,7 @@ echo "graph LR; A-->B" | mmdx - -f png --engine mermaid -o "$TMP/mmdx-check-lega
 
 | 用户要表达的 | 用什么 | 上限 | 典型命令 |
 | --- | --- | --- | --- |
-| 占比 | pie 或 ` ```chart ` `type: pie` | 扇区 3–6 | `-f png --preset slide` |
+| 占比 | pie 或 ` ```chart ` `type: pie` | 扇区 3–6 | `-f png --preset column` |
 | 趋势 | ` ```chart ` `type: line` | 类别 ≤6、系列 ≤2 | 不要手写 `xychart-beta` |
 | 数值对比 | ` ```chart ` `type: bar` | 同上 | |
 | 方案对比（定性） | ` ```compare ` | 恰 2 栏 | |
@@ -58,7 +68,7 @@ echo "graph LR; A-->B" | mmdx - -f png --engine mermaid -o "$TMP/mmdx-check-lega
 | 流向 | sankey | | |
 | 四象限 / 优先级 | quadrant | ≤12 项 | |
 | 排期 / 工期 | gantt | | |
-| 流程 / 审批 / 判定 | flowchart | ≤9 节点 / ≤12 边 | `flowchart LR` + 命名 subgraph |
+| 流程 / 审批 / 判定 | flowchart | ≤9 节点 / ≤12 边 | 聊天/窄栏 `flowchart TD`；投屏才 `LR` + 命名 subgraph |
 | 跨部门交接 | ` ```swimlane ` | 泳道 ≤5、步骤 ≤8 | handoff 才是重点；有环/并行用 flowchart |
 | 需求池 / 多列看板 | kanban | | 当前状态快照改用 ` ```task ` |
 | 任务状态快照 | ` ```task ` | ≤10 行 | 6 态：未开始/设计/开发/测试/已上线/已取消 |
@@ -80,7 +90,7 @@ echo "graph LR; A-->B" | mmdx - -f png --engine mermaid -o "$TMP/mmdx-check-lega
 ### 1b. 写图规则
 
 1. **节点标签 ≤ 12 个中文字（约 30 latin）**；细节放边线标签、note、或正文
-2. 方向：流水线 `LR`，决策/状态/层级 `TD`
+2. 方向：流水线 `LR`，决策/状态/层级 `TD`；聊天/窄栏必须 `TD`，只有投屏宽屏才用流水线 `LR`
 3. `subgraph` 要命名，容器配色交给主题
 4. **总览 ≤9 节点 / ≤12 边 / 强调色 ≤2**；sequence 生命线 ≤5。超过不要缩小字号硬塞
 5. **降级阶梯**（按序砍，砍到预算内即停）：装饰（便签/水印）→ 副本合并（Worker ×N）→ 叶子簇折叠进容器 → 度-1 汇点（日志/监控）→ 横切基础设施 → 拆图
@@ -92,17 +102,19 @@ echo "graph LR; A-->B" | mmdx - -f png --engine mermaid -o "$TMP/mmdx-check-lega
 
 ### 1c. 渲染
 
-聊天 / 幻灯片默认 **PNG**。贴 PPT / 投屏必须 `--preset slide`（1600px、字号 18、描边加粗）。Word/PDF 用 `--preset a4`，飞书卡片用 `--preset square`。`both`（SVG+PNG）仅开发者把图嵌进 Markdown。
+聊天 / 窄栏文档默认 **PNG + `--preset column`**（800px@2、字号 18、标签换行 200px；2K 屏约 1/3 栏宽）。贴 PPT / 投屏必须 `--preset slide`（1600px、字号 18、描边加粗）。Word/PDF 用 `--preset a4`，飞书卡片用 `--preset square`。`both`（SVG+PNG）仅开发者把图嵌进 Markdown。
 
 ```bash
-# L0 办公默认（Pele 引擎）
+# L0 聊天/窄栏（对话页、侧栏、1/3 屏正文）
+mmdx doc.md --preset column -f png
+# L0b 投屏 / PPT
 mmdx doc.md --preset slide --title "Q1 销售构成" --unit 万元 --source "财务月报"
 # L1 批量/定向
-mmdx a.md b.md -o dist/ --preset slide
+mmdx a.md b.md -o dist/ --preset column
 mmdx doc.md --index 2 -f png
 # L2 精确命名 / stdin
 mmdx doc.md -o out/arch.png
-echo "graph LR; A-->B" | mmdx - -f png
+echo "graph TD; A-->B" | mmdx - -f png --preset column
 # 需要 ELK 或 Mermaid 专属语法
 mmdx doc.md --engine mermaid           # 或 --layout elk（自动选中 mermaid）
 mmdx doc.md --engine auto              # 先 Pele，失败回退
@@ -135,9 +147,36 @@ mmdx doc.md --preset slide --title "一句话结论" --source "出处" --unit "�
 
 **渲染后自检（Read PNG，5 米测试）：** 眯眼仍能分清蓝流程 / 琥珀判定 / 绿状态；图题在；字不截断。通不过 → 砍节点或拆图，不要加 `--css`。
 
+### 1c-3. 聊天 / 窄栏（对话页、侧栏、正文只有约 1/3 屏宽）
+
+触发词：**聊天、对话、贴进对话、窄栏、侧栏、飞书文档正文、微信、钉钉**。  
+这些表面把图缩到栏宽，用 `--preset column`（800px@2）让出图宽度对准栏宽。
+
+```bash
+mmdx doc.md --preset column --json --quiet
+```
+
+`--json.warnings` 出现 `column-landscape`（源是 `flowchart LR/RL`）或 `column-shrink`（图本身宽度超过 800px、会被 CSS 缩小）→ 改 `flowchart TD`、砍节点或拆图。加大 `--width` 会让缩完的字更小。
+
+### 1c-4. HTML 文件导出（配套 editorial / explain 手绘 HTML）
+
+触发：用户给了或生成了 HTML 文件（diagram-design / visual-explainer 产物、报告页原型），要「导出图片 / 截图 / 转 PNG」。
+
+```bash
+mmdx page.html -o out/page.png --scale 3
+```
+
+- 只认独立 `.html` / `.htm` 文件；`.md` 里写 ` ```html ` 围栏**无效**。整页原样截图为 PNG（fullPage，**只出 PNG**）：页面自带样式、脚本、背景全保留；`--width` 是布局视口（页面显式更窄的 `body` 宽优先）；`-f svg` 仍只写 PNG，并在 stderr 提示 `... renders to PNG only`
+- **高保真**：`--scale 3`（印刷/大屏缩放，diagram-design 官方导出即 3x）；默认 2 够 PPT。固定画布页让 `body` 宽 = 画布宽（或 `--width` 对齐），避免响应式重排；透明底显式 `--background transparent`
+- **中文字体（三家族）**：HTML 输入注入内嵌 Noto Sans SC（正文黑体）/ Noto Serif SC（serif 栈中文自动落宋体）/ 霞鹜文楷（手绘标注显式写 `'LXGW WenKai'`，仅 400 字重）；页面声明的中文字体仍优先，页面无需内嵌 CJK。围栏与 mermaid 路径只注入黑体
+- **figure lint**：导出时自动体检每个 figure，结果进 `--json.warnings`（图号 + 文本 + viewBox 坐标 + 方向）：`figure-overflow`（越出画布）、`figure-text-overlap`（压形/压字）、`figure-text-adhesion`（与框间距 < max(4px, 字高×35%)）、`figure-small-text`（有效字号 <11px）、`figure-uncaptioned`（缺 `figcaption`）、`svg-aria-label`（缺 aria-label 且无 figcaption 兜底）。按坐标改源码，修到清零；处置表见 [`references/troubleshooting.md`](references/troubleshooting.md)
+- **护栏**：办公出图**不要**为绕开围栏纪律去手写 HTML——预算、超限警告、像素筛查只对围栏块生效，任意 HTML 不受这套契约约束。这条路径只用于「HTML 已经存在」的导出
+- 要**手绘 editorial 封面 / 方案插图**（低频、一次性、杂志感）：规格用 [`editorial/`](editorial/README.md)（diagram-design 规格层，MIT，随本 skill 分发）——读总则 + 对应 `type-*.md`，导出用上面的命令
+- 要**多图叙事解释页 / 评审页 / recap / 幻灯片页**：规格用 [`explain/`](explain/README.md)（visual-explainer 规格化改造版，MIT，随本 skill 分发）——复制 `explain/kit/starter-<register>.html`（`instrument` / `blueprint` / `paper` / `editorial`）再编辑页身，导出用上面的命令
+
 ### 1d. 自检闭环（渲染后必做）
 
-1. `--json`：`failed:0`；`warnings` 若非空，按 1a 拆图或换 AntV
+1. `--json`：`failed:0`；`warnings` 若非空，按 1a 拆图或换 AntV；`file.html` 的 `figure-*` 告警按 [`references/troubleshooting.md`](references/troubleshooting.md) 修源码到清零
 2. **Read 看 PNG**：图题/来源/单位在图上（若传了）、文字不截断、类别不过多、连线不穿字、四边留白
 3. 若砍过密度，补一句保真台账：「18 源节点 → 9 张图」
 4. 问题 → 改图或调 caption → `--index N` 重渲染；最多 2 轮，仍不满意问用户
@@ -229,6 +268,7 @@ kpi 变化列默认**红涨绿跌**（可用 `--css` 覆盖）。progress 第一
 | `--layout belongs to the mermaid engine` | 参数冲突 | 去掉 `--layout`，或改 `--engine mermaid` |
 | `--theme-js v2 receives a ThemeSpec` | 1.x 换色脚本 | 改 `theme.vars` / `theme.shapes` |
 | `config "…" is not supported by the pele engine` | `--config` 白名单外 | 颜色用 `--theme-js`；字号/间距用 `fontSize` / `flowchart.*` |
+| HTML 输入 `-f svg` 提示 `renders to PNG only` | 正常降级 | 整页截图只有 PNG；要矢量走 mermaid 图型的 SVG |
 | exit 2 | 参数用法错误 | `mmdx --help` |
 
 总原则：**exit 2 = 参数错；exit 1 = 图写错或超限；报错先查表。**
@@ -275,18 +315,19 @@ kpi 变化列默认**红涨绿跌**（可用 `--css` 覆盖）。progress 第一
 
 信息卡是独立 skill：[`info-card-designer/SKILL.md`](info-card-designer/SKILL.md)。本 skill 只负责图表与块；需要 URL/文本 → 杂志感卡片时切到该 skill，命令仍是 `mmdx card`。
 
-### 5c. 手绘 HTML 模板（v1.4.2，非主题预设）
+### 5c. 手绘 HTML 模板（非主题预设）
 
-上一个 tag 的展示页用的是两个 vendored 手绘 HTML skill。它们是手写 HTML + SVG，再走 `mmdx file.html --scale 3` 导出；当前 v2 的 `-t` 主题只做近似。
+`editorial` 与 `visual-explainer` 是 vendored 的两个手绘 HTML skill：手写 HTML + SVG，再走 `mmdx page.html --scale 3` 导出（§1c-4）。它们不是 `-t` 主题预设，下面的 `-t` 组合只是近似，要用原版直接走 HTML 导出路径。
 
 | 模板 | 视觉特点 | 适合 | 避免 | 当前近似 |
 | --- | --- | --- | --- | --- |
 | `editorial`（diagram-design） | `#F7F4EE` 纸底、`#1F2328` 墨线、`#2563EB` 蓝强调、4px 网格、衬线标题、mono 小标签、2px 描边、手绘层带 | 封面、架构插图、方案一页纸、设计评审 | 高频周报、密集数据表、逐像素对齐的合规材料 | `openai` + `paper`（排版） |
 | `visual-explainer`（paper register） | `#F7F7F4` 暖纸底、`#17191C` 正文、`#2C4CD0` 墨蓝、Newsreader 衬线标题、Atkinson 正文、10px 圆角、叙事段落 + 手绘机制图 | 解释页、复盘页、评审页、recap、幻灯片页 | 合规/审计、严格数据表、高密度仪表盘 | `openai` + `paper`（衬线标题）；`excalidraw`（手绘感） |
 
-精确复现需要 v1.4.2 的 HTML 导出链路；当前 v2 可用 `mmdx card` 近似：
+原版形态直接按规格手绘 HTML 再导出（`--scale 3`，见 §1c-4）；只想在围栏管线里接近那种观感时用 `mmdx card`：
 
 ```bash
+mmdx page.html -o out/editorial.png --scale 3
 mmdx card --in note.md -t openai --tone paper -o editorial-like.png
 mmdx card --in note.md -t excalidraw --tone paper -o explainer-like.png
 ```

@@ -7,7 +7,9 @@ The previous tag's showcase page used two vendored hand-drawn HTML skills, not m
 - **editorial** from `diagram-design`: paper/ink palette, 4px grid, serif headings, mono sublabels, hand-drawn SVG.
 - **visual-explainer** in its `paper` register: warm paper ground, Newsreader serif display, Atkinson body, ink-blue accent, 10px radii.
 
-Both use “hand-written self-contained HTML → `mmdx file.html --scale 3`”, a different pipeline from v2's fences and themes.
+Both use “hand-written self-contained HTML → `mmdx page.html --scale 3`”, a different pipeline from v2's fences and themes.
+
+That export path carries three v1.4.0–v1.4.2 capabilities: a whole `.html` file is screenshotted as-is to PNG (fullPage, PNG only — the page keeps its own styles, scripts and background; `--width` is the layout viewport, and an explicit narrower `body` width wins); three embedded CJK families — Noto Sans SC (body sans), Noto Serif SC (serif stacks and the `serif` generic's CJK fallback) and LXGW WenKai (kai, declared explicitly as `'LXGW WenKai'` for hand-drawn labels); and figure lint on export (`figure-overflow` / `figure-text-overlap` / `figure-text-adhesion` / `figure-small-text` / `figure-uncaptioned` / `svg-aria-label`), surfaced in `--json.warnings`. Both samples below render with zero lint warnings.
 
 ## editorial (diagram-design)
 
@@ -19,7 +21,7 @@ Both use “hand-written self-contained HTML → `mmdx file.html --scale 3`”, 
 
 **Avoid**: weekly reports, dense data tables, compliance material that needs pixel alignment.
 
-**Closest current preset**: `excalidraw` picks up the hand-drawn strokes and pastel feel; `openai` picks up the restrained palette and hairline borders. The exact paper palette and 4px grid need the v1.4.2 HTML export path.
+**Closest current preset**: `excalidraw` picks up the hand-drawn strokes and pastel feel; `openai` picks up the restrained palette and hairline borders. These are fence-theme approximations only; for the real paper palette and 4px grid, use the HTML export below.
 
 ## visual-explainer (paper register)
 
@@ -44,15 +46,14 @@ Both use “hand-written self-contained HTML → `mmdx file.html --scale 3`”, 
 
 ## Reproduce
 
-Original hand-drawn HTML (needs the v1.4.2 HTML export path):
+Original hand-drawn HTML (sources live in `tests/`; use these to regenerate the samples with the current binary):
 
 ```bash
-git checkout v1.4.2
 mmdx tests/editorial-showcase/layer-stack.html -o out/editorial.png --scale 3
 mmdx tests/explain-e2e/cache-read-path.html -o out/explain.png --scale 3
 ```
 
-Approximation with v2:
+Fence-theme approximation of the same look:
 
 ```bash
 mmdx card --in note.md -t openai --tone paper -o out/editorial-like.png

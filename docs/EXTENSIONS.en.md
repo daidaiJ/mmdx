@@ -6,6 +6,10 @@ One PNG **rendered by this tool** per fence (`bun scripts/make-review.ts`). Exte
 
 Twenty mermaid types: Pele [contact-sheet-pele.png](../tests/contact-sheet-pele.png), mermaid [contact-sheet-mermaid.png](../tests/contact-sheet-mermaid.png) (`bun scripts/make-contact-sheet.ts`).
 
+Canvas: chat / narrow columns use `--preset column` (800px@2, 18px type, 200px label wrap — about 1/3 of a 2K screen), and extension blocks lay out to that canvas. In `--json.warnings`, `column-shrink` (a mermaid diagram or ` ```chart ` whose intrinsic width exceeds 800px, so CSS scales it down) and `column-landscape` (source is `flowchart LR/RL`) are this canvas telling you it is over budget. Slides use `--preset slide`, Word/PDF `a4`, Feishu cards `square`.
+
+A standalone `.html` file is not an extension block: it is screenshotted whole as PNG (fullPage, PNG only) through a different path — see [Whole-page HTML screenshots](HUMAN_GUIDE.en.md#whole-page-html-screenshots).
+
 ---
 
 ## table

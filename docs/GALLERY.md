@@ -60,7 +60,7 @@
 node --experimental-transform-types --no-warnings scripts/make-gallery.ts
 ```
 
-脚本会读取案例源码，写入三套主题的分场景图、报告卡与信息卡、3 张信息卡 tone 图，以及两张总览图。`vendored-*.png` 是 v1.4.2 的手绘 HTML 原始样张。
+脚本会读取案例源码，写入三套主题的分场景图、报告卡与信息卡、3 张信息卡 tone 图，以及两张总览图。`vendored-*.png` 是 v1.4.2 的手绘 HTML 原始样张，可用 `mmdx tests/editorial-showcase/layer-stack.html --scale 3` 一类命令从 `tests/` 源码重出。
 
 单独渲染其中一张：
 

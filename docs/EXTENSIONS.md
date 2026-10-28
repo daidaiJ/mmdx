@@ -6,6 +6,10 @@
 
 mermaid 二十种图型拼图：Pele [contact-sheet-pele.png](../tests/contact-sheet-pele.png)、mermaid [contact-sheet-mermaid.png](../tests/contact-sheet-mermaid.png)（`bun scripts/make-contact-sheet.ts`）。
 
+画幅：贴聊天/窄栏用 `--preset column`（800px@2、字号 18、标签换行 200px，2K 屏约 1/3 栏宽），扩展块按该画幅排版。`--json.warnings` 里 `column-shrink`（mermaid 图或 ` ```chart ` 的内在宽度超过 800px、会被 CSS 缩小）与 `column-landscape`（源是 `flowchart LR/RL`）是这条画幅的越界提示。贴 PPT 用 `--preset slide`，Word/PDF 用 `a4`，飞书卡片用 `square`。
+
+独立 `.html` 文件不属于扩展块：整页原样截图为 PNG（fullPage，只出 PNG），走的是另一条路径，见 [HTML 整页截图](HUMAN_GUIDE.md#html-整页截图)。
+
 ---
 
 ## table

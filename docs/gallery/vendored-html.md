@@ -7,7 +7,9 @@
 - **editorial**：来自 `diagram-design`，paper/ink 色板、4px 网格、衬线标题、mono 小标签、手绘 SVG。
 - **visual-explainer**：来自 `visual-explainer` 的 `paper` register，暖纸底、Newsreader 衬线标题、Atkinson 正文、墨蓝强调、10px 圆角。
 
-它们都走「手写自包含 HTML → `mmdx file.html --scale 3`」导出，和当前 v2 的围栏/主题管线不同。
+它们都走「手写自包含 HTML → `mmdx page.html --scale 3`」导出，和当前 v2 的围栏/主题管线不同。
+
+导出这条链路的三项能力（v1.4.0–v1.4.2）：整页 `.html` 原样截图为 PNG（fullPage，只出 PNG，页面自带样式/脚本/背景全保留，`--width` 是布局视口，页面显式更窄的 `body` 宽优先）；三套内嵌中文字体——Noto Sans SC 黑体（默认）、Noto Serif SC 宋体（serif 栈与 `serif` 泛型的 CJK 兜底）、霞鹜文楷楷体（`'LXGW WenKai'`，手绘标注显式声明）；导出时自动跑 figure lint（`figure-overflow` / `figure-text-overlap` / `figure-text-adhesion` / `figure-small-text` / `figure-uncaptioned` / `svg-aria-label`），结果进 `--json.warnings`。两项样张都是 lint warnings = 0。
 
 ## editorial（diagram-design）
 
@@ -19,7 +21,7 @@
 
 **避免**：高频周报、密集数据表、需要逐像素对齐的合规材料。
 
-**当前近似**：`excalidraw` 承接手绘线条与粉彩手感；`openai` 承接克制配色与发丝边框。精确的 paper 色板与 4px 网格需要 v1.4.2 的 HTML 导出链路。
+**当前近似**：`excalidraw` 承接手绘线条与粉彩手感；`openai` 承接克制配色与发丝边框。这些只是围栏主题的近似；要原版 paper 色板与 4px 网格，直接走下面的 HTML 导出。
 
 ## visual-explainer（paper register）
 
@@ -44,15 +46,14 @@
 
 ## 复现
 
-原始手绘 HTML（需要 v1.4.2 的 HTML 导出链路）：
+原始手绘 HTML（源文件在 `tests/`，需要用当前二进制重出样张时）：
 
 ```bash
-git checkout v1.4.2
 mmdx tests/editorial-showcase/layer-stack.html -o out/editorial.png --scale 3
 mmdx tests/explain-e2e/cache-read-path.html -o out/explain.png --scale 3
 ```
 
-当前 v2 的近似做法：
+只想在围栏管线里近似那种观感：
 
 ```bash
 mmdx card --in note.md -t openai --tone paper -o out/editorial-like.png

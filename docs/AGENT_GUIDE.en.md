@@ -2,9 +2,21 @@
 
 # mmdx — Agent Guide
 
-Office diagram CLI. Renders fenced blocks to PNGs you can paste into PPT / Word / Feishu. Themes, CJK font, Pele layout, and padding are built in. **Do not hand-style diagram code; do not freehand SVG.**
+Office diagram CLI. Renders fenced blocks to PNGs you can paste into PPT / Word / Feishu. Themes, CJK font, Pele layout, and padding are built in. **Do not hand-style diagram code.**
 
-> Human-readable version: [HUMAN_GUIDE.en.md](HUMAN_GUIDE.en.md) · Extension gallery: [EXTENSIONS.en.md](EXTENSIONS.en.md) · Overview: [README](../README.en.md)
+> Human-readable version: [HUMAN_GUIDE.en.md](HUMAN_GUIDE.en.md) · Extension gallery: [EXTENSIONS.en.md](EXTENSIONS.en.md) · On-demand references: [skill/references/](../skill/references/) (fence syntax / diagram examples / themes & engines / troubleshooting) · Overview: [README](../README.en.md)
+
+## Scene tiers (pick the tier before writing)
+
+| Tier | Scene | Path | Output | Cost |
+| --- | --- | --- | --- | --- |
+| **Fast** (default) | Process / approval / light data / layout blocks — weekly pastes, projection, high-frequency acceptance | Fences (mermaid types + extension blocks) per [diagram picking](#diagram-picking) | PNG @2x; vector SVG for mermaid types | ~0.3–1.5k tokens, seconds |
+| **Polished** (rare) | Covers / proposal art — editorial feel, one-off | Hand-drawn HTML ([vendored diagram-design specs](../skill/editorial/README.md)) → [HTML export](#html-export) | PNG @3x | ~10–20k tokens, minutes |
+| **Narrative** (rare) | Multi-figure explainers / diff·plan review pages / recaps / slide decks | HTML assembled from an explain starter ([vendored visual-explainer specs](../skill/explain/README.md)) → the same export command | PNG @3x | minutes |
+
+Every tier exports through mmdx — one rasterization, supersampled, embedded CJK type — so sharpness is a construction guarantee. For more fidelity add `--scale 3`; never upscale an exported PNG.
+
+**Guardrail**: office output defaults to the fast tier; don't drop to hand-drawn HTML to dodge fence discipline (budgets and pixel sweeps only hold inside the fence system). The polished / narrative tiers are for "HTML already exists" exports or one-offs that genuinely need editorial or explainer feel.
 
 ## Get the binary (by priority)
 
@@ -40,6 +52,8 @@ Before drawing, state in one or two sentences: type, `--preset` (if any), what t
 ```bash
 # L0 office default: PNG + slide frame
 mmdx doc.md --preset slide --title "Q1 mix" --unit "CNY wan" --source "Finance"
+# L0 chat / narrow column: 800px@2 (about 1/3 of a 2K display, tighter label wrap)
+mmdx doc.md --preset column
 # L1 batch / targeted
 mmdx a.md b.md -o dist/ --preset slide
 mmdx doc.md --index 2 -f png
@@ -49,9 +63,35 @@ echo "graph LR; A-->B" | mmdx - -f png
 mmdx card --in note.md -t openai --tone neutral --width 600 -o card.png
 ```
 
-Chat/slides: `-f png` or `--preset slide|a4|square` (preset defaults to png unless `-f` is explicit). **Projection / PPT / all-hands / big screen** must use `--preset slide` (18px type + heavier strokes) plus `--title`. Do not hand-tune contrast with `--css`; do not project a dark page in a meeting room. Feishu cards: `square`. Word: `a4`. `both` is for developers embedding Markdown. Explicit `--width`/`--scale`/`-f` override the preset. Brand: `--brand #2563EB` (accent only; skip washed-out light blues on a projector).
+Chat/slides: `-f png` or `--preset slide|a4|square|column` (preset defaults to png unless `-f` is explicit). **Projection / PPT / all-hands / big screen** must use `--preset slide` (18px type + heavier strokes) plus `--title`. Do not hand-tune contrast with `--css`; do not project a dark page in a meeting room. Chat / narrow column: `--preset column` (800px@2, 18px type, 200px label wrap) with `flowchart TD` — do not raise `--width` (smaller type after scaling). Feishu cards: `square`. Word: `a4`. `both` is for developers embedding Markdown. Explicit `--width`/`--scale`/`-f` override the preset. Brand: `--brand #2563EB` (accent only; skip washed-out light blues on a projector). `column-landscape` / `column-shrink` in `--json.warnings` → switch to `flowchart TD` or split.
 
 Default `--engine pele`. For ELK or Mermaid-only syntax use `--engine mermaid` (or `--layout elk`, which selects Mermaid automatically); when unsure use `--engine auto`. `-f svg` bakes colors by default; `--svg-themeable` keeps CSS variables.
+
+## HTML export
+
+Trigger: the user hands you / asks for an HTML file to "export / screenshot / turn into PNG", or wants an editorial cover or a narrative explainer.
+
+```bash
+mmdx page.html -o out/page.png --scale 3    # 3x for print / large screens; 2 is enough for PPT
+mmdx page.html --background transparent     # transparent only when passed
+```
+
+- Only standalone `.html` / `.htm` files; a ` ```html ` fence inside `.md` does **nothing**. Page styles, scripts, and background are kept; Chinese is filled by the three bundled families (sans body text, serif-stack Chinese to the serif face, explicit `'LXGW WenKai'` for kai), while CJK webfonts the page declares itself still win. `--width` is the layout viewport; an explicit narrower `body` width wins
+- PNG only: an explicit `-f svg` still writes PNG and prints `... renders to PNG only`
+- **Figure lint runs automatically** on export; findings land in `--json.warnings` — fix the source by coordinates until zero
+- **Editorial cover / proposal art**: read [skill/editorial](../skill/editorial/README.md) (diagram-design specs, MIT), hand-draw a self-contained HTML per its general rules + the matching `references/type-*.md`, then export
+- **Explainer / review page / recap / slide deck**: copy a [skill/explain](../skill/explain/README.md) `kit/starter-<register>.html` (instrument / blueprint / paper / editorial; kit and Latin fonts already inlined) → edit `<main>` → the same export command. Pre-render in-page mermaid with `mmdx - -f svg` and inline it as-is (never add a second `style` attribute to that svg — HTML drops the duplicate and the `--pele-*` theme vars with it). Starters are generated by `bun run scripts/explain-starter.ts`, which uses `import.meta.dir` and needs bun; run it only to regenerate starters
+- **Guardrail**: don't hand-write HTML to dodge fences — budgets and pixel sweeps do not apply to arbitrary HTML; the hand-drawn path is for "HTML already exists" or one-offs that need editorial / narrative feel
+
+Figure-lint codes and fixes:
+
+| Code | Fix |
+| --- | --- |
+| `figure-overflow` | Widen the `viewBox` or pull the element back inside |
+| `figure-text-overlap` | Move the label; put a node's own label and its shape in one `<g>` |
+| `figure-text-adhesion` | Gap to a box under max(4px, 35% of the font size): shorten the label, spread it out, or raise it |
+| `figure-small-text` | Enlarge the canvas or the type (<11px reads as illegible) |
+| `figure-uncaptioned` / `svg-aria-label` | Add a `figcaption` (stating the claim) or an svg `aria-label` |
 
 ## Diagram picking
 
@@ -110,6 +150,8 @@ One JSON on stdout: `theme/engine/layout/format/background/preset?/brand?/fallba
 | `config "…" is not supported by the pele engine` | Key outside the whitelist | Colors via `--theme-js`; size/spacing via `fontSize` / `flowchart.*` |
 | exit 2 | Usage error | Compare against `mmdx --help` |
 | SVG loses color in Office | `--svg-themeable` used | Drop the flag, or use `-f png` |
+| `.html` input with `-f svg` prints `renders to PNG only` | Normal degradation | Whole-page shots are PNG only; use mermaid SVG for vectors |
+| `figure-*` / `svg-aria-label` warnings on `.html` input | Hand-drawn figure geometry or structure | Fix the source by figure number and coordinates until `--json.warnings` is empty |
 
 Rule of thumb: **exit 2 = wrong flags; exit 1 = wrong diagram or over limit; look the error up before reinstalling anything**.
 

@@ -18,6 +18,9 @@
 | 🖼 Extension blocks | [docs/EXTENSIONS.en.md](docs/EXTENSIONS.en.md) | One tool-rendered PNG + syntax per fence |
 | 🎭 Style gallery | [docs/GALLERY.en.md](docs/GALLERY.en.md) | One case across three styles: flowchart / KPI / cards / table |
 | 🧪 Quality gates | [docs/QUALITY.en.md](docs/QUALITY.en.md) | Pixel-lint coverage, known blind spots, pre-release license checklist |
+| 🖋 Hand-drawn editorial specs | [skill/editorial/](skill/editorial/README.md) | Vendored diagram-design specs (MIT): hand-draw covers / proposal art per its specs and export with `mmdx file.html --scale 3` |
+| 📃 Narrative explainer specs | [skill/explain/](skill/explain/README.md) | Vendored spec-only adaptation of visual-explainer (MIT): explainers / review pages / recaps / slide decks assembled from a starter, exported with the same command |
+| 📚 Skill reference cards | [skill/references/](skill/references/) | Fence syntax, diagram examples, themes & engines, troubleshooting — read on demand |
 | 📜 Changelog | [CHANGELOG.md](CHANGELOG.md) | Release history |
 
 Every doc is Chinese-first with an English `.en.md` sibling of the same name.
@@ -26,10 +29,13 @@ Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 
 - **Pele default engine**: Obsidian's Mermaid→SVG renderer, 1–50 ms per diagram; Mermaid 11 + ELK retained as `--engine mermaid` fallback
 - **CSS-variable themes**: Pele exposes every color/font/radius as `--pele-*`; `-f svg` bakes hex by default, `--svg-themeable` keeps a re-themeable SVG; three presets share shape coding (blue = process, amber = decision, green = state, purple = storage)
-- **Bundled CJK font**: Noto Sans SC subset (full GB2312 + Latin, only 1.9 MB) — identical rendering on any machine, correct wrapping for Chinese labels
+- **Bundled CJK fonts (three families)**: GB2312 subsets of Noto Sans SC (universal), Noto Serif SC (serif stacks), and LXGW WenKai (kai labels) — ~6.2 MB total, identical rendering on any machine, correct wrapping for Chinese labels; the serif/kai faces and the `sans-serif` / `serif` CJK fallback aliases are injected for authored HTML documents only — fences and mermaid keep the sans face alone
 - **Pixel-level even padding**: every image is re-cropped to its ink bounding box; symmetric margins are a construction guarantee, not the engine's unreliable viewBox
 - **Extension blocks**: ```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane straight to PNG
-- **Office delivery**: `--preset slide|a4|square`, title/source/unit chrome, `--brand` accent; agent-friendly `--json` (including `warnings`)
+- **Office delivery**: `--preset slide|a4|square|column`, title/source/unit chrome, `--brand` accent; agent-friendly `--json` (including `warnings`)
+- **Whole-page HTML shots**: `mmdx page.html` screenshots the page as-is to PNG (fullPage, PNG only) — system Edge, no Playwright, the page keeps its own styles/scripts/background; pairs with the vendored [diagram-design](skill/editorial/README.md) specs for hand-drawn editorial images
+- **Figure lint**: exporting a `.html` input inspects every figure — overflow (`figure-overflow`), text on shape/text (`figure-text-overlap`), adhesion (`figure-text-adhesion`), effective font size <11px (`figure-small-text`), missing caption (`figure-uncaptioned`), missing `aria-label` (`svg-aria-label`); messages carry coordinates and land in `--json.warnings`
+- **explain narrative tier**: `skill/explain/` ships four register starters (instrument / blueprint / paper / editorial) with the kit design system and Latin fonts already inlined — copy one, edit the body, `mmdx name.html --scale 3`
 
 ## 🚀 Quick start
 
@@ -66,11 +72,12 @@ The default engine is Pele. Use `--engine mermaid` for ELK or Mermaid-only synta
 ```bash
 mmdx a.md b.md other/*.md -o dist/          # multi-file batch, parallel
 mmdx diagram.mmd -o out/arch.svg            # exact name; sibling .png written alongside
+mmdx page.html -o out/page.png --scale 2    # whole-page HTML screenshot (Playwright-free)
 mmdx report.md --index 2 --title "Architecture" --title-pos bottom
 mmdx doc.md -t tech --background transparent -f png --json
 ```
 
-Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` / `kpi` / `compare` / `vs` / `funnel` / `task` / `progress` / `gauge` / `heatmap` / `swimlane` (extension blocks, PNG only). For slides: `mmdx doc.md --preset slide --title "…" --source "…"`.
+Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` / `kpi` / `compare` / `vs` / `funnel` / `task` / `progress` / `gauge` / `heatmap` / `swimlane` (extension blocks, PNG only). For slides: `mmdx doc.md --preset slide --title "…" --source "…"`. For chat / a narrow column: `--preset column`. Standalone `.html` files are screenshotted whole (own styles and background kept, bundled CJK font fills the fallback chain) — see [HUMAN_GUIDE](docs/HUMAN_GUIDE.en.md#whole-page-html-screenshots).
 
 **Card wall** — a ```card fence, one card per line: `emoji | title | description` (emoji and description optional):
 
@@ -99,6 +106,17 @@ mmdx card --url https://example.com/post -t openai --tone paper
 ```
 
 Layering order: preset → `--brand` → `--theme-js` → `--config` → `--css`. v2 `--theme-js` receives a `ThemeSpec` (`theme.vars` / `theme.shapes` / `theme.css`); examples in the [HUMAN_GUIDE theming section](docs/HUMAN_GUIDE.en.md#theming).
+
+## 🖋 Hand-drawn HTML & explain
+
+`mmdx page.html --scale 3` is the single export path for hand-authored HTML: the page is screenshotted as-is, keeping its own styles/scripts/background, with the three bundled CJK families filling the fallback. Two vendored specs (MIT) sit at different tiers:
+
+| Tier | Spec | How to use |
+| --- | --- | --- |
+| Editorial cover / proposal art | [skill/editorial/](skill/editorial/README.md) (diagram-design) | Hand-draw a self-contained HTML per its general rules + `references/type-*.md`, then `mmdx name.html --scale 3` |
+| Narrative explainer / review page / recap / slide deck | [skill/explain/](skill/explain/README.md) (spec-only adaptation of visual-explainer) | Copy `skill/explain/kit/starter-<register>.html` (instrument / blueprint / paper / editorial) → edit the body → `mmdx name.html --scale 3` |
+
+Starters already inline the kit design system and that register's Latin fonts, so the head needs no edits; in-page mermaid is pre-rendered with `mmdx - -f svg` and inlined. Export runs figure lint automatically — fix `--json.warnings` to zero before shipping. The starter generator `scripts/explain-starter.ts` relies on bun's `import.meta.dir` and is only needed to regenerate starters.
 
 ## 🎭 Style gallery
 
@@ -131,7 +149,7 @@ Tuning knobs (concurrency, viewport, scale) in the [HUMAN_GUIDE performance sect
 `bun run tests/run.ts`, four layers — visual review only looks at items the script flags as suspicious:
 
 1. **Library sweep**: 20 mermaid diagram types + table/list/card, rendered in one browser session, then pixel-analyzed (margin symmetry ±8px, content ratio, bottom blank band, blank-image detection)
-2. **CLI behavior**: exit codes, `--index` naming, bad-block isolation, stdin, JSON contract, multi-file 4-concurrency batch
+2. **CLI behavior**: exit codes, `--index` naming, bad-block isolation, stdin, JSON contract, figure-lint warnings for `.html` input, multi-file 4-concurrency batch
 3. **Info cards**: Markdown/web extraction, width, pixel-height splitting, tone structure differences
 4. **Visual lint**: DOM overflow/outside elements/caption overlap, SVG label overflow, rendered contrast, PNG edge clipping, two-run determinism; rules in [docs/QUALITY.en.md](docs/QUALITY.en.md)
 
