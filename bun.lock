@@ -5,8 +5,6 @@
     "": {
       "name": "mmdx",
       "dependencies": {
-        "@mermaid-js/layout-elk": "^0.2.3",
-        "mermaid": "^11.17.2",
         "pele": "1.9.0",
         "pngjs": "^7.0.0",
         "roughjs": "^4.6.6",

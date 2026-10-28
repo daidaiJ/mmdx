@@ -10,9 +10,7 @@ import { fileURLToPath } from 'node:url';
 const PKG_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 export interface Assets {
-  mermaidJs: string;
-  elkJs: string;
-  /** Pele browser bundle (v2 default engine) */
+  /** Pele browser bundle (the only engine) */
   peleJs: string;
   /** rough.js UMD bundle, loaded only by hand-drawn themes */
   roughJs: string;
@@ -29,8 +27,6 @@ async function fromGenerated(): Promise<Assets | null> {
     // build-time generated module (scripts/build.ts); committed as an empty
     // stub so the import always resolves
     const g = (await import('./embed.generated.js')) as {
-      MERMAID_JS: string;
-      ELK_JS: string;
       PELE_JS?: string;
       ROUGH_JS?: string;
       FONT_B64: string | null;
@@ -39,11 +35,9 @@ async function fromGenerated(): Promise<Assets | null> {
       BUILD_VERSION?: string | null;
     };
     // the committed stub is empty — that means "not built", fall back to files
-    if (g.MERMAID_JS) {
+    if (g.PELE_JS) {
       return {
-        mermaidJs: g.MERMAID_JS,
-        elkJs: g.ELK_JS,
-        peleJs: g.PELE_JS ?? '',
+        peleJs: g.PELE_JS,
         roughJs: g.ROUGH_JS ?? '',
         fontB64: g.FONT_B64,
         fontSerifB64: g.FONT_SERIF_B64 ?? null,
@@ -84,10 +78,6 @@ export async function loadAssets(): Promise<Assets> {
     return fs.existsSync(p) ? fs.readFileSync(p).toString('base64') : null;
   };
   return {
-    mermaidJs: read('vendor/mermaid.min.js'),
-    elkJs: fs.existsSync(path.join(PKG_DIR, 'vendor/elk.bundle.mjs'))
-      ? read('vendor/elk.bundle.mjs')
-      : '',
     peleJs: fs.existsSync(path.join(PKG_DIR, 'vendor/pele.global.js'))
       ? read('vendor/pele.global.js')
       : '',

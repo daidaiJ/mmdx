@@ -18,11 +18,11 @@ fs.mkdirSync(OUT, { recursive: true });
 const preset = PRESETS[DEFAULT_THEME as keyof typeof PRESETS];
 const config = JSON.parse(JSON.stringify(preset.config)) as Record<string, unknown>;
 const theme = getTheme(DEFAULT_THEME);
-const r = await Renderer.create(await loadAssets(), { layout: 'elk', scale: 2, width: 1200 });
+const r = await Renderer.create(await loadAssets(), { scale: 2, width: 1200 });
 const render = (code: string, needPng: boolean): Promise<{ svg: string; png?: Buffer }> =>
   r.render({
-    code, engine: 'pele', background: '#FFFFFF', needPng, scale: 2, width: 1200,
-    layout: 'elk', theme, mermaidConfig: config, fontSize: 15, padding: 0,
+    code, background: '#FFFFFF', needPng, scale: 2, width: 1200,
+    theme, mermaidConfig: config, fontSize: 15, padding: 0,
     svgThemeable: false, titlePos: 'top', titleText: '', remap: preset.remap,
   });
 

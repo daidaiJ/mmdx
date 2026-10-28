@@ -5,7 +5,7 @@ description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 
 
 # mmdx — 办公出图（结构图 + 轻量数据图 + 版式块 → PNG）
 
-把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG。主题、中文字体、Pele 布局、留白全部内置；默认 Pele 引擎，Mermaid + ELK 作为回退。**围栏路径不要手工调样式、不要让模型手绘 SVG、不要用 VSCode 插件**；手绘 HTML 只在外来 `.html` 导出与 editorial / explain 两条低频规格里用（§1c-4）。
+把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG。主题、中文字体、Pele 布局、留白全部内置；Pele 是唯一引擎（输入仍是 Mermaid 语法），没有第二引擎可切。**围栏路径不要手工调样式、不要让模型手绘 SVG、不要用 VSCode 插件**；手绘 HTML 只在外来 `.html` 导出与 editorial / explain 两条低频规格里用（§1c-4）。
 
 CLI 获取（按优先级）：
 
@@ -23,7 +23,7 @@ CLI 获取（按优先级）：
 - [`references/fences.md`](references/fences.md) — 扩展围栏语法速记 + 每围栏细则 + 能上会边界（写围栏前抄语法时）
 - [`references/recipes.md`](references/recipes.md) — 16 种 mermaid 图型最小示例 + 特殊画法（LR+TB 并列双流程、嵌套包含、组织架构、分层横切、对照式 timeline）
 - [`references/troubleshooting.md`](references/troubleshooting.md) — 报错速诊 / `--json.warnings` 处置 / 退出码（渲染失败时）
-- [`references/themes-engines.md`](references/themes-engines.md) — 主题选型 / 双引擎差别 / Pele 配置键（换主题或引擎时）
+- [`references/themes-engines.md`](references/themes-engines.md) — 主题与 tone 选型 / Pele 图型支持面 / `--config` 配置键 / `--theme-js`·`--css`·`--brand` 换色（换主题、调布局或改配色时）
 - [`explain/`](explain/README.md) — vendored visual-explainer 工程解释页规格（多图叙事页 / 评审页 / recap 动笔前；starter 装配式写作，页内图禁 JS 交互态）
 - [`editorial/`](editorial/README.md) — vendored diagram-design 手绘规格（偶发封面 / 方案插图动笔前）
 - [`info-card-designer/`](info-card-designer/SKILL.md) — URL / 文本 → 杂志感信息卡（`mmdx card`，见 §5b）
@@ -35,11 +35,9 @@ CLI 获取（按优先级）：
 ```bash
 mmdx --version
 echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --json --quiet
-# 需要 ELK / Mermaid 专属语法时再验回退：
-echo "graph LR; A-->B" | mmdx - -f png --engine mermaid -o "$TMP/mmdx-check-legacy" --json --quiet
 ```
 
-冒烟 JSON 且 `rendered:1` → 就绪；默认 `engine: "pele"`。`rendered:0` → §4 错误速诊。
+冒烟 JSON 且 `rendered:1` → 就绪；`engine` 恒为 `"pele"`。`rendered:0` → §4 错误速诊。
 
 ## 1. Agent Loop（选型 → 先砍再画 → 渲染 → 自检）
 
@@ -115,12 +113,9 @@ mmdx doc.md --index 2 -f png
 # L2 精确命名 / stdin
 mmdx doc.md -o out/arch.png
 echo "graph TD; A-->B" | mmdx - -f png --preset column
-# 需要 ELK 或 Mermaid 专属语法
-mmdx doc.md --engine mermaid           # 或 --layout elk（自动选中 mermaid）
-mmdx doc.md --engine auto              # 先 Pele，失败回退
 ```
 
-默认 `--engine pele`；`--layout` 只属于 Mermaid，传它会自动切 `--engine mermaid`，与显式 `--engine pele` 同时出现是参数冲突。`-f svg` 默认把颜色烘焙成 hex；要可换肤 SVG 加 `--svg-themeable`。
+只有 Pele 一个引擎，没有 `--engine` / `--layout` 开关；Pele 解析不了的写法直接 `Parsing error`（exit 1），改成等价图型。`-f svg` 默认把颜色烘焙成 hex；要可换肤 SVG 加 `--svg-themeable`。
 
 覆盖关系：显式 `--width` / `--scale` / `-f` 覆盖 preset 默认值。叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。
 
@@ -264,8 +259,8 @@ kpi 变化列默认**红涨绿跌**（可用 `--css` 覆盖）。progress 第一
 | `render timed out after 60s` | 资源紧张 | CLI 已重试；持续则 `--jobs 1` |
 | `icon pack "xxx" not found` | 网络不通 | 去掉 `--icon` |
 | 中文变方块 | 不应发生 | 检查 `--theme-js` 是否覆盖 fontFamily |
-| exit 1 + `Parsing error` / `pele: Parse error` / 超限信息 | **图或围栏写错** | 按信息修；Pele 不支持的写法加 `--engine mermaid` 或 `--engine auto` |
-| `--layout belongs to the mermaid engine` | 参数冲突 | 去掉 `--layout`，或改 `--engine mermaid` |
+| exit 1 + `Parsing error` / `pele: Parse error` / 超限信息 | **图或围栏写错** | 按信息修；改写为等价的可渲染图型，没有别的引擎可切 |
+| `unknown option --engine` / `--layout` | 1.x 遗留参数，已随第二引擎移除 | 去掉参数；间距用 `--config` 的 `flowchart.nodeSpacing` / `rankSpacing` |
 | `--theme-js v2 receives a ThemeSpec` | 1.x 换色脚本 | 改 `theme.vars` / `theme.shapes` |
 | `config "…" is not supported by the pele engine` | `--config` 白名单外 | 颜色用 `--theme-js`；字号/间距用 `fontSize` / `flowchart.*` |
 | HTML 输入 `-f svg` 提示 `renders to PNG only` | 正常降级 | 整页截图只有 PNG；要矢量走 mermaid 图型的 SVG |
@@ -346,8 +341,8 @@ mmdx card --in note.md -t excalidraw --tone paper -o explainer-like.png
 
 `--theme-js` 是 v2 契约 `(theme) => theme`，改 `theme.vars` / `theme.shapes` / `theme.css`；不要再写 `config.themeVariables`。`--config` 只接受 `fontSize` / `padding` / `flowchart.nodeSpacing|rankSpacing|padding`。
 
-从 1.x 迁移：`--theme-js` 脚本报错并提示；`--config` 的 `themeVariables` 被忽略；`--layout elk` 自动切 Mermaid。
+从 1.x 迁移：`--theme-js` 脚本报错并提示；`--config` 的 `themeVariables` 被忽略；`--layout elk` 已移除（按用法错误退出），布局靠 Pele 自身与 `--config` 间距键。
 
 ## 附录 — 开发文档场景（能渲染、不主推）
 
-sequence、state、class、ER、gitgraph、C4。办公选型不要从这里起。需要 ELK 或 Mermaid 专属语法时加 `--engine mermaid`；其余场景 Pele 已覆盖。
+sequence、state、class、ER、gitgraph、C4。办公选型不要从这里起。这些图型由 Pele 直接渲染，没有备选引擎；渲染不出来就改成 flowchart 或交给 [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。

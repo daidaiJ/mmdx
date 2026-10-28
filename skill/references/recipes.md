@@ -128,7 +128,7 @@ mindmap
       PNG
     主题
       tech
-      sketch
+      excalidraw
 ```
 
 ```mermaid
@@ -170,13 +170,13 @@ kanban
 ```
 ````
 
-C4：`C4Context` / `C4Container`（深色块 + 小人需 `--engine mermaid`，默认 Pele 画成浅色办公卡）。`xychart` **不要手写**——趋势/柱状走 ` ```chart ` 围栏（有预算检查和图题层）。
+C4：`C4Context` / `C4Container`（Pele 画成浅色办公卡——person 是圆角卡、system/container 走 `process` 填色、`_Ext` 外部元素白底虚线框；单个元素要换色用源码里的 `UpdateElementStyle(id, $bgColor="#…", $borderColor="#…")`）。`xychart` **不要手写**——趋势/柱状走 ` ```chart ` 围栏（有预算检查和图题层）。
 
 ## 二、特殊画法（组合版式，已验证）
 
 ### 1. 一图两个并列流程，方向各异（LR + TB 混排）
 
-subgraph 内 `direction` 各自生效——**仅默认 Pele 引擎支持**；`--engine mermaid`（ELK）会忽略 `direction`，两块都变纵向。
+subgraph 内 `direction` 各自生效：横向组与纵向组可以并排，两组都按各自方向排版。这是 Pele 的默认行为，没有第二个引擎，也不需要额外参数。
 
 ````markdown
 ```mermaid

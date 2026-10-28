@@ -4,7 +4,7 @@
 
 办公出图 CLI。把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG；主题、中文字体、Pele 布局、留白全部内置。**不要在图代码里手工调样式，不要用手绘 SVG。**
 
-> 人类阅读版：[HUMAN_GUIDE.md](HUMAN_GUIDE.md) · 扩展块图鉴：[EXTENSIONS.md](EXTENSIONS.md) · 按需参考：[skill/references/](../skill/references/)（围栏语法 / 图型示例 / 主题与引擎 / 排障） · 项目概览：[README](../README.md)
+> 人类阅读版：[HUMAN_GUIDE.md](HUMAN_GUIDE.md) · 扩展块图鉴：[EXTENSIONS.md](EXTENSIONS.md) · 按需参考：[skill/references/](../skill/references/)（围栏语法 / 图型示例 / 主题与 Pele 配置 / 排障） · 项目概览：[README](../README.md)
 
 ## 场景分级（先选档，再动笔）
 
@@ -65,7 +65,7 @@ mmdx card --in note.md -t openai --tone neutral --width 600 -o card.png
 
 聊天/幻灯片 `-f png` 或 `--preset slide|a4|square|column`（preset 未显式 `-f` 时默认 png）。**投屏 / PPT / 上会 / 周会 / 大屏** 必须 `--preset slide`（字号 18 + 加粗描边），并带 `--title`；不要用 `--css` 手调对比度，也不要把深色页面投会议室。聊天/窄栏用 `--preset column`（800px@2，字号 18、标签换行 200px），流程图用 `TD`——不要加宽 `--width`（缩完字更小）。飞书卡片 `square`，Word `a4`。`both` 仅开发者嵌 Markdown。显式 `--width`/`--scale`/`-f` 覆盖 preset。跟 VI：`--brand #2563EB`（只改强调色；投影不要用过浅的蓝）。`--json.warnings` 出现 `column-landscape` / `column-shrink` → 改 `flowchart TD` 或拆图。
 
-默认 `--engine pele`。需要 ELK 或 Mermaid 专属语法：`--engine mermaid`（或 `--layout elk`，会自动选中 Mermaid）；不确定时 `--engine auto`。`-f svg` 默认烘焙颜色，`--svg-themeable` 才保留 CSS 变量。
+只有 Pele 一个引擎，没有 `--engine` / `--layout` 开关；Pele 解析不了的写法直接 `Parsing error`（exit 1），改写成等价图型。`-f svg` 默认烘焙颜色，`--svg-themeable` 才保留 CSS 变量。
 
 ## HTML 文件导出
 
@@ -134,7 +134,7 @@ figure lint 处置表：
 
 ## JSON 契约（--json）
 
-stdout 单份 JSON：`theme/engine/layout/format/background/preset?/brand?/fallbacks?/caption?/blocks/rendered/failed/files[]/errors[]/warnings[{input,index,code,message}]`；加 `--profile` 时附 `profile`。非 JSON 模式 stdout 逐行产物路径。
+stdout 单份 JSON：`theme/engine/format/background/preset?/brand?/caption?/blocks/rendered/failed/files[]/errors[]/warnings[{input,index,code,message}]`（`engine` 恒为 `"pele"`）；加 `--profile` 时附 `profile`。非 JSON 模式 stdout 逐行产物路径。
 
 ## 错误速诊
 
@@ -144,8 +144,8 @@ stdout 单份 JSON：`theme/engine/layout/format/background/preset?/brand?/fallb
 | `render timed out after 60s` | 资源紧张/假死 | CLI 已自动重试；持续则 `--jobs 1` |
 | `icon pack "xxx" not found` | 网络不通（unpkg） | 去掉 `--icon` 或先联网跑一次用缓存 |
 | 中文变方块 | 不应发生（内置字体） | 检查 `--config`/`--theme-js` 是否覆盖 fontFamily |
-| `Parsing error` / `pele: Parse error` / 超限信息（exit 1） | **图或围栏写错** | 按信息修图；Pele 不支持的写法加 `--engine mermaid` 或 `--engine auto` |
-| `--layout belongs to the mermaid engine` | 参数冲突 | 去掉 `--layout`，或改 `--engine mermaid` |
+| `Parsing error` / `pele: Parse error` / 超限信息（exit 1） | **图或围栏写错** | 按信息修图；改写为等价的可渲染图型，没有别的引擎可切 |
+| `unknown option --engine` / `--layout` | 1.x 遗留参数，已随第二引擎移除 | 去掉参数；间距用 `--config` 的 `flowchart.nodeSpacing` / `rankSpacing` |
 | `--theme-js v2 receives a ThemeSpec` | 1.x 换色脚本 | 改 `theme.vars` / `theme.shapes` |
 | `config "…" is not supported by the pele engine` | `--config` 白名单外 | 颜色用 `--theme-js`，字号/间距用 `fontSize` / `flowchart.*` |
 | exit 2 | 参数用法错误 | `mmdx --help` 对照 |

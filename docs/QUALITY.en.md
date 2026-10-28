@@ -21,7 +21,7 @@ This file records what the render-output lint covers, where the known blind spot
 - **Readable report**: `scripts/lint-visuals.ts` renders the flowchart and card block of every theme (`tech` / `openai` / `excalidraw`), printing measured margins, thresholds and issues line by line.
 - **Contracts**: required `ThemeSpec` fields, `shapeCoverage`, `--style-fill`, block CSS, CLI exit codes/naming/JSON/concurrency.
 
-Current baseline: `146/146 passed`. Measured at 2x: a 44,548px-tall list ended 51px above the image bottom; a 56,952px-tall flowchart ended 22px above it; two consecutive Excalidraw flowchart renders had zero pixel difference.
+Current baseline: `148/148 passed`. Measured at 2x: a 44,548px-tall list ended 51px above the image bottom; a 56,952px-tall flowchart ended 22px above it; two consecutive Excalidraw flowchart renders had zero pixel difference.
 
 The contrast gate requires `fg` ≥ 4.5:1 and `muted` / `accent` / `critical` ≥ 3.0:1 for every theme; `tech` / `openai` / `excalidraw` all pass, with the lowest value being `excalidraw`'s `muted` at 3.32:1.
 
@@ -29,7 +29,7 @@ The contrast gate requires `fg` ≥ 4.5:1 and `muted` / `accent` / `critical` �
 
 | Scenario | Today | Target |
 | --- | --- | --- |
-| Very tall screenshots | Bottom-band rule + 40-row fixture | Cover 1x/2x, `--preset slide`, the 16,000px viewport cap, Mermaid fallback, extreme aspect ratios |
+| Very tall screenshots | Bottom-band rule + 40-row fixture | Cover 1x/2x, `--preset slide`, the 16,000px viewport cap, extreme aspect ratios |
 | Text overflow | HTML blocks check `scrollWidth/clientWidth`; SVG labels check screen rects | Direct `getComputedTextLength()` comparison, long Latin tokens, unbreakable CJK |
 | Horizontal overflow | Root and clipping containers checked | Cover table cells, wide `overflow:visible` content, card grid columns |
 | Caption collision | Block-page captions checked | Cover mermaid internal titles, `--title` chrome vs SVG bounds |
@@ -42,7 +42,7 @@ The contrast gate requires `fg` ≥ 4.5:1 and `muted` / `accent` / `critical` �
 Order of work:
 
 1. Run `auditLayout` from `src/lint.ts` across all 12 block types and the slide preset; fix false positives, then freeze fixtures.
-2. Add SVG text metrics for mermaid output: fail when `getComputedTextLength()` exceeds the node width.
+2. Add SVG text metrics for mermaid output: fail when `getComputedTextLength()` exceeds the node width. (Pele's native `<text>` is already covered; a `foreignObject` path would need its own DOM measurement.)
 3. Add golden baselines once CI pins Chromium and fonts; follow Playwright's per-platform layout with pixelmatch `threshold=0.1` and `maxDiffPixels` at 0.1%.
 4. Extend `scripts/lint-visuals.ts` to every diagram type and the slide preset, not just flowcharts and cards.
 5. Keep measured values and thresholds in failure messages instead of PASS/FAIL only.
@@ -61,7 +61,7 @@ Threshold rule: fixed padding uses absolute pixels (90px at 2x); content-height 
 ## Before release: licenses and attribution
 
 - The component, font, and design-reference inventory is in [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).
-- Full EPL-2.0, Apache-2.0, and OFL-1.1 texts are in [`licenses/`](../licenses/).
+- Full Apache-2.0 and OFL-1.1 texts are in [`licenses/`](../licenses/); the leftover Mermaid / ELK license files cover earlier releases only — those components no longer ship.
 - Release archives must include `THIRD_PARTY_NOTICES.md`, `licenses/`, and the binary.
 - After dependency upgrades or new scenario templates, verify the upstream license before updating the inventory.
 - Regenerate the transitive dependency list from the lockfile before publishing and confirm no copyleft component is missing.

@@ -1,8 +1,10 @@
 # 后续：从同类「文本 → 图」里抽布局/配色，不引入第二套语法
 
+> **2026-10-28 补记：** Mermaid/ELK 回退已在 2.x 移除，Pele 是唯一引擎——`--engine`、`--layout` 不再存在。下文凡提到 `--engine`、`--layout`、mermaid 回退或 ELK 的部分都只是当时的调研记录，不是当前选项。
+
 > 状态：调研 · 2026-10-23  
-> 前提：mmdx 默认 Pele、mermaid+ELK 作回退；输入仍是 mermaid 围栏 + 办公扩展块  
-> 对照实测：同一份 `tests/diagrams`，见 [contact-sheet-pele.png](../tests/contact-sheet-pele.png) / [contact-sheet-mermaid.png](../tests/contact-sheet-mermaid.png)
+> 前提：mmdx 默认 Pele、mermaid+ELK 作回退（该回退已在 2.x 移除）；输入仍是 mermaid 围栏 + 办公扩展块  
+> 对照实测（历史记录，mermaid 一版已随第二引擎删除）：同一份 `tests/diagrams`，见 [contact-sheet-pele.png](../tests/contact-sheet-pele.png)
 
 ## 结论先行
 
@@ -10,7 +12,7 @@
 
 值得抽的是它们已经做对、而 mmdx 还只做了一半的**底层旋钮**：
 
-1. **语法与布局引擎解耦**（D2：dagre / ELK / TALA；mmdx 已有 `--engine`）
+1. **语法与布局引擎解耦**（D2：dagre / ELK / TALA；mmdx 曾有 `--engine`，2.x 已移除）
 2. **边路由作为一等配置**（Graphviz `splines=`、ELK `ORTHOGONAL|SPLINES`）
 3. **语义角色上色**（C4 person/system/external，不是「所有 rect 一色」）
 4. **先测文字再排版**（Pele / 正确的 sequence 字号；mermaid 全局 `fontSize` 不进 sequence 布局是反例）
@@ -33,7 +35,7 @@ GitHub 上热门的 mermaid skill / MCP 大多是「模型写 mermaid + 调 merm
 
 Graphviz 把 `splines=spline|ortho|polyline|curved` 做成图属性；ELK 有 `edgeRouting=ORTHOGONAL|POLYLINE|SPLINES`（SPLINES 的控制点按分段三次样条解释）。mermaid+ELK 现在仍偏折角，即使 `flowchart.curve: basis`。
 
-可做：在 `--engine mermaid` 的 ELK 配置里打开 splines（或 layered 的 sloppy spline 模式），作为 Pele 之外的折线补丁。不换语法。**未在本仓库实测 mermaid-layout-elk 是否暴露该 option**，实施前要用 `tests/diagrams/flowchart.md` 打一枪。
+可做（历史方案，`--engine mermaid` 已移除，仅存档）：在 mermaid 回退的 ELK 配置里打开 splines（或 layered 的 sloppy spline 模式），作为 Pele 之外的折线补丁。不换语法。**未在本仓库实测 mermaid-layout-elk 是否暴露该 option**。
 
 ### 2. 语义角色 → token，而不是按 SVG 标签上色 — 优先（Pele C4 / mindmap）
 
@@ -58,8 +60,8 @@ Pele 根上已是 CSS 变量；`tech` 从 themeVariables 派生。diagram-design
 ## 实施顺序（有空再拆任务）
 
 1. Pele：C4 / mindmap 类名映射到现有 token（配色补齐，行为仍是 Pele 布局）
-2. mermaid 回退：探 ELK `edgeRouting=SPLINES`，flowchart fixture 像素筛查过了再默认打开
-3. skill 保持「按意图选图 + 按意图选引擎」；不接新 MCP、不接新图语言
+2. ~~mermaid 回退：探 ELK `edgeRouting=SPLINES`~~（2.x 已移除该回退，此项作废）
+3. skill 保持「按意图选图」；不接新 MCP、不接新图语言
 
 ## 来源（已用 gh / 文档页核对过的）
 

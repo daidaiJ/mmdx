@@ -11,8 +11,8 @@
 | 范围 | 只保留 Excalidraw 手绘风；OpenAI 编辑风与办公/工程批次放弃（见第 6 节） |
 | 主题名 | `-t excalidraw`；默认主题仍是 `tech` |
 | 填色 | **实心填色为默认**；`--style-fill hachure` 作为可选项，不单独拆主题 |
-| Pele 引擎 | Excalidraw 走 **Pele + rough.js 后处理**；不自动切 Mermaid |
-| Mermaid 回退 | 允许 `--engine mermaid`，但手绘观感不同（Mermaid 自有 handDrawn），需在输出里说明 |
+| Pele 引擎 | Excalidraw 走 **Pele + rough.js 后处理**（2.x 起 Pele 是唯一引擎） |
+| 第二引擎 | Mermaid + ELK 回退已随 2.x 移除；`excalidraw` 只有 Pele + rough.js 一条实现路径 |
 | 字体 | 目标为随包的 Excalifont + LXGW WenKai 子集；**当前实际字体栈回退到系统字体**（见第 7 节） |
 | `--brand` | 仍只改强调色，不覆盖形状分色 |
 | 推送 | 出正式 `review/` 图，用户二次目测通过后才提交、推送 |
@@ -20,7 +20,7 @@
 ### 为什么是这套
 
 - **实心填色胜出**：斜线填色（hachure）更像 Excalidraw 原生，但缩略图和投影会显脏；实心填色保留手绘轮廓，办公可读性更好。hachure 作为一档可选项即可（实测同一张流程图 SVG 由 55,009 B 涨到 79,973 B）。
-- **Pele + rough.js 胜出**：Mermaid 的 `look: handDrawn` 会斜线填满子图、右侧在本样本中被裁切、roughness 硬编码 `.7`，且会把默认引擎从 Pele 切走。CSS 位移滤镜会啃缺箭头，且 `src/engine/pele.ts` 的 flatten 会丢掉 CSS `filter`。
+- **Pele + rough.js 胜出**：当时那条被放弃的替代路径是 Mermaid 的 `look: handDrawn`——它会斜线填满子图、右侧在本样本中被裁切、roughness 硬编码 `.7`，且要把默认引擎从 Pele 切走（该引擎已在 2.x 移除，此处仅留决策记录）。CSS 位移滤镜会啃缺箭头，且 `src/engine/pele.ts` 的 flatten 会丢掉 CSS `filter`。
 
 ## 2. 评审资产
 
@@ -32,7 +32,7 @@
 | `review/style-porting/excalidraw-solid.png` | 候选 A：Excalidraw 实心填色（最终默认） |
 | `review/style-porting/excalidraw-hachure.png` | 候选 A2：Excalidraw 斜线填色（可选档） |
 | `review/style-porting/sketch-pele.png` | 移植前基线：`-t sketch`（Pele，无线条抖动） |
-| `review/style-porting/sketch-mermaid.png` | 移植前基线：`-t sketch --engine mermaid`（handDrawn，右侧裁切） |
+| `review/style-porting/sketch-mermaid.png` | 历史基线（第二引擎已移除，仅存档）：`-t sketch --engine mermaid`（handDrawn，右侧裁切） |
 
 `acnh-*.png` 是已取消的动森原型，仅作历史记录，不再维护。
 
@@ -82,6 +82,8 @@
 - 支持范围 v1：flowchart / state / class / ER；sequence、pie、gantt 保持干净线条，避免全图手绘降低可读性。
 
 ## 4. 调研结论（背景）
+
+> 本节是 1.x 时期的调研记录，当时 Mermaid 仍是可切换的第二引擎；该引擎已在 2.x 移除，下表只解释当初为什么选 rough.js。
 
 | 缺口 | 现状 | 影响 |
 | --- | --- | --- |
@@ -152,7 +154,7 @@ export interface ThemeSpec {
 
 - `--theme` 只剩 `tech` / `openai` / `excalidraw`；未知主题报错并列出可用值。
 - `--style-fill solid|hachure`：只对 `excalidraw` 有效；其他主题传了给 `config-ignored` 类 warning，不报错；非法值 exit 2。
-- `--engine mermaid` + `excalidraw`：Mermaid 走 `look: 'handDrawn'` + `handDrawnSeed`，但 rough 强度、子图填色、布局与 Pele 不同，`--json` 的 warnings 里提示手绘观感不一致。
+- `--engine` / `--layout` 已不存在：`excalidraw` 的手绘后处理只在 Pele 输出上执行，没有第二引擎的观感分叉。
 - `--brand` 只改 `vars.accent`，不改 shape fills。
 
 ## 6. 已放弃的移植
@@ -177,7 +179,6 @@ export interface ThemeSpec {
 | rough 外扩裁切 | Pele `viewBox` padding 20/12px 未改动 | 出现裁切再加到 24/16，必要时按包围盒再留 2px |
 | hachure 体积 | 流程图 SVG 55,009 → 79,973 B | 默认实心；hachure 仅在明确需要时开启，文档标注体积代价 |
 | 箭头仍是实心三角 | v1 接受 | v2 再换 rough 开口 V |
-| `--engine mermaid` 观感差异 | 已有 warning，未出正式对比图 | 补一张同图对照后再定是否调整提示文案 |
 | 形状覆盖遗漏 | `shapeCoverage` 已覆盖 shape zoo，测试含 rough 形状契约 | 新增形状时同步 `tests/diagrams` 的形状 zoo |
 | `--brand` 与粉彩冲突 | 只改 accent | 不改 shape fills；文档说明 |
 | 视觉主观性 | 默认方案已拍板 | hachure 后续单独评估，不反复改默认 |

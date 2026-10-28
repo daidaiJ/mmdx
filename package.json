@@ -1,7 +1,7 @@
 {
   "name": "mmdx",
   "version": "2.0.0",
-  "description": "Mermaid → SVG/PNG exporter with Pele rendering, CSS-variable themes, bundled CJK font and Mermaid fallback, built for AI agents",
+  "description": "Mermaid → SVG/PNG exporter with Pele rendering, CSS-variable themes, bundled CJK fonts and whole-page HTML shots, built for AI agents",
   "scripts": {
     "dev": "bun run src/cli.ts",
     "build": "bun run scripts/build.ts",
@@ -16,8 +16,6 @@
     "mmdx": "src/cli.ts"
   },
   "dependencies": {
-    "@mermaid-js/layout-elk": "^0.2.3",
-    "mermaid": "^11.17.2",
     "pele": "1.9.0",
     "pngjs": "^7.0.0",
     "puppeteer-core": "^25.10.0",

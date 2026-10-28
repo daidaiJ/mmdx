@@ -20,14 +20,14 @@
 | 🧪 Quality gates | [docs/QUALITY.en.md](docs/QUALITY.en.md) | Pixel-lint coverage, known blind spots, pre-release license checklist |
 | 🖋 Hand-drawn editorial specs | [skill/editorial/](skill/editorial/README.md) | Vendored diagram-design specs (MIT): hand-draw covers / proposal art per its specs and export with `mmdx file.html --scale 3` |
 | 📃 Narrative explainer specs | [skill/explain/](skill/explain/README.md) | Vendored spec-only adaptation of visual-explainer (MIT): explainers / review pages / recaps / slide decks assembled from a starter, exported with the same command |
-| 📚 Skill reference cards | [skill/references/](skill/references/) | Fence syntax, diagram examples, themes & engines, troubleshooting — read on demand |
+| 📚 Skill reference cards | [skill/references/](skill/references/) | Fence syntax, diagram examples, themes & Pele config, troubleshooting — read on demand |
 | 📜 Changelog | [CHANGELOG.md](CHANGELOG.md) | Release history |
 
 Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 
 ## ✨ Highlights
 
-- **Pele default engine**: Obsidian's Mermaid→SVG renderer, 1–50 ms per diagram; Mermaid 11 + ELK retained as `--engine mermaid` fallback
+- **Pele as the only engine**: Obsidian's Mermaid→SVG renderer, 1–50 ms per diagram; the input is still Mermaid syntax (fences / `.mmd` / stdin), but there is a single render path and no second layout engine
 - **CSS-variable themes**: Pele exposes every color/font/radius as `--pele-*`; `-f svg` bakes hex by default, `--svg-themeable` keeps a re-themeable SVG; three presets share shape coding (blue = process, amber = decision, green = state, purple = storage)
 - **Bundled CJK fonts (three families)**: GB2312 subsets of Noto Sans SC (universal), Noto Serif SC (serif stacks), and LXGW WenKai (kai labels) — ~6.2 MB total, identical rendering on any machine, correct wrapping for Chinese labels; the serif/kai faces and the `sans-serif` / `serif` CJK fallback aliases are injected for authored HTML documents only — fences and mermaid keep the sans face alone
 - **Pixel-level even padding**: every image is re-cropped to its ink bounding box; symmetric margins are a construction guarantee, not the engine's unreliable viewBox
@@ -65,7 +65,7 @@ echo "graph LR; A-->B" | mmdx - -f svg      # single diagram from stdin
 
 More (multi-file batches, exact naming, title injection) in the [HUMAN_GUIDE quick start](docs/HUMAN_GUIDE.en.md#quick-start).
 
-The default engine is Pele. Use `--engine mermaid` for ELK or Mermaid-only syntax (`--layout elk` selects Mermaid automatically); `--engine auto` tries Pele first and falls back. `-f svg` bakes theme colors to hex; `--svg-themeable` keeps `--pele-*` CSS variables.
+The engine is always Pele — there is no `--engine` / `--layout` switch; syntax Pele cannot parse fails with `Parsing error` (exit 1), so rewrite the diagram per the message. `-f svg` bakes theme colors to hex; `--svg-themeable` keeps `--pele-*` CSS variables.
 
 ## 🖼 Usage
 
@@ -137,7 +137,7 @@ browser-launch  ~0.5s ×1      pele-render     ~26ms ×diagram
 page-init       ~1.0s ×page   screenshot      ~90ms ×diagram (incl. pixel-level re-crop)
 ```
 
-- Pele bundle (~700 KB) is injected on demand; Mermaid (3.5 MB) and ELK (7 MB bundle) are parsed only for `--engine mermaid` / `--engine auto` fallback
+- One engine asset only: the Pele bundle (~700 KB) is injected on demand; the binary no longer embeds the Mermaid (~3.5 MB) and ELK (~5 MB) bundles
 - Screenshots serialized across pages (headless Chrome serves one active tab) + viewport fitted to content; a 2x hi-res diagram still lands around ~100 ms
 - A hung render always errors after 60s instead of stalling the batch; each diagram is retried once
 - PNG is lossless 2x (typical architecture diagram 20–80 KB); SVG is minified by svgo — the official browser build is embedded in the binary (self-contained ESM), so minified SVG is as turnkey as PNG

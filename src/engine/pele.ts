@@ -8,7 +8,6 @@ import { peleCss } from '../themes.ts';
 import type { Engine, EngineRenderOptions, EngineResult, MarkFn } from './types.ts';
 
 export const peleEngine: Engine = {
-  id: 'pele',
   async render(page: Page, opts: EngineRenderOptions, mark: MarkFn): Promise<EngineResult> {
     const css = peleCss(opts.theme, {
       strokeWidth: opts.theme.style?.strokeWidth ?? (opts.fontSize >= 18 ? 2 : 1.5),

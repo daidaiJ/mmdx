@@ -20,7 +20,7 @@ import {
   PRESETS, SIZE_PRESETS, type SizePreset, type ThemeSpec,
 } from './themes.ts';
 import { isToneName, type ToneName } from './tone.ts';
-import type { EngineId, IconPack } from './engine/types.ts';
+import type { IconPack } from './engine/types.ts';
 
 let VERSION = '2.0.0';
 
@@ -72,10 +72,6 @@ Options:
   --background <color>    page background, e.g. white | transparent | #1A1A1A
   --scale <n>             PNG scale factor                     (default: 2)
   --width <px>            layout viewport width                (default: 1200)
-  --engine <name>         pele (default, fast, themeable SVG) | mermaid
-                          (legacy fallback, ELK) | auto (pele then mermaid)
-  --layout <engine>       elk | dagre — mermaid engine only; passing it
-                          selects --engine mermaid
   --svg-themeable         keep --pele-* CSS variables in SVG output; default
                           bakes resolved paint so Office/PPT can open it
   --title <text>          figure title (PNG chrome; no mermaid frontmatter)
@@ -88,8 +84,7 @@ Options:
                           Does not recolor flowchart shape coding
   --icon <pack>           iconify pack for @{icon: pack:name} nodes (repeatable,
                           fetched from unpkg and cached)
-  --config <file.json>    pele: fontSize / padding / flowchart spacing.
-                          mermaid: deep-merged into the legacy config
+  --config <file.json>    pele: fontSize / padding / flowchart spacing
   --theme-js <file.js>    v2 JS theming: file body is (theme, ctx) => theme,
                           where theme is a ThemeSpec ({ vars, shapes, ... })
   --css <file.css>        extra CSS appended to the theme CSS
@@ -128,10 +123,6 @@ interface Options {
   scaleExplicit: boolean;
   width: number;
   widthExplicit: boolean;
-  layout: 'elk' | 'dagre';
-  layoutExplicit: boolean;
-  engine: EngineId | 'auto';
-  engineExplicit: boolean;
   svgThemeable: boolean;
   title: string | null;
   subtitle: string | null;
@@ -159,7 +150,6 @@ function parseArgs(argv: string[]): Options {
     tone: null, styleFill: null,
     preset: null, background: null,
     scale: 2, scaleExplicit: false, width: 1200, widthExplicit: false,
-    layout: 'elk', layoutExplicit: false, engine: 'pele', engineExplicit: false,
     svgThemeable: false,
     title: null, subtitle: null, source: null, unit: null,
     titlePos: 'top', index: null, brand: null, icons: [],
@@ -209,26 +199,6 @@ function parseArgs(argv: string[]): Options {
       case '--background': o.background = need(argv[++i], a); break;
       case '--scale': o.scale = parseFloat(need(argv[++i], a)); o.scaleExplicit = true; break;
       case '--width': o.width = parseInt(need(argv[++i], a), 10); o.widthExplicit = true; break;
-      case '--layout': {
-        const v = need(argv[++i], a);
-        if (v !== 'elk' && v !== 'dagre') {
-          console.error(`mmdx: --layout must be elk|dagre, got "${v}"`);
-          process.exit(2);
-        }
-        o.layout = v;
-        o.layoutExplicit = true;
-        break;
-      }
-      case '--engine': {
-        const v = need(argv[++i], a);
-        if (v !== 'pele' && v !== 'mermaid' && v !== 'auto') {
-          console.error(`mmdx: --engine must be pele|mermaid|auto, got "${v}"`);
-          process.exit(2);
-        }
-        o.engine = v;
-        o.engineExplicit = true;
-        break;
-      }
       case '--svg-themeable': o.svgThemeable = true; break;
       case '--title': o.title = need(argv[++i], a); break;
       case '--subtitle': o.subtitle = need(argv[++i], a); break;
@@ -257,13 +227,6 @@ function parseArgs(argv: string[]): Options {
         }
         o.inputs.push(a);
     }
-  }
-  if (o.layoutExplicit) {
-    if (o.engineExplicit && o.engine === 'pele') {
-      console.error('mmdx: --layout belongs to the mermaid engine; use --engine mermaid, or drop --layout');
-      process.exit(2);
-    }
-    if (!o.engineExplicit) o.engine = 'mermaid';
   }
   if (!o.inputs.length) { process.stdout.write(help()); process.exit(2); }
   if (!['svg', 'png', 'both'].includes(o.format)) {
@@ -533,9 +496,6 @@ async function main(): Promise<void> {
     const extra = fs.readFileSync(o.css, 'utf8');
     theme.css = theme.css ? `${theme.css}\n${extra}` : extra;
   }
-  if (o.engine === 'mermaid' && o.svgThemeable) {
-    configWarnings.push('--svg-themeable applies to the pele engine; mermaid SVG colors are baked');
-  }
   const tokens: Tokens = {
     paper: theme.vars.bg,
     ink: theme.vars.fg,
@@ -623,7 +583,6 @@ async function main(): Promise<void> {
   const assets = await loadAssets();
   const renderer = await Renderer.create(assets, {
     browserPath: o.browser || undefined,
-    layout: o.layout,
     scale: o.scale,
     width: o.width,
     iconPacks,
@@ -631,11 +590,10 @@ async function main(): Promise<void> {
   });
 
   const results: Array<{
-    input: string; index: number; files: string[]; engine?: EngineId;
+    input: string; index: number; files: string[];
     error?: string; warnings: JsonWarning[];
   }> = [];
   let cursor = 0;
-  let fallbackCount = 0;
   const jobs = Math.min(o.jobs, selected.length);
 
   const renderDiagram = async (
@@ -643,29 +601,13 @@ async function main(): Promise<void> {
     needPng: boolean,
     label: string,
     titleText = '',
-  ): Promise<{ svg: string; png?: Buffer; engine: EngineId }> => {
-    const engines: EngineId[] = o.engine === 'auto' ? ['pele', 'mermaid'] : [o.engine as EngineId];
-    let last: unknown;
-    for (let i = 0; i < engines.length; i++) {
-      const engine = engines[i];
-      try {
-        const res = await renderer.render({
-          code, engine, background, needPng, scale: o.scale, width: o.width,
-          layout: o.layout, theme, mermaidConfig, fontSize, padding, flowchart,
-          svgThemeable: o.svgThemeable, titlePos: o.titlePos, titleText,
-          remap: preset.remap, iconPacks,
-        });
-        if (i > 0) {
-          fallbackCount++;
-          log(o.quiet || o.json, `mmdx: ${label} fell back to mermaid: ${(last as Error).message.split('\n')[0]}`);
-        }
-        return { ...res, engine };
-      } catch (e) {
-        last = e;
-      }
-    }
-    const msg = last instanceof Error ? last.message : String(last);
-    throw new Error(o.engine === 'pele' ? `${msg}\nmmdx: try --engine mermaid or --engine auto` : msg);
+  ): Promise<{ svg: string; png?: Buffer }> => {
+    return renderer.render({
+      code, background, needPng, scale: o.scale, width: o.width,
+      theme, mermaidConfig, fontSize, padding, flowchart,
+      svgThemeable: o.svgThemeable, titlePos: o.titlePos, titleText,
+      remap: preset.remap, iconPacks,
+    });
   };
 
   const writePngOnly = (b: Block, png: Buffer, note?: string): string[] => {
@@ -686,14 +628,14 @@ async function main(): Promise<void> {
       const wantPng = o.format === 'both' || o.format === 'png';
       const wantSvg = o.format === 'both' || o.format === 'svg';
 
-      const attempt = async (): Promise<{ files: string[]; warnings: JsonWarning[]; engine?: EngineId }> => {
+      const attempt = async (): Promise<{ files: string[]; warnings: JsonWarning[] }> => {
         const warnings: JsonWarning[] = [];
 
         if (b.kind === 'chart') {
           const spec = parseChart(b.code);
           const mermaid = chartToMermaid(spec);
           const cap = mergeCaption(cliCaption, { title: spec.title, source: spec.source, unit: spec.unit });
-          const { svg, engine } = await renderDiagram(mermaid, false, label);
+          const { svg } = await renderDiagram(mermaid, false, label);
           if (o.preset === 'column') {
             const hit = columnShrinkHit(b.input, b.index, svg, o.width);
             if (hit) {
@@ -703,7 +645,7 @@ async function main(): Promise<void> {
           }
           const html = blockPage(`<div class="fig">${svg}</div>`, { ...pageOptsBase, caption: cap });
           const png = await renderer.renderHtml(html, background, label);
-          return { files: writePngOnly(b, png), warnings, engine };
+          return { files: writePngOnly(b, png), warnings };
         }
 
         if (b.kind === 'html') {
@@ -739,7 +681,7 @@ async function main(): Promise<void> {
         }
 
         if (wrapMermaid) {
-          const { svg, engine } = await renderDiagram(b.code, false, label);
+          const { svg } = await renderDiagram(b.code, false, label);
           if (o.preset === 'column') {
             const hit = columnShrinkHit(b.input, b.index, svg, o.width);
             if (hit) {
@@ -764,10 +706,10 @@ async function main(): Promise<void> {
               // chrome is PNG-only; SVG is the diagram
             }
           }
-          return { files, warnings, engine };
+          return { files, warnings };
         }
 
-        const { svg, png, engine } = await renderDiagram(
+        const { svg, png } = await renderDiagram(
           b.code, wantPng, label, frontTitle(b.code),
         );
         if (o.preset === 'column') {
@@ -788,11 +730,11 @@ async function main(): Promise<void> {
           fs.writeFileSync(f, png);
           files.push(f);
         }
-        return { files, warnings, engine };
+        return { files, warnings };
       };
 
       try {
-        let out: { files: string[]; warnings: JsonWarning[]; engine?: EngineId };
+        let out: { files: string[]; warnings: JsonWarning[] };
         try {
           out = await attempt();
         } catch (first) {
@@ -800,7 +742,7 @@ async function main(): Promise<void> {
           out = await attempt();
         }
         results.push({
-          input: b.input, index: b.index, files: out.files, engine: out.engine, warnings: out.warnings,
+          input: b.input, index: b.index, files: out.files, warnings: out.warnings,
         });
         log(o.quiet || o.json, `mmdx: ${label} → ${out.files.length} file(s)`);
       } catch (e) {
@@ -836,8 +778,7 @@ async function main(): Promise<void> {
 
   if (o.json) {
     console.log(JSON.stringify({
-      theme: o.theme, engine: o.engine, layout: o.layout, format: o.format, background,
-      ...(fallbackCount ? { fallbacks: fallbackCount } : {}),
+      theme: o.theme, engine: 'pele', format: o.format, background,
       ...(o.preset ? { preset: o.preset } : {}),
       ...(o.brand ? { brand: tokens.accent } : {}),
       ...(chromeOn ? {
@@ -864,7 +805,7 @@ async function main(): Promise<void> {
     if (!o.quiet) {
       process.stderr.write(
         `mmdx: ${results.length - failed.length}/${results.length} diagram(s) rendered ` +
-        `[theme=${o.theme} engine=${o.engine} layout=${o.layout}]\n`,
+        `[theme=${o.theme} engine=pele]\n`,
       );
     }
   }

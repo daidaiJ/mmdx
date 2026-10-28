@@ -22,7 +22,6 @@ import { scanColumnHints, scanLimits } from '../src/limits.ts';
 import { bottomBlankLimit, diffPng } from '../src/lint.ts';
 import { Renderer } from '../src/render.ts';
 import { applyColumnDensity, applySlideDensity, DEFAULT_THEME, getTheme, peleCss, PRESETS, type ThemeSpec } from '../src/themes.ts';
-import type { EngineId } from '../src/engine/types.ts';
 import { accentTint, applyBrand, contrastRatio, normalizeHex } from '../src/tokens.ts';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -221,18 +220,17 @@ const record = (name: string, ok: boolean, detail: string): void => {
 // ---------------------------------------------------------------------------
 
 const assets = await loadAssets();
-const renderer = await Renderer.create(assets, { layout: 'elk', scale: 2, width: 1200, profile: true });
+const renderer = await Renderer.create(assets, { scale: 2, width: 1200, profile: true });
 const tech = PRESETS[DEFAULT_THEME].config;
 const themeSpec = getTheme(DEFAULT_THEME);
 
 const renderPng = (
   code: string,
-  engine: EngineId = 'pele',
   spec: ThemeSpec = themeSpec,
 ): Promise<{ svg: string; png?: Buffer }> =>
   renderer.render({
-    code, engine, background: spec.background, needPng: true, scale: 2, width: 1200,
-    layout: 'elk', theme: spec, mermaidConfig: tech as Record<string, unknown>,
+    code, background: spec.background, needPng: true, scale: 2, width: 1200,
+    theme: spec, mermaidConfig: tech as Record<string, unknown>,
     fontSize: 15, padding: 0, svgThemeable: false, titlePos: 'top', titleText: '',
     remap: PRESETS[DEFAULT_THEME].remap,
   });
@@ -436,7 +434,7 @@ for (const styleName of Object.keys(PRESETS)) {
   const spec = getTheme(styleName);
   for (const name of ['flowchart', 'state', 'class', 'er']) {
     try {
-      const { png } = await renderPng(source(`${name}.md`), 'pele', spec);
+      const { png } = await renderPng(source(`${name}.md`), spec);
       const file = path.join(KEEP, `style-${styleName}-${name}.png`);
       fs.writeFileSync(file, png);
       const a = analyze(file);
@@ -566,7 +564,7 @@ for (const styleName of Object.keys(PRESETS)) {
 
 {
   const spec = getTheme('excalidraw');
-  const { svg } = await renderPng(source('flowchart.md'), 'pele', spec);
+  const { svg } = await renderPng(source('flowchart.md'), spec);
   const { issues } = await renderer.renderHtmlAudit(
     blockPage(`<div class="fig">${svg}</div>`, {
       tone: 'neutral',
@@ -597,8 +595,8 @@ for (const styleName of Object.keys(PRESETS)) {
 
 for (const name of Object.keys(PRESETS)) {
   const spec = getTheme(name);
-  const first = await renderPng(source('flowchart.md'), 'pele', spec);
-  const second = await renderPng(source('flowchart.md'), 'pele', spec);
+  const first = await renderPng(source('flowchart.md'), spec);
+  const second = await renderPng(source('flowchart.md'), spec);
   if (!first.png || !second.png) {
     record(`lint/deterministic-${name}`, false, 'no PNG');
     continue;
@@ -611,7 +609,7 @@ for (const name of Object.keys(PRESETS)) {
 
 {
   const first = fs.readFileSync(path.join(KEEP, 'style-excalidraw-flowchart.png'));
-  const { png } = await renderPng(source('flowchart.md'), 'pele', getTheme('excalidraw'));
+  const { png } = await renderPng(source('flowchart.md'), getTheme('excalidraw'));
   if (!png) throw new Error('no PNG for determinism check');
   fs.writeFileSync(path.join(KEEP, 'style-excalidraw-flowchart-repeat.png'), png);
   const diff = diffPng(first, png);
@@ -916,11 +914,6 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mmdx-v2-'));
   const flow = path.join('tests', 'diagrams', 'flowchart.md');
 
-  const mermaidRun = runCli([flow, '--engine', 'mermaid', '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'm')]);
-  const mj = JSON.parse(mermaidRun.stdout || '{}') as { engine?: string; rendered?: number };
-  record('cli/engine-mermaid', mermaidRun.code === 0 && mj.engine === 'mermaid' && mj.rendered === 1,
-    `exit=${mermaidRun.code} engine=${mj.engine} rendered=${mj.rendered}`);
-
   const flatRun = runCli([flow, '-f', 'svg', '--json', '--quiet', '-o', path.join(outDir, 'flat')]);
   const flat = fs.readFileSync(path.join(outDir, 'flat', 'flowchart.svg'), 'utf8');
   record('cli/svg-flat', flatRun.code === 0 && !/fill="var\(/.test(flat) && /fill:#d7e4f4/i.test(flat),
@@ -948,22 +941,6 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
   record('cli/config-warning', cfgRun.code === 0 && !!cj.warnings?.some((w) => w.code === 'config-ignored'),
     `exit=${cfgRun.code} warnings=${(cj.warnings || []).map((w) => w.code).join(',')}`);
 
-  const big = path.join(outDir, 'big.mmd');
-  fs.writeFileSync(big, 'flowchart LR\n%% ' + 'x'.repeat(51_000) + '\nA-->B\n');
-  const autoRun = runCli([big, '--engine', 'auto', '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'auto')]);
-  const aj = JSON.parse(autoRun.stdout || '{}') as { fallbacks?: number; rendered?: number };
-  record('cli/engine-auto-fallback', autoRun.code === 0 && aj.fallbacks === 1 && aj.rendered === 1,
-    `exit=${autoRun.code} fallbacks=${aj.fallbacks} rendered=${aj.rendered}`);
-
-  const layoutRun = runCli([flow, '--layout', 'elk', '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'elk')]);
-  const lj = JSON.parse(layoutRun.stdout || '{}') as { engine?: string };
-  record('cli/layout-selects-mermaid', layoutRun.code === 0 && lj.engine === 'mermaid',
-    `exit=${layoutRun.code} engine=${lj.engine}`);
-
-  const conflictRun = runCli([flow, '--engine', 'pele', '--layout', 'elk', '--quiet']);
-  record('cli/layout-conflict', conflictRun.code === 2 && /mermaid engine/.test(conflictRun.stderr),
-    `exit=${conflictRun.code}`);
-
   const solidRun = runCli([flow, '-t', 'excalidraw', '-f', 'svg', '--json', '--quiet', '-o', path.join(outDir, 'ex-solid')]);
   const hachureRun = runCli([flow, '-t', 'excalidraw', '--style-fill', 'hachure', '-f', 'svg', '--json', '--quiet', '-o', path.join(outDir, 'ex-hachure')]);
   const solidPath = path.join(outDir, 'ex-solid', 'flowchart.svg');
@@ -983,11 +960,6 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
   const wj = JSON.parse(wrongFill.stdout || '{}') as { warnings?: Array<{ code: string; message: string }> };
   record('cli/style-fill-warning', wrongFill.code === 0 && !!wj.warnings?.some((w) => /only applies to the excalidraw/.test(w.message)),
     `exit=${wrongFill.code} warnings=${(wj.warnings || []).length}`);
-
-  const exMermaid = runCli([flow, '-t', 'excalidraw', '--engine', 'mermaid', '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'ex-mermaid')]);
-  const emj = JSON.parse(exMermaid.stdout || '{}') as { rendered?: number; failed?: number };
-  record('cli/excalidraw-mermaid', exMermaid.code === 0 && emj.rendered === 1 && emj.failed === 0,
-    `exit=${exMermaid.code} rendered=${emj.rendered} failed=${emj.failed}`);
 
   fs.rmSync(outDir, { recursive: true, force: true });
 }

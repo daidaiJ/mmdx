@@ -562,7 +562,7 @@ export async function runCardCommand(argv: string[], version: string): Promise<n
     const assets = await loadAssets();
     const renderer = await Renderer.create(assets, {
       browserPath: o.browser || undefined,
-      layout: 'elk', scale: o.scale, width: o.width,
+      scale: o.scale, width: o.width,
     });
     const pages = await renderCardDoc(renderer, doc, {
       themeName: o.theme, tone: o.tone, width: o.width,

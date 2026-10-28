@@ -106,7 +106,6 @@ status: active
 - [ ] 生产字体子集与跨机器渲染 — 目前只有系统字体原型，Excalifont / LXGW WenKai 子集尚未生成，`theme.fonts` 未接入渲染。
 - [ ] rough 后处理覆盖全部图型 — 有 flowchart/state/class/ER 的渲染筛查与 selector 单测，但 sequence / pie / gantt 按设计不做手绘。
 - [ ] Office/PPT 打开 hachure SVG — 未验证，需记录体积和兼容性（测试只比较了 SVG 文件大小）。
-- [ ] `--engine mermaid` + `excalidraw` 的观感差异 — 未做正式对比图。
 
 ### 已完成且已验证
 

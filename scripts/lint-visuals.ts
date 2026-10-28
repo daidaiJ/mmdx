@@ -46,7 +46,7 @@ function margins(png: Buffer) {
   return { width, height, l: minX, r: width - 1 - maxX, t: minY, b: height - 1 - maxY };
 }
 
-const r = await Renderer.create(await loadAssets(), { layout: 'elk', scale: 2, width: 1200 });
+const r = await Renderer.create(await loadAssets(), { scale: 2, width: 1200 });
 let failed = 0;
 const report: string[] = [];
 
@@ -54,8 +54,8 @@ for (const name of Object.keys(PRESETS)) {
   const theme = getTheme(name);
   const tokens = tokensFor(theme);
   const { svg } = await r.render({
-    code: flow, engine: 'pele', background: theme.background, needPng: false,
-    scale: 2, width: 1200, layout: 'elk', theme,
+    code: flow, background: theme.background, needPng: false,
+    scale: 2, width: 1200, theme,
     mermaidConfig: (PRESETS[name]?.config ?? {}) as Record<string, unknown>,
     fontSize: 15, padding: 0, svgThemeable: false, titlePos: 'top', titleText: '',
     remap: PRESETS[name]?.remap,

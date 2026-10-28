@@ -99,8 +99,6 @@ Output naming: by default next to the input, `<name>-m<N>.svg/.png` numbered by 
 | `--style-fill <mode>` | `solid` (default) \| `hachure`; `excalidraw` only |
 | `--preset <name>` | `slide` (projection/PPT: 1600px@2, 18px type, heavier strokes, ~80px footer) \| `a4` (900px@2) \| `square` (1080px@2) \| `column` (chat/narrow column: 800px@2, about 1/3 of a 2560×1440 display, 18px type, 200px label wrap). Explicit `--width`/`--scale`/`-f` win |
 | `--background <color>` | Page background, e.g. `white` \| `transparent` \| `#1A1A1A` (pass it explicitly for a dark page) |
-| `--engine <name>` | `pele` (default; fast, CSS-variable themes) \| `mermaid` (legacy, ELK) \| `auto` (Pele, then Mermaid fallback) |
-| `--layout <engine>` | `elk` \| `dagre`; Mermaid-only — passing it selects `--engine mermaid` |
 | `--svg-themeable` | Keep `--pele-*` CSS variables in SVG; default bakes hex for Office/PPT |
 | `--scale <n>` | PNG scale factor (default 2) |
 | `--width <px>` | Layout viewport width (default 1200; Pele uses it as `maxWidth` without flipping direction) |
@@ -113,7 +111,7 @@ Output naming: by default next to the input, `<name>-m<N>.svg/.png` numbered by 
 | `--brand <hex>` | Accent for extension blocks (default `#2563EB`; `2563EB` also works); does not recolor flowchart shapes. Use a deep hex on a projector |
 | `--strict-chart` | Promote mermaid pie/xychart/radar/flowchart/sequence budget hits to errors (default: warn) |
 | `--icon <pack>` | Iconify pack for `A@{icon: logos:react}` nodes (repeatable; fetched then cached) |
-| `--config <file.json>` | Pele whitelist: `fontSize` / `padding` / `flowchart.nodeSpacing` / `rankSpacing` / `padding`; other keys warn. Deep-merged into native config on Mermaid fallback |
+| `--config <file.json>` | Pele whitelist: `fontSize` / `padding` / `flowchart.nodeSpacing` / `rankSpacing` / `padding`; other keys warn |
 | `--theme-js <file.js>` | v2 theming: `(theme, ctx) => theme`, where theme is a `ThemeSpec` (`vars` / `shapes` / `css`) |
 | `--css <file.css>` | Extra CSS appended after the theme (target Pele class names) |
 | `--browser <path>` | Browser executable override (default: auto-detect Edge/Chrome) |
@@ -130,8 +128,8 @@ The `--json` contract:
 
 ```json
 {
-  "theme": "tech", "engine": "pele", "layout": "elk", "format": "png", "background": "#FFFFFF",
-  "preset": "slide", "brand": "#E4572E", "fallbacks": 0,
+  "theme": "tech", "engine": "pele", "format": "png", "background": "#FFFFFF",
+  "preset": "slide", "brand": "#E4572E",
   "caption": { "title": "Q1 mix", "subtitle": null, "source": "Finance", "unit": "CNY wan" },
   "blocks": 3, "rendered": 3, "failed": 0,
   "files": ["doc-m1.png", "…"],
@@ -141,7 +139,7 @@ The `--json` contract:
 }
 ```
 
-(`preset`/`brand`/`caption` appear only when those flags are used; `warnings` is always an array; `profile` appears only when `--profile` is also passed.)
+(`preset`/`brand`/`caption` appear only when those flags are used; `engine` is always `"pele"`; `warnings` is always an array; `profile` appears only when `--profile` is also passed.)
 
 ## Info cards (`mmdx card`)
 
@@ -252,7 +250,7 @@ export default (theme) => {
 | --- | --- |
 | `--theme-js` mutating `config.themeVariables` | Errors with a migration hint to `theme.vars` / `theme.shapes` |
 | `--config` with `themeVariables` / `themeCSS` | Ignored by Pele; `config-ignored` warning |
-| `--layout elk` | Selects `--engine mermaid`; `--engine pele --layout elk` is a parameter conflict |
+| `--layout elk` (1.x leftover) | Flag removed; exits as a usage error (exit 2). Use Pele's own layout, or tune `flowchart.nodeSpacing` / `rankSpacing` via `--config` |
 | `excalidraw` lines are still straight | Check `-t excalidraw`; `rough.js asset missing` means `vendor/rough.js` was not bundled into the build |
 | Default `-f svg` colors | Still baked to hex; add `--svg-themeable` for a re-themeable SVG |
 | `--title-pos bottom` + frontmatter title | Pele keeps the in-diagram title at the top; use `--title` chrome for a bottom caption |
@@ -275,7 +273,7 @@ page-init       ~1.0s ×page   screenshot      ~90ms ×diagram (incl. pixel-leve
 | SVG only | `-f svg` skips the screenshot stage |
 | First image slow | browser-launch + page-init is fixed cost (~1.7s), amortized over batches; normal for single images |
 
-Pipeline facts: one Chromium instance + page pool + bounded workers; the Pele bundle (~700 KB) is injected on demand, while Mermaid (3.5 MB) and ELK (7 MB bundle) are parsed only for `--engine mermaid` / `--engine auto` fallback; screenshots serialize across pages (headless Chrome serves one active tab); a hung render trips a 60s circuit breaker, each diagram retried once.
+Pipeline facts: one Chromium instance + page pool + bounded workers; the only engine asset is the Pele bundle (~700 KB), injected on demand — there is no second engine to fall back to and no extra layout bundle; screenshots serialize across pages (headless Chrome serves one active tab); a hung render trips a 60s circuit breaker, each diagram retried once.
 
 ## Troubleshooting
 
@@ -285,8 +283,8 @@ Pipeline facts: one Chromium instance + page pool + bounded workers; the Pele bu
 | `render timed out after 60s` | Resource pressure / browser hang | CLI already retried; rerun the whole command, or isolate with `--jobs 1` if persistent |
 | `icon pack "xxx" not found` | Network down (unpkg) | Drop `--icon`, or run once online to warm the cache |
 | Chinese glyphs turn into boxes | Shouldn't happen (font bundled) | Check whether `--config`/`--theme-js` overrode fontFamily |
-| `Parsing error` / `pele: Parse error` (exit 1) | **Diagram syntax error** | Fix per the line info; for syntax Pele does not support, add `--engine mermaid` or `--engine auto` |
-| `--layout belongs to the mermaid engine` | Parameter conflict | Drop `--layout`, or use `--engine mermaid` |
+| `Parsing error` / `pele: Parse error` (exit 1) | **Diagram syntax error** | Fix per the line info; rewrite unsupported syntax into an equivalent renderable type (flowchart / state / sequence …) — there is no other engine to switch to |
+| `unknown option --engine` / `--layout` | 1.x flags, removed with the second engine | Drop them; tune layout and spacing with `--config` `flowchart.nodeSpacing` / `rankSpacing` |
 | `--theme-js v2 receives a ThemeSpec` | 1.x recolor script | Move to `theme.vars` / `theme.shapes` |
 | `config "…" is not supported by the pele engine` | Key outside the whitelist | Colors via `--theme-js`; size/spacing via `fontSize` / `flowchart.*` |
 | exit 2 | Usage error | Compare against `mmdx --help` |

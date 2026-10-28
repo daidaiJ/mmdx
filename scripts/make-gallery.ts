@@ -71,12 +71,12 @@ const code: Record<SceneKind, string> = {
 };
 
 fs.mkdirSync(OUT, { recursive: true });
-const r = await Renderer.create(await loadAssets(), { layout: 'elk', scale: 2, width: 1200 });
+const r = await Renderer.create(await loadAssets(), { scale: 2, width: 1200 });
 
 const renderRaw = async (theme: ThemeSpec, diagram: string): Promise<Buffer> => {
   const { png } = await r.render({
-    code: diagram, engine: 'pele', background: theme.background, needPng: true,
-    scale: 2, width: 1200, layout: 'elk', theme,
+    code: diagram, background: theme.background, needPng: true,
+    scale: 2, width: 1200, theme,
     mermaidConfig: (PRESETS[theme.name]?.config ?? {}) as Record<string, unknown>,
     fontSize: 15, padding: 0, svgThemeable: false, titlePos: 'top', titleText: '',
     remap: PRESETS[theme.name]?.remap,
@@ -87,8 +87,8 @@ const renderRaw = async (theme: ThemeSpec, diagram: string): Promise<Buffer> => 
 
 const renderDiagram = async (theme: ThemeSpec, scene: Scene): Promise<Buffer> => {
   const { svg } = await r.render({
-    code: code.mermaid, engine: 'pele', background: theme.background, needPng: false,
-    scale: 2, width: 1200, layout: 'elk', theme,
+    code: code.mermaid, background: theme.background, needPng: false,
+    scale: 2, width: 1200, theme,
     mermaidConfig: (PRESETS[theme.name]?.config ?? {}) as Record<string, unknown>,
     fontSize: 15, padding: 0, svgThemeable: false, titlePos: 'top', titleText: '',
     remap: PRESETS[theme.name]?.remap,

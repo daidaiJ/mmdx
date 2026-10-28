@@ -12,7 +12,7 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const OUT = path.join(ROOT, 'review', 'styles');
 fs.mkdirSync(OUT, { recursive: true });
 
-const r = await Renderer.create(await loadAssets(), { layout: 'elk', scale: 2, width: 1200 });
+const r = await Renderer.create(await loadAssets(), { scale: 2, width: 1200 });
 const themes = ['tech', 'openai', 'excalidraw'] as const;
 const diagrams = ['flowchart', 'state', 'class', 'er'] as const;
 const blocks: Array<[BlockKind, string]> = [['card', 'card.md'], ['kpi', 'kpi.md'], ['table', 'table.md']];
@@ -29,8 +29,8 @@ const renderDiagram = async (theme: ThemeSpec, code: string, hachure = false): P
     ? { ...theme, style: { ...(theme.style ?? {}), fillStyle: 'hachure' } }
     : theme;
   const { png } = await r.render({
-    code, engine: 'pele', background: '#FFFFFF', needPng: true, scale: 2, width: 1200,
-    layout: 'elk', theme: spec, mermaidConfig: {}, fontSize: 15, padding: 0,
+    code, background: '#FFFFFF', needPng: true, scale: 2, width: 1200,
+    theme: spec, mermaidConfig: {}, fontSize: 15, padding: 0,
     svgThemeable: false, titlePos: 'top', titleText: '',
   });
   if (!png) throw new Error('no png');

@@ -6,16 +6,12 @@ import fs from 'node:fs';
 import puppeteer, { type Browser, type Page } from 'puppeteer-core';
 import { screenshotGate } from './capture.ts';
 import type { Assets } from './embed.ts';
-import { mermaidEngine } from './engine/mermaid.ts';
 import { peleEngine } from './engine/pele.ts';
-import type { EngineId, EngineRenderOptions, MarkFn } from './engine/types.ts';
+import type { EngineRenderOptions, MarkFn } from './engine/types.ts';
 import { auditContrast, auditLayout, auditSvgText, type LayoutIssue } from './lint.ts';
-
-export type Layout = 'elk' | 'dagre';
 
 export interface RendererOptions {
   browserPath?: string;
-  layout: Layout;
   scale: number;
   width: number;
   /** iconify packs preloaded for `@{icon: pack:icon}` node syntax */
@@ -154,44 +150,18 @@ export class Renderer {
     }));
   }
 
-  /** Inject the engine bundle (and font) after a page reset, once per document. */
-  private async ensureEngine(page: Page, engine: EngineId): Promise<void> {
-    const state = await page.evaluate((e) => ({
-      ready: e === 'pele'
-        ? typeof (window as unknown as { pele?: { render?: unknown } }).pele?.render === 'function'
-        : typeof (window as unknown as { mermaid?: { render?: unknown } }).mermaid?.render === 'function',
+  /** Inject the Pele bundle (and font) after a page reset, once per document. */
+  private async ensurePele(page: Page): Promise<void> {
+    const state = await page.evaluate(() => ({
+      ready: typeof (window as unknown as { pele?: { render?: unknown } }).pele?.render === 'function',
       font: !!document.querySelector('style[data-mmdx-font]'),
-    }), engine);
+    }));
 
     if (this.assets.fontB64 && !state.font) await this.injectFont(page);
     if (state.ready) return;
 
-    if (engine === 'pele') {
-      if (!this.assets.peleJs) throw new Error('pele asset missing — run the build or vendor/pele.global.js');
-      await this.mark('init-pele', () => page.addScriptTag({ content: this.assets.peleJs }));
-      return;
-    }
-
-    if (!this.assets.mermaidJs) throw new Error('mermaid asset missing — run the build');
-    await this.mark('init-mermaid', () => page.addScriptTag({ content: this.assets.mermaidJs }));
-    if (this.opts.layout === 'elk' && this.assets.elkJs) {
-      const b64 = Buffer.from(this.assets.elkJs, 'utf8').toString('base64');
-      await page.evaluate((b) => {
-        (window as unknown as Record<string, unknown>).__elkB64 = b;
-      }, b64);
-    }
-    if (this.opts.iconPacks?.length) {
-      await page.evaluate((packs) => {
-        const mermaid = (
-          window as unknown as {
-            mermaid: { registerIconPacks: (p: unknown) => void };
-          }
-        ).mermaid;
-        mermaid.registerIconPacks(
-          packs.map((p) => ({ name: p.name, loader: () => JSON.parse(p.json) })),
-        );
-      }, this.opts.iconPacks);
-    }
+    if (!this.assets.peleJs) throw new Error('pele asset missing — run the build or vendor/pele.global.js');
+    await this.mark('init-pele', () => page.addScriptTag({ content: this.assets.peleJs }));
   }
 
   private async renderHtmlPage(
@@ -564,13 +534,12 @@ export class Renderer {
     }, `page#${this.pages.length + 1}`);
   }
 
-  /** Render one diagram through the selected engine. */
+  /** Render one diagram through Pele. */
   async render(opts: EngineRenderOptions): Promise<{ svg: string; png?: Buffer }> {
     return this.run(async (page) => {
       await this.resetBody(page);
-      await this.ensureEngine(page, opts.engine);
-      const engine = opts.engine === 'pele' ? peleEngine : mermaidEngine;
-      return engine.render(page, { ...opts, roughJs: this.assets.roughJs }, this.mark.bind(this) as MarkFn);
+      await this.ensurePele(page);
+      return peleEngine.render(page, { ...opts, roughJs: this.assets.roughJs }, this.mark.bind(this) as MarkFn);
     });
   }
 

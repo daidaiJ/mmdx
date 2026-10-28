@@ -1,34 +1,106 @@
-# 主题与双引擎（按需读取）
+# 主题、Pele 图型支持面与配置键（按需读取）
 
-> 换主题、选引擎、调 Pele 布局参数时读本文。日常出图不需要——默认 `tech` + `--engine pele` 已覆盖办公场景。
+> 换主题 / 调 tone / 改配色 / 确认 Pele 支持哪些图型 / 查 `--config` 认哪些键时读本文。日常出图不需要——默认 `tech` + Pele 已经覆盖办公场景。Pele 是唯一引擎，输入仍是 Mermaid 语法，没有第二个引擎可切。
 
-## 主题速记
+## 一、三套主题
 
-| 场景 | `-t` |
+| 主题 | `-t` | 视觉特点 | 适合 | 避免 |
+| --- | --- | --- | --- | --- |
+| `tech`（默认） | `tech` | 白底、蓝/琥珀/绿/紫形状分色、1.5px 描边、信息密度最高 | 方案评审、架构图、周报、投屏 | 对外品牌报告、需要编辑感的印刷品 |
+| `openai` | `openai` | 纯白/墨黑、薄荷绿点缀、发丝边框、近单色 | 对外报告、白皮书、工程师文档、`a4` 打印 | 高密度看板、白板脑暴 |
+| `excalidraw` | `excalidraw` | 白底、粉彩填色、rough.js 手绘抖动、墨线、12px 圆角 | 白板、脑暴、工作坊、非正式分享 | 对外正式报告、打印稿、高密度数据图 |
+
+其余主题名（`openai-dark`、`vercel`、`notion`、`mocha`、`sketch` …）已随预设收敛移除，传了按 `unknown theme` 报错。三套主题的对照样张见 `docs/GALLERY.md`。
+
+- `excalidraw` 默认实心填色，`--style-fill hachure` 切斜线；其他主题传 `--style-fill` 会在 `--json.warnings` 里提示只对 `excalidraw` 生效。
+- 深色页面用 `--background '#1A1A1A'`，但**不要**投会议室（灯光一打全糊）。
+
+## 二、`--tone`：只改结构，不改配色
+
+`--tone paper|neutral|product` 作用在**块页**（`card` / `kpi` / `table` / `task` / `compare` / `vs` / `heatmap` …）和 `mmdx card` 信息卡上，改的是圆角、阴影、标题字体、表格头字重与页边距；图的形状、线条、填色一律不变。不传则不追加任何覆盖。
+
+| tone | 圆角 | 阴影 | 标题字体 | 适合 |
+| --- | --- | --- | --- | --- |
+| `paper` | 16px / 10px | 极轻 | 衬线（Source Serif 4 + Noto Serif SC） | 对外报告、打印、`--preset a4` |
+| `neutral` | 10px / 6px | 无 | 无衬线（Inter + Noto Sans SC） | 内部说明、工程文档（默认观感） |
+| `product` | 6px / 4px | 1px 2px | 无衬线、字号更小、间距更紧 | 产品界面、发布说明、投屏 |
+
+主题决定配色、tone 决定结构，两者正交：`-t openai --tone paper` 是「薄荷绿 + 纸感排版」，`-t tech --tone product` 是「形状分色 + 紧凑面板」。
+
+## 三、Pele 支持哪些图型
+
+Pele 直接解析 Mermaid 语法出 SVG，办公围栏之外的原生图型都能渲染：
+
+| 类别 | 图型 |
 | --- | --- |
-| 技术方案/周报/投屏（默认） | `tech`（形状分色：蓝流程 / 琥珀判定 / 绿状态 / 紫存储；填色可见，不是发丝描边） |
-| 开源 README | `openai` / `openai-dark` |
-| 暗色文档 | `mocha` |
-| 轻松分享 | `sketch`（手绘风，自动切 `--engine mermaid`——Pele 无手绘实现） |
+| 办公主力 | flowchart、sequence、state、class、ER、pie、gantt、timeline、journey、quadrantChart、kanban、mindmap |
+| 数据类 | sankey、treemap、xychart、radar |
+| 开发文档 | C4（Context / Container / Component / Dynamic / Deployment）、gitgraph、requirementDiagram、block-beta、packet-beta、architecture-beta、cynefin |
 
-`--brand` 只改扩展块强调色（卡片左边条、kpi 数字、swimlane 第一条跨带箭头），**不**把判定菱形改成品牌色、不重涂 flowchart 形状分色。叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。
+Pele 下的观感（`tests/diagrams/` 有对应 fixture）：
 
-## 双引擎差别
+- **flowchart**：宽 S 弯连线；`subgraph` 内的 `direction` 各自生效（横向组 + 纵向组可以并排）；cluster 用主题 `cluster` 填色。
+- **sequence**：带消息序号，中文标签可换行。
+- **C4**：person 是圆角卡 + 头顶圆点、system/container 用 `process` 填色、`_Ext` 外部元素白底虚线框；没有 mermaid 那套深色块。单个元素要换色用源码里的 `UpdateElementStyle(id, $bgColor="#…", $borderColor="#…")`，Pele 认这两个属性。
+- **mindmap**：分支按主题 `--pele-series-N` 上色，叶子是纯文字（无盒子）。
+- **图标**：`A@{icon: logos:react}` + `--icon logos` 可用，图标按 24×24 视图缩放后嵌进节点。
 
-差别在**布局和画法**，不是配色更好。flowchart 蓝/琥珀/绿/紫是同一套 `tech` token。拼图对照（仓库内）：`tests/contact-sheet-pele.png` / `tests/contact-sheet-mermaid.png`。
+Pele 解析不了的写法直接 `Parsing error`（exit 1），没有回退引擎可切——按报错改成等价图型（多数情况是改成 flowchart 或交给 [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)）。`xychart` 不要手写，趋势/柱状走 ` ```chart ` 围栏。
 
-| 要什么 | 用哪个 |
-| --- | --- |
-| 流程 / 时序 / 状态（办公默认） | `--engine pele`（默认）：宽 S 弯、subgraph 成员位置更贴源码、sequence 带序号且中文能换行 |
-| C4 深色块 + 小人、思维导图按枝上色盒子、`@{icon}` | `--engine mermaid`（flowchart 才走 ELK；C4 吃主题 `c4` 节） |
-| 手绘风 | `-t sketch`（自动 mermaid） |
+## 四、布局与字号：`--config`
 
-## 引擎相关参数
+`--config` 是 JSON 文件（Windows 上要落成真实文件，没有进程替换）。Pele 只认这几个键：顶层出现别的 key 会在 `--json.warnings` 里报 `config "xxx" is not supported by the pele engine`，`flowchart` 里出现别的子键则被静默忽略（不报错也不生效）。
 
-- `--layout elk|dagre` **只作用于 mermaid 的 flowchart**；Pele 自带布局，时序/C4/思维导图/gitgraph 是两套引擎各自排版
-- Pele 下 `--config` 只认：`flowchart.nodeSpacing` / `rankSpacing` / `wrappingWidth` / `curve`、`fontSize`、`padding`；mermaid 专属键（`themeCSS`、`look`、`layoutAlgorithm` 等）在 Pele 下忽略
-- 扩展块与 PNG 像素裁切始终走 Chromium，与引擎无关
+```json
+{ "fontSize": 16, "padding": 24, "flowchart": { "nodeSpacing": 72, "rankSpacing": 96, "padding": 18 } }
+```
+
+| 键 | 作用 | 取值参考 |
+| --- | --- | --- |
+| `fontSize` | 图内文字字号（节点与画布随字重算） | 默认 15；`slide` / `column` preset 为 18 |
+| `flowchart.nodeSpacing` | 同层节点间距（横向排布的松紧） | 空配置实测约 40；`slide` 88、`column` 56 |
+| `flowchart.rankSpacing` | 层间距（流程纵向长度） | 空配置实测约 48；`slide` 88、`column` 64 |
+| `flowchart.padding` | 单节点内边距 | preset 给 14–22，实测对画布影响很小 |
+| `padding` | 画布内边距 | 默认 0，实测对画布影响很小 |
+
+实测（`tests/diagrams` 各图型 + 合成 fixture）：`fontSize`、`nodeSpacing`、`rankSpacing` 会直接改变画布尺寸；两个 `padding` 键在 flowchart / sequence / state / class / ER 上都没有可观察的变化，调布局先动前三个。`flowchart` 下的 `wrappingWidth` / `curve` 会被静默丢弃（不报错也不生效）。`--preset` 已经设过 `fontSize` 与三个 `flowchart.*`，`--config` 在 preset 之后叠加。
+
+`themeVariables`、`themeCSS`、`look`、`layoutAlgorithm`、`sequence.*` 这些 Mermaid 专属键都不认，顶层出现时会给 `config-ignored` 警告（`config "sequence" is not supported by the pele engine`）；颜色请走 `--theme-js` 或 `--css`。
+
+## 五、换色：`--theme-js` / `--css` / `--brand`
+
+叠加顺序：**主题 → `--brand` → `--theme-js` → `--config` → `--css`**。
+
+- `--brand #RRGGBB` 只改 `theme.vars.accent`（卡片左边条、kpi 数字、swimlane 首条跨带箭头），**不**重涂 flowchart 形状分色；低对比度会警告但不改色。
+- `--theme-js` 是 v2 契约 `(theme, ctx) => theme`，拿到的是 `ThemeSpec`：
+
+```js
+// brand.js — mmdx doc.md --theme-js brand.js
+export default (theme) => {
+  const brand = '#E4572E';
+  theme.vars.accent = brand;
+  theme.vars.line = '#0D1B2A';
+  theme.shapes.process = { fill: '#FDF0E5', stroke: brand };
+  theme.shapes.decision = { fill: '#FFF4D6', stroke: '#A87428' };
+  theme.css += '.pele-label { font-weight: 600; }';
+  return theme;
+};
+```
+
+`theme.vars`：`bg` / `fg` / `muted` / `line` / `surface` / `surfaceAlt` / `border` / `accent` / `critical` / `radius` / `font` / `series`。`theme.shapes`：`process` / `decision` / `state` / `store` / `cluster`（`{fill, stroke}`）。1.x 那套改 `config.themeVariables` 的脚本会报迁移错误。
+
+- `--css` 追加在主题 CSS 之后，用 Pele 的类名：
+
+```css
+.pele-flowchart .pele-shape-rect rect { rx: 14px; ry: 14px; }
+.pele-flowchart .pele-shape-diam polygon { stroke-width: 2px; }
+.pele-edge path { stroke-width: 2px; }
+.pele-cluster rect { stroke-dasharray: 6 4; }
+.pele-label { font-weight: 600; }
+```
+
+常用钩子：`.pele`（根，`--pele-*` 变量挂在这里）、`.pele-flowchart .pele-shape-{rect|diam|circle|cyl|fr-rect|stadium|hex}`、`.pele-state`、`.pele-class`、`.pele-er`、`.pele-cluster`、`.pele-edge path`、`.pele-label`、`.pele-title`、`.pele-c4-{person|system|external}`、`.pele-shape-branch` / `.pele-branch`（思维导图分支）、`.pele-icon`。
 
 ## 附录 — 开发文档场景（能渲染、不主推）
 
-sequence、state、class、ER、gitgraph、C4。办公选型不要从这里起；确属开发文档场景直接用，语法与 mermaid 相同。
+sequence、state、class、ER、gitgraph、C4。办公选型不要从这里起；确属开发文档场景直接用，语法与 mermaid 相同，由 Pele 直接排版。

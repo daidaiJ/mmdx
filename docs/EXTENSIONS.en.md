@@ -4,7 +4,7 @@
 
 One PNG **rendered by this tool** per fence (`bun scripts/make-review.ts`). Extension blocks are PNG-only. All of them take `--title` / `--subtitle` / `--source` / `--unit` chrome; accent color follows `--brand`.
 
-Twenty mermaid types: Pele [contact-sheet-pele.png](../tests/contact-sheet-pele.png), mermaid [contact-sheet-mermaid.png](../tests/contact-sheet-mermaid.png) (`bun scripts/make-contact-sheet.ts`).
+Twenty mermaid types: [contact-sheet-pele.png](../tests/contact-sheet-pele.png) (`bun scripts/make-contact-sheet.ts` writes `tests/contact-sheet.png`; the `-pele` file is an identical copy, kept for older links — Pele is the only engine, so there is no per-engine pair anymore).
 
 Canvas: chat / narrow columns use `--preset column` (800px@2, 18px type, 200px label wrap — about 1/3 of a 2K screen), and extension blocks lay out to that canvas. In `--json.warnings`, `column-shrink` (a mermaid diagram or ` ```chart ` whose intrinsic width exceeds 800px, so CSS scales it down) and `column-landscape` (source is `flowchart LR/RL`) are this canvas telling you it is over budget. Slides use `--preset slide`, Word/PDF `a4`, Feishu cards `square`.
 
@@ -231,6 +231,6 @@ Cross-team handoff: `step | lane | next`, ≤5 lanes ≤8 steps. Loops, parallel
 ## Regenerating samples
 
 ```bash
-bun scripts/make-contact-sheet.ts   # Pele / mermaid collages → tests/contact-sheet-*.png
+bun scripts/make-contact-sheet.ts   # twenty-type collage → tests/contact-sheet.png (Pele is the only engine; contact-sheet-pele.png is an identical copy)
 bun scripts/make-review.ts          # extension samples → docs/ext-*.png
 ```

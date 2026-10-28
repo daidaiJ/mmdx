@@ -33,6 +33,7 @@
 
 ## [Unreleased]
 
+- **Breaking：** 引擎收敛为 Pele 一套：移除 `--engine pele|mermaid|auto`、`--layout elk|dagre` 与 `--json` 的 `fallbacks` 字段，并移除 `mermaid` / `@mermaid-js/layout-elk` 依赖及随包资源（约 3.5MB 的 mermaid.min.js 与 5.0MB 的 elk.bundle.mjs）。输入语法仍是 Mermaid（围栏 / `.mmd` / stdin），`--json` 的 `engine` 固定为 `pele`；遇到 Pele 解不了的图型不再有回退引擎
 - **Breaking：** 主题收敛为三套预设：`tech`（默认）/ `openai` / `excalidraw`；移除 `openai-dark`、`openai-editorial`、`vercel`、`linear`、`stripe`、`notion`、`ibm`、`minimal`、`latte`、`mocha`、`sketch` 共 11 套。旧命令里的主题名现在按 `unknown theme` 报错，可用主题见 `--help`
 - 新增 `--tone paper|neutral|product`：只覆盖块页结构（圆角/阴影/标题字体/表格头/chip 圆角），配色仍由主题决定；显式传参才生效，不传时输出不变
 - 新增 `mmdx card`：Markdown 或 URL → 信息卡 PNG；默认主题 `openai`，配合 `--tone`、480/600/900+ 宽度、按实际像素高度自动拆页、`--json` 输出 `cards`/`files`/`pages`

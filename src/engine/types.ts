@@ -1,8 +1,6 @@
 import type { Page } from 'puppeteer-core';
 import type { ThemeSpec } from '../themes.ts';
 
-export type EngineId = 'pele' | 'mermaid';
-
 export interface IconPack {
   name: string;
   json: string;
@@ -10,14 +8,12 @@ export interface IconPack {
 
 export interface EngineRenderOptions {
   code: string;
-  engine: EngineId;
   background: string;
   needPng: boolean;
   scale: number;
   width: number;
-  layout: 'elk' | 'dagre';
   theme: ThemeSpec;
-  /** Mermaid-only config (legacy fallback engine) */
+  /** Mermaid-syntax theme config; peleConfig() turns it into Pele knobs */
   mermaidConfig: Record<string, unknown>;
   /** Pele render knobs derived from --config / --preset */
   fontSize: number;
@@ -41,6 +37,5 @@ export interface EngineResult {
 export type MarkFn = <T>(stage: string, fn: () => Promise<T>, label?: string) => Promise<T>;
 
 export interface Engine {
-  id: EngineId;
   render(page: Page, opts: EngineRenderOptions, mark: MarkFn): Promise<EngineResult>;
 }

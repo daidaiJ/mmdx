@@ -99,8 +99,6 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 | `--style-fill <mode>` | `solid`（默认）\| `hachure`；仅 `excalidraw` 生效 |
 | `--preset <name>` | `slide`（投屏/PPT：1600px@2，字号 18、描边加粗，底栏预留 ~80px）\| `a4`（900px@2）\| `square`（1080px@2）\| `column`（聊天/窄栏：800px@2，2K 屏约 1/3 栏宽，字号 18、标签换行 200px）。显式 `--width`/`--scale`/`-f` 优先 |
 | `--background <color>` | 页面背景，如 `white` \| `transparent` \| `#1A1A1A`（需要深色页面时显式传） |
-| `--engine <name>` | `pele`（默认，快、CSS 变量主题）\| `mermaid`（旧引擎，ELK 可用）\| `auto`（先 Pele，失败回退 Mermaid） |
-| `--layout <engine>` | `elk` \| `dagre`，只属于 Mermaid；传它会自动选中 `--engine mermaid` |
 | `--svg-themeable` | SVG 保留 `--pele-*` CSS 变量；默认烘焙成 hex，便于 Office/PPT 打开 |
 | `--scale <n>` | PNG 缩放倍数（默认 2） |
 | `--width <px>` | 布局视口宽（默认 1200；Pele 作为 `maxWidth`，不自动翻转方向） |
@@ -113,7 +111,7 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 | `--brand <hex>` | 扩展块强调色（默认 `#2563EB`；可写 `2563EB`）；不重涂 flowchart 形状分色。投屏请用深色，避免浅蓝 |
 | `--strict-chart` | mermaid pie/xychart/radar/flowchart/sequence 超限当错误（默认只警告） |
 | `--icon <pack>` | iconify 图标包，支持 `A@{icon: logos:react}` 节点（可重复传；拉取后有缓存） |
-| `--config <file.json>` | Pele 白名单：`fontSize` / `padding` / `flowchart.nodeSpacing` / `rankSpacing` / `padding`；其他 key 报警告。Mermaid 回退时深合并原生配置 |
+| `--config <file.json>` | Pele 白名单：`fontSize` / `padding` / `flowchart.nodeSpacing` / `rankSpacing` / `padding`；其他 key 报警告 |
 | `--theme-js <file.js>` | v2 换色函数：`(theme, ctx) => theme`，theme 是 `ThemeSpec`（`vars` / `shapes` / `css`） |
 | `--css <file.css>` | 追加 CSS 到主题样式之后（选择器用 Pele 类名） |
 | `--browser <path>` | 浏览器可执行文件路径（默认自动探测 Edge/Chrome） |
@@ -130,8 +128,8 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 
 ```json
 {
-  "theme": "tech", "engine": "pele", "layout": "elk", "format": "png", "background": "#FFFFFF",
-  "preset": "slide", "brand": "#E4572E", "fallbacks": 0,
+  "theme": "tech", "engine": "pele", "format": "png", "background": "#FFFFFF",
+  "preset": "slide", "brand": "#E4572E",
   "caption": { "title": "Q1 销售构成", "subtitle": null, "source": "财务月报", "unit": "万元" },
   "blocks": 3, "rendered": 3, "failed": 0,
   "files": ["doc-m1.png", "…"],
@@ -141,7 +139,7 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 }
 ```
 
-（`preset`/`brand`/`caption` 仅在使用对应参数时出现；`fallbacks` 仅在 `--engine auto` 实际回退时出现；`warnings` 始终为数组；`profile` 仅在同时传 `--profile` 时出现。）
+（`preset`/`brand`/`caption` 仅在使用对应参数时出现；`engine` 恒为 `"pele"`；`warnings` 始终为数组；`profile` 仅在同时传 `--profile` 时出现。）
 
 ## 信息卡（mmdx card）
 
@@ -252,7 +250,7 @@ export default (theme) => {
 | --- | --- |
 | `--theme-js` 改 `config.themeVariables` | 报错并提示迁移到 `theme.vars` / `theme.shapes` |
 | `--config` 传 `themeVariables` / `themeCSS` | Pele 忽略并给 `config-ignored` 警告 |
-| `--layout elk` | 自动切到 `--engine mermaid`；`--engine pele --layout elk` 视为参数冲突 |
+| `--layout elk`（1.x 遗留） | 参数已移除，按用法错误退出（exit 2）；改用 Pele 自带布局，或用 `--config` 调 `flowchart.nodeSpacing` / `rankSpacing` |
 | `excalidraw` 线条仍是直的 | 检查 `-t excalidraw`；`rough.js asset missing` 表示 `vendor/rough.js` 未随构建打包 |
 | `--style-fill` 对非 `excalidraw` 无效 | 预期行为；`--json` 的 `warnings` 会提示只对 `excalidraw` 生效 |
 | `-f svg` 默认颜色 | 仍烘焙成 hex；需要可换肤 SVG 时加 `--svg-themeable` |
@@ -276,7 +274,7 @@ page-init       ~1.0s ×页     screenshot      ~90ms ×图（含像素级二次
 | 只要 SVG | `-f svg` 跳过截图环节 |
 | 首图慢 | browser-launch + page-init 是固定成本（~1.7s），批量摊薄；单图无解，属正常 |
 
-管线事实：单 Chromium 实例 + 页面池 + 有界 worker；Pele bundle（~700KB）按需注入，Mermaid（3.5MB）和 ELK（7MB bundle）只在 `--engine mermaid` / `--engine auto` 回退时解析；截图跨页面串行化（headless Chrome 只服务活动 tab）；渲染卡死 60s 熔断，每图自动重试一次。
+管线事实：单 Chromium 实例 + 页面池 + 有界 worker；唯一的引擎资源 Pele bundle（~700KB）按需注入，没有第二套引擎可回退，也没有额外的布局 bundle；截图跨页面串行化（headless Chrome 只服务活动 tab）；渲染卡死 60s 熔断，每图自动重试一次。
 
 ## 排障
 
@@ -286,8 +284,8 @@ page-init       ~1.0s ×页     screenshot      ~90ms ×图（含像素级二次
 | `render timed out after 60s` | 资源紧张/浏览器假死 | CLI 已自动重试；仍失败重跑整条命令，持续则 `--jobs 1` 隔离 |
 | `icon pack "xxx" not found` | 网络不通（unpkg） | 去掉 `--icon` 或先联网跑一次用缓存 |
 | 中文变方块 | 不应发生（内置字体） | 检查 `--config`/`--theme-js` 是否覆盖了 fontFamily |
-| `Parsing error` / `pele: Parse error`（exit 1） | **图语法错误** | 按行信息修图；Pele 不支持的写法加 `--engine mermaid` 或 `--engine auto` |
-| `--layout belongs to the mermaid engine` | 参数冲突 | 去掉 `--layout`，或改 `--engine mermaid` |
+| `Parsing error` / `pele: Parse error`（exit 1） | **图语法错误** | 按行信息修图；Pele 不支持的写法改成等价的可渲染图型（flowchart / state / sequence 等），没有别的引擎可切 |
+| `unknown option --engine` / `--layout` | 1.x 遗留参数，已随第二引擎移除 | 去掉这两个参数；布局与间距用 `--config` 的 `flowchart.nodeSpacing` / `rankSpacing` 调 |
 | `--theme-js v2 receives a ThemeSpec` | 1.x 换色脚本 | 按提示改 `theme.vars` / `theme.shapes` |
 | `config "…" is not supported by the pele engine` | `--config` 白名单之外 | 颜色用 `--theme-js`，字号/间距用 `fontSize` / `flowchart.*` |
 | exit 2 | 参数用法错误 | `mmdx --help` 对照 |

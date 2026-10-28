@@ -4,7 +4,7 @@
 
 每种围栏一张 **本工具渲染** 的 PNG（`bun scripts/make-review.ts`）。扩展块只出 PNG，均吃 `--title` / `--subtitle` / `--source` / `--unit` 图题层，强调色走 `--brand`。
 
-mermaid 二十种图型拼图：Pele [contact-sheet-pele.png](../tests/contact-sheet-pele.png)、mermaid [contact-sheet-mermaid.png](../tests/contact-sheet-mermaid.png)（`bun scripts/make-contact-sheet.ts`）。
+mermaid 二十种图型拼图：[contact-sheet-pele.png](../tests/contact-sheet-pele.png)（脚本 `bun scripts/make-contact-sheet.ts` 产出 `tests/contact-sheet.png`，`-pele` 是同一张图的副本、保留给旧链接；Pele 是唯一引擎，不再按引擎出两版）。
 
 画幅：贴聊天/窄栏用 `--preset column`（800px@2、字号 18、标签换行 200px，2K 屏约 1/3 栏宽），扩展块按该画幅排版。`--json.warnings` 里 `column-shrink`（mermaid 图或 ` ```chart ` 的内在宽度超过 800px、会被 CSS 缩小）与 `column-landscape`（源是 `flowchart LR/RL`）是这条画幅的越界提示。贴 PPT 用 `--preset slide`，Word/PDF 用 `a4`，飞书卡片用 `square`。
 
@@ -231,6 +231,6 @@ CI 分钟, 8, 3
 ## 更新样图
 
 ```bash
-bun scripts/make-contact-sheet.ts   # Pele / mermaid 拼图 → tests/contact-sheet-*.png
+bun scripts/make-contact-sheet.ts   # 二十种图型拼图 → tests/contact-sheet.png（Pele 唯一引擎；contact-sheet-pele.png 是同图副本）
 bun scripts/make-review.ts          # 扩展块 → docs/ext-*.png
 ```

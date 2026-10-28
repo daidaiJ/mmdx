@@ -10,18 +10,18 @@ depends on the components below. Full license texts are kept in [`licenses/`](li
 
 | Component | Version | License | Source | How it is used |
 | --- | --- | --- | --- | --- |
-| Pele | 1.9.0 | MIT | https://github.com/obsidianmd/pele | `vendor/pele.global.js`; default Mermaid→SVG engine |
-| Mermaid | 11.17.2 | MIT | https://github.com/mermaid-js/mermaid | `vendor/mermaid.min.js`; `--engine mermaid` fallback |
-| @mermaid-js/layout-elk | 0.2.3 | MIT | https://github.com/mermaid-js/mermaid-layout-elk | ELK layout entry, compiled into `vendor/elk.bundle.mjs` |
-| elkjs | 0.9.3 | EPL-2.0 | https://github.com/kieler/elkjs | ELK layout runtime inside `vendor/elk.bundle.mjs` |
+| Pele | 1.9.0 | MIT | https://github.com/obsidianmd/pele | `vendor/pele.global.js`; the only Mermaid-syntax→SVG engine |
 | rough.js | 4.6.6 | MIT | https://github.com/rough-stuff/rough | `vendor/rough.js`; hand-drawn stroke post-processing |
 | svgo | 4.1.0 | MIT | https://github.com/svg/svgo | Browser build; SVG minification |
 | Noto Sans SC (subset) | — | OFL-1.1 | https://github.com/notofonts/noto-cjk | `assets/fonts/NotoSansSC-Subset.woff2`; bundled CJK font |
+| Noto Serif SC (subset) | — | OFL-1.1 | https://github.com/notofonts/noto-cjk | `assets/fonts/NotoSerifSC-Subset.woff2`; serif-stack CJK for authored HTML |
+| LXGW WenKai (subset) | — | OFL-1.1 | https://github.com/lxgw/LxgwWenKai | `assets/fonts/LXGWWenKai-Subset.woff2`; kai CJK for authored HTML |
 
-`NotoSansSC-Subset.woff2` is a subset of the upstream font. It is redistributed under
-the SIL Open Font License 1.1; the license text is in
-[`licenses/NotoSansSC-OFL.txt`](licenses/NotoSansSC-OFL.txt). Copyright remains with the
-upstream Noto project authors as stated in the font metadata.
+The three font files are subsets of the upstream families, redistributed under the SIL
+Open Font License 1.1; license texts ship next to them as
+`assets/fonts/OFL-notoserifsc.txt` and `assets/fonts/OFL-lxgwwenkai.txt`, and the sans
+subset under [`licenses/NotoSansSC-OFL.txt`](licenses/NotoSansSC-OFL.txt). Copyright
+remains with the upstream projects as stated in the font metadata.
 
 ## Runtime dependencies
 
@@ -46,9 +46,6 @@ ships no proprietary brand fonts or logos.
 ## License texts
 
 - [`licenses/pele-MIT.txt`](licenses/pele-MIT.txt)
-- [`licenses/mermaid-MIT.txt`](licenses/mermaid-MIT.txt)
-- [`licenses/layout-elk-MIT.txt`](licenses/layout-elk-MIT.txt)
-- [`licenses/elkjs-EPL-2.0.md`](licenses/elkjs-EPL-2.0.md)
 - [`licenses/roughjs-MIT.txt`](licenses/roughjs-MIT.txt)
 - [`licenses/pngjs-MIT.txt`](licenses/pngjs-MIT.txt)
 - [`licenses/svgo-MIT.txt`](licenses/svgo-MIT.txt)
@@ -56,10 +53,11 @@ ships no proprietary brand fonts or logos.
 - [`licenses/NotoSansSC-OFL.txt`](licenses/NotoSansSC-OFL.txt)
 - [`licenses/OFL-1.1.txt`](licenses/OFL-1.1.txt)
 
+
 ## Release checklist
 
 - [x] Direct bundled/runtime components listed with version, license, and source.
-- [x] EPL-2.0, Apache-2.0, and OFL-1.1 texts included.
+- [x] Apache-2.0 and OFL-1.1 texts included.
 - [ ] Regenerate the transitive dependency list from the lockfile and reconcile it
       before publishing a release archive.
 - [ ] Ship `THIRD_PARTY_NOTICES.md` and `licenses/` next to the binary.

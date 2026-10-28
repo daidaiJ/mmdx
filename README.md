@@ -20,14 +20,14 @@
 | 🧪 质量门禁 | [docs/QUALITY.md](docs/QUALITY.md) | 像素 lint 覆盖、已知盲区、发布前许可证清单 |
 | 🖋 手绘 editorial 规格 | [skill/editorial/](skill/editorial/README.md) | vendored diagram-design 规格（MIT）：偶发封面 / 方案插图按其规格手绘 HTML，`mmdx file.html --scale 3` 导出 |
 | 📃 叙事解释页规格 | [skill/explain/](skill/explain/README.md) | vendored visual-explainer 规格化改造版（MIT）：解释页 / 评审页 / recap / 幻灯片页用 starter 装配 HTML，同命令导出 |
-| 📚 skill 参考速查 | [skill/references/](skill/references/) | 围栏语法、图型示例、主题与引擎、排障四篇按需读取 |
+| 📚 skill 参考速查 | [skill/references/](skill/references/) | 围栏语法、图型示例、主题与 Pele 配置、排障四篇按需读取 |
 | 📜 变更历史 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 
 各文档均为中文默认，同名 `.en.md` 为英文版。
 
 ## ✨ 核心特性
 
-- **Pele 默认引擎**：Obsidian 开源的 Mermaid→SVG 渲染器，单图 SVG 生成 1–50ms；Mermaid 11 + ELK 保留为 `--engine mermaid` 回退
+- **Pele 唯一引擎**：Obsidian 开源的 Mermaid→SVG 渲染器，单图 SVG 生成 1–50ms；输入仍是 Mermaid 语法（围栏 / `.mmd` / stdin），但只有这一条渲染路径，没有第二套布局引擎
 - **CSS 变量主题**：Pele 把颜色/字体/圆角全部外置为 `--pele-*` 变量，`-f svg` 默认烘焙成 hex，`--svg-themeable` 保留可换肤 SVG；三套预设共用形状分色（蓝=流程、琥珀=判定、绿=状态、紫=存储）
 - **内置中文字体（三家族）**：Noto Sans SC（通用）/ Noto Serif SC（衬线栈）/ 霞鹜文楷（楷体标注）的 GB2312 全量子集，合计约 6.2MB，任意机器渲染一致，中文标签换行正确；后两者与 `sans-serif`/`serif` 的 CJK 兜底 alias 只为手写 HTML 文档注入，围栏与 mermaid 仍只用黑体
 - **像素级均匀留白**：每张图二次裁切到墨迹包围盒，四边留白对称是构造保证，不靠引擎不可靠的 viewBox
@@ -65,7 +65,7 @@ echo "graph LR; A-->B" | mmdx - -f svg      # stdin 单图
 
 更多用法（多文件批量、精确命名、标题注入）见 [HUMAN_GUIDE 快速开始](docs/HUMAN_GUIDE.md#快速开始)。
 
-默认引擎是 Pele。需要 ELK 或 Mermaid 专属语法时加 `--engine mermaid`（传 `--layout elk` 也会自动选中 Mermaid）；`--engine auto` 先试 Pele，失败后回退。`-f svg` 默认把主题烘焙成 hex，`--svg-themeable` 保留 `--pele-*` CSS 变量。
+渲染引擎固定为 Pele，没有 `--engine` / `--layout` 开关；围栏写法超出 Pele 支持范围时直接报 `Parsing error`（exit 1），按提示改写图型。`-f svg` 默认把主题烘焙成 hex，`--svg-themeable` 保留 `--pele-*` CSS 变量。
 
 ## 🖼 使用示例
 
@@ -137,7 +137,7 @@ browser-launch  ~0.5s ×1      pele-render     ~26ms ×图
 page-init       ~1.0s ×页     screenshot      ~90ms ×图（含像素级二次裁切）
 ```
 
-- Pele bundle（~700KB）懒注入；Mermaid（3.5MB）与 ELK（7MB bundle）只在 `--engine mermaid` / `--engine auto` 回退时解析
+- 只有一个引擎资源：Pele bundle（~700KB）懒注入；二进制不再内嵌 Mermaid（~3.5MB）与 ELK（~5MB）bundle
 - 截图跨页面串行化（headless Chrome 只服务活动 tab）+ 视口按内容适配，2x 高清单图仍在 ~100ms 量级
 - 渲染卡死 60s 必然报错而不是挂住整批；每个图自动重试一次
 - PNG 为 2x 无损（典型架构图 20–80KB）；SVG 经 svgo 压缩——二进制内嵌 svgo 官方 browser 构建（自包含 ESM），压缩后的 SVG 与 PNG 一样开箱即得

@@ -4,7 +4,7 @@
 
 Office diagram CLI. Renders fenced blocks to PNGs you can paste into PPT / Word / Feishu. Themes, CJK font, Pele layout, and padding are built in. **Do not hand-style diagram code.**
 
-> Human-readable version: [HUMAN_GUIDE.en.md](HUMAN_GUIDE.en.md) · Extension gallery: [EXTENSIONS.en.md](EXTENSIONS.en.md) · On-demand references: [skill/references/](../skill/references/) (fence syntax / diagram examples / themes & engines / troubleshooting) · Overview: [README](../README.en.md)
+> Human-readable version: [HUMAN_GUIDE.en.md](HUMAN_GUIDE.en.md) · Extension gallery: [EXTENSIONS.en.md](EXTENSIONS.en.md) · On-demand references: [skill/references/](../skill/references/) (fence syntax / diagram examples / themes & Pele config / troubleshooting) · Overview: [README](../README.en.md)
 
 ## Scene tiers (pick the tier before writing)
 
@@ -65,7 +65,7 @@ mmdx card --in note.md -t openai --tone neutral --width 600 -o card.png
 
 Chat/slides: `-f png` or `--preset slide|a4|square|column` (preset defaults to png unless `-f` is explicit). **Projection / PPT / all-hands / big screen** must use `--preset slide` (18px type + heavier strokes) plus `--title`. Do not hand-tune contrast with `--css`; do not project a dark page in a meeting room. Chat / narrow column: `--preset column` (800px@2, 18px type, 200px label wrap) with `flowchart TD` — do not raise `--width` (smaller type after scaling). Feishu cards: `square`. Word: `a4`. `both` is for developers embedding Markdown. Explicit `--width`/`--scale`/`-f` override the preset. Brand: `--brand #2563EB` (accent only; skip washed-out light blues on a projector). `column-landscape` / `column-shrink` in `--json.warnings` → switch to `flowchart TD` or split.
 
-Default `--engine pele`. For ELK or Mermaid-only syntax use `--engine mermaid` (or `--layout elk`, which selects Mermaid automatically); when unsure use `--engine auto`. `-f svg` bakes colors by default; `--svg-themeable` keeps CSS variables.
+Pele is the only engine — there is no `--engine` / `--layout` switch; syntax Pele cannot parse fails with `Parsing error` (exit 1), so rewrite it into an equivalent diagram type. `-f svg` bakes colors by default; `--svg-themeable` keeps CSS variables.
 
 ## HTML export
 
@@ -134,7 +134,7 @@ Figure-lint codes and fixes:
 
 ## JSON contract (--json)
 
-One JSON on stdout: `theme/engine/layout/format/background/preset?/brand?/fallbacks?/caption?/blocks/rendered/failed/files[]/errors[]/warnings[{input,index,code,message}]`; with `--profile` an extra `profile`. Non-JSON mode prints artifact paths on stdout.
+One JSON on stdout: `theme/engine/format/background/preset?/brand?/caption?/blocks/rendered/failed/files[]/errors[]/warnings[{input,index,code,message}]` (`engine` is always `"pele"`); with `--profile` an extra `profile`. Non-JSON mode prints artifact paths on stdout.
 
 ## Error triage
 
@@ -144,8 +144,8 @@ One JSON on stdout: `theme/engine/layout/format/background/preset?/brand?/fallba
 | `render timed out after 60s` | Resource pressure / hang | CLI already retried; isolate with `--jobs 1` |
 | `icon pack "xxx" not found` | Network down (unpkg) | Drop `--icon`, or run once online to warm the cache |
 | Chinese glyphs become boxes | Shouldn't happen (font bundled) | Check whether `--config`/`--theme-js` overrode fontFamily |
-| `Parsing error` / `pele: Parse error` / limit message (exit 1) | **Diagram or fence is wrong** | Fix per the message; for unsupported syntax add `--engine mermaid` or `--engine auto` |
-| `--layout belongs to the mermaid engine` | Parameter conflict | Drop `--layout`, or use `--engine mermaid` |
+| `Parsing error` / `pele: Parse error` / limit message (exit 1) | **Diagram or fence is wrong** | Fix per the message; rewrite into an equivalent renderable type — there is no other engine to switch to |
+| `unknown option --engine` / `--layout` | 1.x flags, removed with the second engine | Drop them; spacing via `--config` `flowchart.nodeSpacing` / `rankSpacing` |
 | `--theme-js v2 receives a ThemeSpec` | 1.x recolor script | Use `theme.vars` / `theme.shapes` |
 | `config "…" is not supported by the pele engine` | Key outside the whitelist | Colors via `--theme-js`; size/spacing via `fontSize` / `flowchart.*` |
 | exit 2 | Usage error | Compare against `mmdx --help` |

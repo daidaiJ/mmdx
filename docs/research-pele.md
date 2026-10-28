@@ -1,5 +1,7 @@
 # 后续：Pele 作为 mermaid 渲染引擎
 
+> **2026-10-28 补记：** Mermaid/ELK 回退已在 2.x 移除——`--engine`、`--layout` 与 `--json.fallbacks` 都不存在了，Pele 是唯一引擎（`sketch` 也已随主题收敛移除）。下面「已落地 / 降级说明」两节是当时的记录：其中 `--engine mermaid`、`--layout elk|dagre`、「`sketch` 自动回退」、「`--icon` 未接线」均已过时——图标现已通过 Pele 的 `icons` 回调注入，C4 的 `UpdateElementStyle` 也能改单个元素颜色。
+
 > 状态：**done**（v1.3.0，2026-10-23）· 对象：[obsidianmd/pele](https://github.com/obsidianmd/pele)（MIT，v1.9.0，Mermaid-12.1 语法、自研布局）
 
 ## 已落地

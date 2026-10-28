@@ -33,6 +33,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+- **Breaking:** the engine set is now Pele only: `--engine pele|mermaid|auto`, `--layout elk|dagre` and the `fallbacks` field in `--json` are gone, along with the `mermaid` and `@mermaid-js/layout-elk` dependencies and their shipped bundles (~3.5MB mermaid.min.js, 5.0MB elk.bundle.mjs). The input syntax is still Mermaid (fences / `.mmd` / stdin) and `--json` reports `engine: "pele"`; a diagram Pele cannot parse no longer has a fallback engine
 - **Breaking:** the preset set is now three themes: `tech` (default) / `openai` / `excalidraw`. Eleven presets are removed: `openai-dark`, `openai-editorial`, `vercel`, `linear`, `stripe`, `notion`, `ibm`, `minimal`, `latte`, `mocha`, `sketch`. Old theme names now fail with `unknown theme`; `--help` lists what remains
 - New `--tone paper|neutral|product`: structural block overrides only (radius/shadow/display type/table headers/chip radius); the palette stays with the theme. Applies only when passed, so existing output is unchanged
 - New `mmdx card`: Markdown or URL → info-card PNG; default theme `openai`, with `--tone`, 480/600/900+ widths, splits by actual pixel height, `--json` reports `cards`/`files`/`pages`
