@@ -2,7 +2,7 @@
 
 # mmdx — Agent Guide
 
-办公出图 CLI。把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG；主题、中文字体、ELK、留白全部内置。**不要在图代码里手工调样式，不要用手绘 SVG。**
+办公出图 CLI。把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG；主题、中文字体、Pele 布局、留白全部内置。**不要在图代码里手工调样式，不要用手绘 SVG。**
 
 > 人类阅读版：[HUMAN_GUIDE.md](HUMAN_GUIDE.md) · 扩展块图鉴：[EXTENSIONS.md](EXTENSIONS.md) · 项目概览：[README](../README.md)
 
@@ -45,9 +45,13 @@ mmdx a.md b.md -o dist/ --preset slide
 mmdx doc.md --index 2 -f png
 # L2 精确命名 / stdin
 echo "graph LR; A-->B" | mmdx - -f png
+# 信息卡（Markdown 或 URL；--tone 控制结构）
+mmdx card --in note.md -t openai --tone neutral --width 600 -o card.png
 ```
 
-聊天/幻灯片 `-f png` 或 `--preset slide|a4|square`（preset 未显式 `-f` 时默认 png）。**投屏 / PPT / 上会 / 周会 / 大屏** 必须 `--preset slide`（字号 18 + 加粗描边），并带 `--title`；不要用 `--css` 手调对比度，不要用暗色主题投会议室。飞书卡片 `square`，Word `a4`。`both` 仅开发者嵌 Markdown。显式 `--width`/`--scale`/`-f` 覆盖 preset。跟 VI：`--brand #2563EB`（只改强调色；投影不要用过浅的蓝）。
+聊天/幻灯片 `-f png` 或 `--preset slide|a4|square`（preset 未显式 `-f` 时默认 png）。**投屏 / PPT / 上会 / 周会 / 大屏** 必须 `--preset slide`（字号 18 + 加粗描边），并带 `--title`；不要用 `--css` 手调对比度，也不要把深色页面投会议室。飞书卡片 `square`，Word `a4`。`both` 仅开发者嵌 Markdown。显式 `--width`/`--scale`/`-f` 覆盖 preset。跟 VI：`--brand #2563EB`（只改强调色；投影不要用过浅的蓝）。
+
+默认 `--engine pele`。需要 ELK 或 Mermaid 专属语法：`--engine mermaid`（或 `--layout elk`，会自动选中 Mermaid）；不确定时 `--engine auto`。`-f svg` 默认烘焙颜色，`--svg-themeable` 才保留 CSS 变量。
 
 ## 选型速查
 
@@ -90,7 +94,7 @@ echo "graph LR; A-->B" | mmdx - -f png
 
 ## JSON 契约（--json）
 
-stdout 单份 JSON：`theme/layout/format/background/preset?/brand?/caption?/blocks/rendered/failed/files[]/errors[]/warnings[{input,index,code,message}]`；加 `--profile` 时附 `profile`。非 JSON 模式 stdout 逐行产物路径。
+stdout 单份 JSON：`theme/engine/layout/format/background/preset?/brand?/fallbacks?/caption?/blocks/rendered/failed/files[]/errors[]/warnings[{input,index,code,message}]`；加 `--profile` 时附 `profile`。非 JSON 模式 stdout 逐行产物路径。
 
 ## 错误速诊
 
@@ -100,16 +104,36 @@ stdout 单份 JSON：`theme/layout/format/background/preset?/brand?/caption?/blo
 | `render timed out after 60s` | 资源紧张/假死 | CLI 已自动重试；持续则 `--jobs 1` |
 | `icon pack "xxx" not found` | 网络不通（unpkg） | 去掉 `--icon` 或先联网跑一次用缓存 |
 | 中文变方块 | 不应发生（内置字体） | 检查 `--config`/`--theme-js` 是否覆盖 fontFamily |
-| `Parsing error` / 超限信息（exit 1） | **图或围栏写错** | 按信息修图，其他块不受影响 |
+| `Parsing error` / `pele: Parse error` / 超限信息（exit 1） | **图或围栏写错** | 按信息修图；Pele 不支持的写法加 `--engine mermaid` 或 `--engine auto` |
+| `--layout belongs to the mermaid engine` | 参数冲突 | 去掉 `--layout`，或改 `--engine mermaid` |
+| `--theme-js v2 receives a ThemeSpec` | 1.x 换色脚本 | 改 `theme.vars` / `theme.shapes` |
+| `config "…" is not supported by the pele engine` | `--config` 白名单外 | 颜色用 `--theme-js`，字号/间距用 `fontSize` / `flowchart.*` |
 | exit 2 | 参数用法错误 | `mmdx --help` 对照 |
-| SVG 在非浏览器工具文字消失 | svg 是 HTML 实现 | 改 `-f png` |
+| SVG 在 Office 颜色丢失 | 用了 `--svg-themeable` | 去掉该 flag，或改 `-f png` |
 
 总原则：**exit 2 = 参数错；exit 1 = 图写错或超限；报错先查表，别盲目重装环境**。
 
 ## 主题速记
 
-`-t`：`tech`（默认，形状分色 + 可见填色，适合文档和投屏）· `openai`/`openai-dark` · `minimal` · `latte`/`mocha` · `sketch`。
-叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。`--brand` 不重涂 flowchart 判定菱形。投屏不要换 `mocha`/`openai-dark`。
+`-t`：`tech`（默认，形状分色 + 可见填色，适合文档和投屏）· `openai`（干净工程师文档：纯白、墨黑、薄荷绿点缀、发丝边框）· `excalidraw`（手绘线条 + 粉彩填色）。
+`excalidraw` 默认实心填色；`--style-fill hachure` 切斜线。块页和信息卡用 `--tone paper|neutral|product` 控制结构，配色仍由主题决定。叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。`--brand` 不重涂 flowchart 判定菱形。
+
+| 场景 | 首选 | 备选 | tone |
+| --- | --- | --- | --- |
+| 方案 / 周报 / 投屏 | `tech` | `openai` | `neutral` |
+| 工程师文档 / README | `openai` | `tech` | `neutral` |
+| 发布说明 / 工程博客 | `openai` | `tech` | `product` |
+| 对外报告 / 打印 | `openai` | `tech` | `paper` |
+| 金融 / 商业报告 | `openai` | `tech` | `paper` |
+| 知识库 / 长文 | `tech` | `openai` | `neutral` |
+| 企业架构 / 合规 | `tech` | `openai` | `product` |
+| 产品评审 | `openai` | `tech` | `product` |
+| 白板 / 脑暴 | `excalidraw` | `openai` | `neutral` |
+| 轻松分享 | `excalidraw` | `tech` | `paper` |
+
+信息卡：对外/打印用 `openai` + `paper`；工程文档用 `tech` + `neutral`；发布/产品用 `openai` + `product`。详见 `skill/info-card-designer/SKILL.md`。
+
+`--theme-js` 是 v2 契约：`(theme) => theme`，改 `theme.vars` / `theme.shapes` / `theme.css`，不要再碰 Mermaid 的 `themeVariables`。
 
 ## 退出码
 
@@ -119,5 +143,5 @@ stdout 单份 JSON：`theme/layout/format/background/preset?/brand?/caption?/blo
 
 - 批量 >30 块 → `--jobs 4`（默认 2；单浏览器页池，别更高）
 - 同名 md 导出到同一 `-o` 目录互相覆盖 → 分目录或 `--index`
-- `--config` 的 JSON 要落成真实文件（Windows 无进程替换）
+- `--config` 的 JSON 要落成真实文件（Windows 无进程替换）；只接受 `fontSize` / `padding` / `flowchart.spacing`
 - 手写 `xychart-beta` 容易出丑 → 改用 ` ```chart `

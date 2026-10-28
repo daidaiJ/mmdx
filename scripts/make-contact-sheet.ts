@@ -3,9 +3,10 @@
 // hairline borders). Run after tests/run.ts: bun scripts/make-contact-sheet.ts
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
 
-const ROOT = path.join(import.meta.dir, '..');
+const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const SRC = path.join(ROOT, 'tests', 'artifacts');
 const OUT = path.join(ROOT, 'tests', 'contact-sheet.png');
 

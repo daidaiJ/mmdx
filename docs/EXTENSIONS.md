@@ -34,7 +34,7 @@ GFM 管道表。支持对齐、行内 `**加粗**` 与 `` `code` ``。
   - 检测浏览器（Edge/Chrome）
   - 复用页面池
 - 主题系统
-  - 内置 7 套预设
+  - 内置 3 套预设
   - `--theme-js` 与 `--css` 自定义
 - 导出
   1. SVG（svgo 压缩）
@@ -51,7 +51,7 @@ GFM 管道表。支持对齐、行内 `**加粗**` 与 `` `code` ``。
 ````markdown
 ```card
 🚀 | 渲染管线 | 单浏览器页池复用，PNG 2x 无损导出
-🎨 | 主题系统 | tech/openai/minimal/latte/mocha/sketch 七套预设
+🎨 | 主题系统 | tech/openai/excalidraw 三套预设
 🧩 | 扩展语法 | 表格、列表、卡片均可独立成图
 📦 | 二进制分发 | Release 直接下载，免 Node 运行时
 ```

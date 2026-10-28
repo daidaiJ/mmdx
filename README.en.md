@@ -16,16 +16,18 @@
 | 🤖 AI Agent | [docs/AGENT_GUIDE.en.md](docs/AGENT_GUIDE.en.md) | Token-lean: env self-check, diagram picking, flag cheatsheet, JSON contract, error triage |
 | 👤 Human user | [docs/HUMAN_GUIDE.en.md](docs/HUMAN_GUIDE.en.md) | Readable: install & deploy, full CLI reference, theming, performance tuning, troubleshooting |
 | 🖼 Extension blocks | [docs/EXTENSIONS.en.md](docs/EXTENSIONS.en.md) | One tool-rendered PNG + syntax per fence |
+| 🎭 Style gallery | [docs/GALLERY.en.md](docs/GALLERY.en.md) | One case across three styles: flowchart / KPI / cards / table |
+| 🧪 Quality gates | [docs/QUALITY.en.md](docs/QUALITY.en.md) | Pixel-lint coverage, known blind spots, pre-release license checklist |
 | 📜 Changelog | [CHANGELOG.md](CHANGELOG.md) | Release history |
 
 Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 
 ## ✨ Highlights
 
-- **`tech` default theme**: white canvas, shape-coded tinted fills (blue = process, amber = decision, green = state, purple = storage); `--preset slide` thickens strokes and type for projection; 6 more presets; all 20 mermaid diagram types
+- **Pele default engine**: Obsidian's Mermaid→SVG renderer, 1–50 ms per diagram; Mermaid 11 + ELK retained as `--engine mermaid` fallback
+- **CSS-variable themes**: Pele exposes every color/font/radius as `--pele-*`; `-f svg` bakes hex by default, `--svg-themeable` keeps a re-themeable SVG; three presets share shape coding (blue = process, amber = decision, green = state, purple = storage)
 - **Bundled CJK font**: Noto Sans SC subset (full GB2312 + Latin, only 1.9 MB) — identical rendering on any machine, correct wrapping for Chinese labels
-- **ELK layout engine**: official `@mermaid-js/layout-elk`, lazily loaded for flowcharts only; edge avoidance and long-label wrapping out of the box
-- **Pixel-level even padding**: every image is re-cropped to its ink bounding box; symmetric margins are a construction guarantee, not mermaid's unreliable viewBox
+- **Pixel-level even padding**: every image is re-cropped to its ink bounding box; symmetric margins are a construction guarantee, not the engine's unreliable viewBox
 - **Extension blocks**: ```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane straight to PNG
 - **Office delivery**: `--preset slide|a4|square`, title/source/unit chrome, `--brand` accent; agent-friendly `--json` (including `warnings`)
 
@@ -57,13 +59,15 @@ echo "graph LR; A-->B" | mmdx - -f svg      # single diagram from stdin
 
 More (multi-file batches, exact naming, title injection) in the [HUMAN_GUIDE quick start](docs/HUMAN_GUIDE.en.md#quick-start).
 
+The default engine is Pele. Use `--engine mermaid` for ELK or Mermaid-only syntax (`--layout elk` selects Mermaid automatically); `--engine auto` tries Pele first and falls back. `-f svg` bakes theme colors to hex; `--svg-themeable` keeps `--pele-*` CSS variables.
+
 ## 🖼 Usage
 
 ```bash
 mmdx a.md b.md other/*.md -o dist/          # multi-file batch, parallel
 mmdx diagram.mmd -o out/arch.svg            # exact name; sibling .png written alongside
 mmdx report.md --index 2 --title "Architecture" --title-pos bottom
-mmdx doc.md -t mocha --background transparent -f png --json
+mmdx doc.md -t tech --background transparent -f png --json
 ```
 
 Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` / `kpi` / `compare` / `vs` / `funnel` / `task` / `progress` / `gauge` / `heatmap` / `swimlane` (extension blocks, PNG only). For slides: `mmdx doc.md --preset slide --title "…" --source "…"`.
@@ -72,7 +76,7 @@ Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` /
 
 ```card
 🚀 | Render pipeline | single-browser page pool, lossless 2x PNG export
-🎨 | Theme system | seven presets, customizable via theme-js and css
+🎨 | Theme system | three presets, customizable via theme-js, tone and css
 ```
 
 ![Card rendering sample](docs/ext-card.png)
@@ -82,23 +86,40 @@ Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` /
 | | |
 | --- | --- |
 | `tech` (default) | Design-doc style: white background, shape coding, thin borders, orthogonal edges |
-| `openai` / `openai-dark` | Near-monochrome, thin borders, mint accents |
-| `minimal` | Obsidian Minimal: warm neutrals + a single violet accent |
-| `latte` / `mocha` | Catppuccin palettes |
-| `sketch` | Mermaid `look: handDrawn` whiteboard style |
+| `openai` | Near-monochrome engineering look: white ground, ink text, mint (teal) accent, hairline borders; pair with `--tone paper` for serif captions and 16px block cards |
+| `excalidraw` | Hand-drawn: pastel fills + rough ink strokes, Excalifont/LXGW; whiteboard-style blocks |
 
-Layering order: preset → `--theme-js` → `--config` → `--css`. Customization (CSS snippets, full recolor functions) in the [HUMAN_GUIDE theming section](docs/HUMAN_GUIDE.en.md#theming).
+`excalidraw` uses solid fills by default; add `--style-fill hachure` for hatched fills (about 1.5–2× larger SVG; keep solid for projectors).
+
+`--tone paper|neutral|product` changes block structure only (radius, shadow, display type, table headers); the palette still comes from the theme. Info cards are a standalone skill, [`info-card-designer`](skill/info-card-designer/SKILL.md), applying the same theme and tone to Markdown or a web article:
+
+```bash
+mmdx card --in note.md -t openai --tone neutral --width 600 -o note-card.png
+mmdx card --url https://example.com/post -t openai --tone paper
+```
+
+Layering order: preset → `--brand` → `--theme-js` → `--config` → `--css`. v2 `--theme-js` receives a `ThemeSpec` (`theme.vars` / `theme.shapes` / `theme.css`); examples in the [HUMAN_GUIDE theming section](docs/HUMAN_GUIDE.en.md#theming).
+
+## 🎭 Style gallery
+
+The same “gray release retrospective” case in `tech`, `openai`, and `excalidraw`; the Markdown stays identical and only `-t` changes. The overview keeps one flowchart for a quick comparison:
+
+[![The same case as a flowchart in three styles](docs/gallery/overview.png)](docs/GALLERY.en.md)
+
+Also see [two HTML scenario templates](docs/gallery/html-skills.en.md) (report cards and info cards across styles), [hand-drawn HTML templates](docs/gallery/vendored-html.en.md) (v1.4.2 editorial / visual-explainer), and the [info-card tone comparison](docs/gallery/card-tones.en.md) (paper / neutral / product).
+
+The full four scenes (flowchart / KPI / cards / table) live on one page per style. Selection guide and reproduce command: [docs/GALLERY.en.md](docs/GALLERY.en.md).
 
 ## ⚡ Pipeline & performance
 
 One Chromium + page pool + bounded workers; observable via `--profile`:
 
 ```
-browser-launch  ~0.5s ×1      mermaid-render ~95ms ×diagram
-page-init       ~1.2s ×page   screenshot      ~90ms ×diagram (incl. pixel-level re-crop)
+browser-launch  ~0.5s ×1      pele-render     ~26ms ×diagram
+page-init       ~1.0s ×page   screenshot      ~90ms ×diagram (incl. pixel-level re-crop)
 ```
 
-- ELK (7 MB bundle) parsed lazily: loaded only when a flowchart/graph actually renders; sequence/pie/gantt etc. pay zero cost
+- Pele bundle (~700 KB) is injected on demand; Mermaid (3.5 MB) and ELK (7 MB bundle) are parsed only for `--engine mermaid` / `--engine auto` fallback
 - Screenshots serialized across pages (headless Chrome serves one active tab) + viewport fitted to content; a 2x hi-res diagram still lands around ~100 ms
 - A hung render always errors after 60s instead of stalling the batch; each diagram is retried once
 - PNG is lossless 2x (typical architecture diagram 20–80 KB); SVG is minified by svgo — the official browser build is embedded in the binary (self-contained ESM), so minified SVG is as turnkey as PNG
@@ -107,11 +128,13 @@ Tuning knobs (concurrency, viewport, scale) in the [HUMAN_GUIDE performance sect
 
 ## 🧪 Testing
 
-`bun run tests/run.ts`, two layers — visual review only looks at items the script flags as suspicious:
+`bun run tests/run.ts`, four layers — visual review only looks at items the script flags as suspicious:
 
-1. **Library sweep**: 20 mermaid diagram types + table/list/card, rendered in one browser session, then pixel-analyzed (margin symmetry ±8px, content ratio, blank-image detection)
-2. **CLI behavior**: exit codes, `--index` naming, bad-block isolation, stdin, JSON contract, 19-file 4-concurrency batch
+1. **Library sweep**: 20 mermaid diagram types + table/list/card, rendered in one browser session, then pixel-analyzed (margin symmetry ±8px, content ratio, bottom blank band, blank-image detection)
+2. **CLI behavior**: exit codes, `--index` naming, bad-block isolation, stdin, JSON contract, multi-file 4-concurrency batch
+3. **Info cards**: Markdown/web extraction, width, pixel-height splitting, tone structure differences
+4. **Visual lint**: DOM overflow/outside elements/caption overlap, SVG label overflow, rendered contrast, PNG edge clipping, two-run determinism; rules in [docs/QUALITY.en.md](docs/QUALITY.en.md)
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Third-party components, fonts, and design references are attributed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

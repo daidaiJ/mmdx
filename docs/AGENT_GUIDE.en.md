@@ -2,7 +2,7 @@
 
 # mmdx — Agent Guide
 
-Office diagram CLI. Renders fenced blocks to PNGs you can paste into PPT / Word / Feishu. Themes, CJK font, ELK, and padding are built in. **Do not hand-style diagram code; do not freehand SVG.**
+Office diagram CLI. Renders fenced blocks to PNGs you can paste into PPT / Word / Feishu. Themes, CJK font, Pele layout, and padding are built in. **Do not hand-style diagram code; do not freehand SVG.**
 
 > Human-readable version: [HUMAN_GUIDE.en.md](HUMAN_GUIDE.en.md) · Extension gallery: [EXTENSIONS.en.md](EXTENSIONS.en.md) · Overview: [README](../README.en.md)
 
@@ -45,9 +45,13 @@ mmdx a.md b.md -o dist/ --preset slide
 mmdx doc.md --index 2 -f png
 # L2 exact name / stdin
 echo "graph LR; A-->B" | mmdx - -f png
+# Info card (Markdown or URL; --tone controls structure)
+mmdx card --in note.md -t openai --tone neutral --width 600 -o card.png
 ```
 
-Chat/slides: `-f png` or `--preset slide|a4|square` (preset defaults to png unless `-f` is explicit). **Projection / PPT / all-hands / big screen** must use `--preset slide` (18px type + heavier strokes) plus `--title`. Do not hand-tune contrast with `--css`; do not project `mocha`/`openai-dark`. Feishu cards: `square`. Word: `a4`. `both` is for developers embedding Markdown. Explicit `--width`/`--scale`/`-f` override the preset. Brand: `--brand #2563EB` (accent only; skip washed-out light blues on a projector).
+Chat/slides: `-f png` or `--preset slide|a4|square` (preset defaults to png unless `-f` is explicit). **Projection / PPT / all-hands / big screen** must use `--preset slide` (18px type + heavier strokes) plus `--title`. Do not hand-tune contrast with `--css`; do not project a dark page in a meeting room. Feishu cards: `square`. Word: `a4`. `both` is for developers embedding Markdown. Explicit `--width`/`--scale`/`-f` override the preset. Brand: `--brand #2563EB` (accent only; skip washed-out light blues on a projector).
+
+Default `--engine pele`. For ELK or Mermaid-only syntax use `--engine mermaid` (or `--layout elk`, which selects Mermaid automatically); when unsure use `--engine auto`. `-f svg` bakes colors by default; `--svg-themeable` keeps CSS variables.
 
 ## Diagram picking
 
@@ -90,7 +94,7 @@ Chat/slides: `-f png` or `--preset slide|a4|square` (preset defaults to png unle
 
 ## JSON contract (--json)
 
-One JSON on stdout: `theme/layout/format/background/preset?/brand?/caption?/blocks/rendered/failed/files[]/errors[]/warnings[{input,index,code,message}]`; with `--profile` an extra `profile`. Non-JSON mode prints artifact paths on stdout.
+One JSON on stdout: `theme/engine/layout/format/background/preset?/brand?/fallbacks?/caption?/blocks/rendered/failed/files[]/errors[]/warnings[{input,index,code,message}]`; with `--profile` an extra `profile`. Non-JSON mode prints artifact paths on stdout.
 
 ## Error triage
 
@@ -100,16 +104,36 @@ One JSON on stdout: `theme/layout/format/background/preset?/brand?/caption?/bloc
 | `render timed out after 60s` | Resource pressure / hang | CLI already retried; isolate with `--jobs 1` |
 | `icon pack "xxx" not found` | Network down (unpkg) | Drop `--icon`, or run once online to warm the cache |
 | Chinese glyphs become boxes | Shouldn't happen (font bundled) | Check whether `--config`/`--theme-js` overrode fontFamily |
-| `Parsing error` / limit message (exit 1) | **Diagram or fence is wrong** | Fix per the message; other blocks unaffected |
+| `Parsing error` / `pele: Parse error` / limit message (exit 1) | **Diagram or fence is wrong** | Fix per the message; for unsupported syntax add `--engine mermaid` or `--engine auto` |
+| `--layout belongs to the mermaid engine` | Parameter conflict | Drop `--layout`, or use `--engine mermaid` |
+| `--theme-js v2 receives a ThemeSpec` | 1.x recolor script | Use `theme.vars` / `theme.shapes` |
+| `config "…" is not supported by the pele engine` | Key outside the whitelist | Colors via `--theme-js`; size/spacing via `fontSize` / `flowchart.*` |
 | exit 2 | Usage error | Compare against `mmdx --help` |
-| SVG text vanishes in non-browser tools | svg is HTML-implemented | Use `-f png` |
+| SVG loses color in Office | `--svg-themeable` used | Drop the flag, or use `-f png` |
 
 Rule of thumb: **exit 2 = wrong flags; exit 1 = wrong diagram or over limit; look the error up before reinstalling anything**.
 
 ## Theme notes
 
-`-t`: `tech` (default, shape-coded tinted fills — docs and projection) · `openai`/`openai-dark` · `minimal` · `latte`/`mocha` · `sketch`.
-Layering: theme → `--brand` → `--theme-js` → `--config` → `--css`. `--brand` does not recolor flowchart decision diamonds. Do not project `mocha`/`openai-dark`.
+`-t`: `tech` (default, shape-coded tinted fills — docs and projection) · `openai` (clean engineering docs: white, ink, mint accent, hairline borders) · `excalidraw` (hand-drawn strokes + pastel fills).
+`excalidraw` uses solid fills by default; `--style-fill hachure` switches to hatched fills. Block pages and info cards use `--tone paper|neutral|product` for structure; the palette stays with the theme. Layering: theme → `--brand` → `--theme-js` → `--config` → `--css`. `--brand` does not recolor flowchart decision diamonds.
+
+| Scenario | First choice | Alternative | tone |
+| --- | --- | --- | --- |
+| Design docs / weekly / projection | `tech` | `openai` | `neutral` |
+| Engineering docs / README | `openai` | `tech` | `neutral` |
+| Release notes / engineering blog | `openai` | `tech` | `product` |
+| External report / print | `openai` | `tech` | `paper` |
+| Finance / business report | `openai` | `tech` | `paper` |
+| Knowledge base / long read | `tech` | `openai` | `neutral` |
+| Enterprise architecture / compliance | `tech` | `openai` | `product` |
+| Product review | `openai` | `tech` | `product` |
+| Whiteboard / brainstorm | `excalidraw` | `openai` | `neutral` |
+| Casual sharing | `excalidraw` | `tech` | `paper` |
+
+Info cards: external/print → `openai` + `paper`; engineering docs → `tech` + `neutral`; release/product → `openai` + `product`. See `skill/info-card-designer/SKILL.md`.
+
+`--theme-js` is the v2 contract: `(theme) => theme`, editing `theme.vars` / `theme.shapes` / `theme.css`; do not touch Mermaid `themeVariables`.
 
 ## Exit codes
 
@@ -119,5 +143,5 @@ Layering: theme → `--brand` → `--theme-js` → `--config` → `--css`. `--br
 
 - Batch > 30 blocks → `--jobs 4` (default 2; single-browser page pool, don't go higher)
 - Same-named md files overwrite each other in one `-o` dir → separate directories or `--index`
-- `--config` JSON must be a real file (no process substitution on Windows)
+- `--config` JSON must be a real file (no process substitution on Windows); only `fontSize` / `padding` / `flowchart.spacing` are honored
 - Hand-written `xychart-beta` is the #1 ugly-chart source → use ` ```chart `

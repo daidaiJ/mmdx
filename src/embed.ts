@@ -12,6 +12,10 @@ const PKG_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 export interface Assets {
   mermaidJs: string;
   elkJs: string;
+  /** Pele browser bundle (v2 default engine) */
+  peleJs: string;
+  /** rough.js UMD bundle, loaded only by hand-drawn themes */
+  roughJs: string;
   /** base64 woff2 of the bundled CJK font, or null when not bundled */
   fontB64: string | null;
 }
@@ -23,11 +27,21 @@ async function fromGenerated(): Promise<Assets | null> {
     const g = (await import('./embed.generated.js')) as {
       MERMAID_JS: string;
       ELK_JS: string;
+      PELE_JS?: string;
+      ROUGH_JS?: string;
       FONT_B64: string | null;
       BUILD_VERSION?: string | null;
     };
     // the committed stub is empty — that means "not built", fall back to files
-    if (g.MERMAID_JS) return { mermaidJs: g.MERMAID_JS, elkJs: g.ELK_JS, fontB64: g.FONT_B64 };
+    if (g.MERMAID_JS) {
+      return {
+        mermaidJs: g.MERMAID_JS,
+        elkJs: g.ELK_JS,
+        peleJs: g.PELE_JS ?? '',
+        roughJs: g.ROUGH_JS ?? '',
+        fontB64: g.FONT_B64,
+      };
+    }
     return null;
   } catch {
     return null;
@@ -40,9 +54,9 @@ export async function getBuildVersion(): Promise<string> {
   if (cachedVersion) return cachedVersion;
   try {
     const g = (await import('./embed.generated.js')) as { BUILD_VERSION?: string | null };
-    cachedVersion = g.BUILD_VERSION || '1.1.0';
+    cachedVersion = g.BUILD_VERSION || '2.0.0';
   } catch {
-    cachedVersion = '1.1.0';
+    cachedVersion = '2.0.0';
   }
   return cachedVersion;
 }
@@ -61,6 +75,12 @@ export async function loadAssets(): Promise<Assets> {
     mermaidJs: read('vendor/mermaid.min.js'),
     elkJs: fs.existsSync(path.join(PKG_DIR, 'vendor/elk.bundle.mjs'))
       ? read('vendor/elk.bundle.mjs')
+      : '',
+    peleJs: fs.existsSync(path.join(PKG_DIR, 'vendor/pele.global.js'))
+      ? read('vendor/pele.global.js')
+      : '',
+    roughJs: fs.existsSync(path.join(PKG_DIR, 'vendor/rough.js'))
+      ? read('vendor/rough.js')
       : '',
     fontB64,
   };

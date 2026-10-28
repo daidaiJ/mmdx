@@ -5,7 +5,7 @@ description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 
 
 # mmdx — 办公出图（结构图 + 轻量数据图 + 版式块 → PNG）
 
-把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG。主题、中文字体、ELK、留白全部内置。**不要在图代码里手工调样式，不要用 VSCode 插件，不要让模型手绘 SVG。**
+把围栏块渲染成可贴进 PPT / Word / 飞书的 PNG。主题、中文字体、Pele 布局、留白全部内置；默认 Pele 引擎，Mermaid + ELK 作为回退。**不要在图代码里手工调样式，不要用 VSCode 插件，不要让模型手绘 SVG。**
 
 CLI 获取（按优先级）：
 
@@ -25,9 +25,11 @@ CLI 获取（按优先级）：
 ```bash
 mmdx --version
 echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --json --quiet
+# 需要 ELK / Mermaid 专属语法时再验回退：
+echo "graph LR; A-->B" | mmdx - -f png --engine mermaid -o "$TMP/mmdx-check-legacy" --json --quiet
 ```
 
-冒烟 JSON 且 `rendered:1` → 就绪。`rendered:0` → §4 错误速诊。
+冒烟 JSON 且 `rendered:1` → 就绪；默认 `engine: "pele"`。`rendered:0` → §4 错误速诊。
 
 ## 1. Agent Loop（选型 → 先砍再画 → 渲染 → 自检）
 
@@ -93,7 +95,7 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 聊天 / 幻灯片默认 **PNG**。贴 PPT / 投屏必须 `--preset slide`（1600px、字号 18、描边加粗）。Word/PDF 用 `--preset a4`，飞书卡片用 `--preset square`。`both`（SVG+PNG）仅开发者把图嵌进 Markdown。
 
 ```bash
-# L0 办公默认
+# L0 办公默认（Pele 引擎）
 mmdx doc.md --preset slide --title "Q1 销售构成" --unit 万元 --source "财务月报"
 # L1 批量/定向
 mmdx a.md b.md -o dist/ --preset slide
@@ -101,7 +103,12 @@ mmdx doc.md --index 2 -f png
 # L2 精确命名 / stdin
 mmdx doc.md -o out/arch.png
 echo "graph LR; A-->B" | mmdx - -f png
+# 需要 ELK 或 Mermaid 专属语法
+mmdx doc.md --engine mermaid           # 或 --layout elk（自动选中 mermaid）
+mmdx doc.md --engine auto              # 先 Pele，失败回退
 ```
+
+默认 `--engine pele`；`--layout` 只属于 Mermaid，传它会自动切 `--engine mermaid`，与显式 `--engine pele` 同时出现是参数冲突。`-f svg` 默认把颜色烘焙成 hex；要可换肤 SVG 加 `--svg-themeable`。
 
 覆盖关系：显式 `--width` / `--scale` / `-f` 覆盖 preset 默认值。叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。
 
@@ -123,7 +130,7 @@ mmdx doc.md --preset slide --title "一句话结论" --source "出处" --unit "�
 1. 总览 ≤7 节点 / pie 3–5 扇区；宁拆两张，不要缩字硬塞
 2. 标签短、对比强：判定用菱形、状态用圆，靠形状+填色分，不靠 1px 细线
 3. 必带 `--title`；来源/单位有就写，方便会后截图还能读
-4. 不要 `openai-dark` / `mocha` 投会议室（灯光一打全糊）；投屏默认 `-t tech`
+4. 不要把深色页面投会议室（灯光一打全糊）；投屏默认 `-t tech`
 5. 贴 PPT：图拉满内容区，不要缩成角落缩略图；底栏安全区已预留，不要再往 PNG 里垫大空白
 
 **渲染后自检（Read PNG，5 米测试）：** 眯眼仍能分清蓝流程 / 琥珀判定 / 绿状态；图题在；字不截断。通不过 → 砍节点或拆图，不要加 `--css`。
@@ -217,23 +224,89 @@ kpi 变化列默认**红涨绿跌**（可用 `--css` 覆盖）。progress 第一
 | `svgo unavailable` | 极罕见 | 无害降级 |
 | `render timed out after 60s` | 资源紧张 | CLI 已重试；持续则 `--jobs 1` |
 | `icon pack "xxx" not found` | 网络不通 | 去掉 `--icon` |
-| 中文变方块 | 不应发生 | 检查 `--config`/`--theme-js` 是否覆盖 fontFamily |
-| exit 1 + `Parsing error` / 超限信息 | **图或围栏写错** | 按信息修；其他块不受影响 |
+| 中文变方块 | 不应发生 | 检查 `--theme-js` 是否覆盖 fontFamily |
+| exit 1 + `Parsing error` / `pele: Parse error` / 超限信息 | **图或围栏写错** | 按信息修；Pele 不支持的写法加 `--engine mermaid` 或 `--engine auto` |
+| `--layout belongs to the mermaid engine` | 参数冲突 | 去掉 `--layout`，或改 `--engine mermaid` |
+| `--theme-js v2 receives a ThemeSpec` | 1.x 换色脚本 | 改 `theme.vars` / `theme.shapes` |
+| `config "…" is not supported by the pele engine` | `--config` 白名单外 | 颜色用 `--theme-js`；字号/间距用 `fontSize` / `flowchart.*` |
 | exit 2 | 参数用法错误 | `mmdx --help` |
 
 总原则：**exit 2 = 参数错；exit 1 = 图写错或超限；报错先查表。**
 
 ## 5. 主题
 
-| 场景 | `-t` |
-| --- | --- |
-| 技术方案/周报/投屏（默认） | `tech`（形状分色：蓝流程 / 琥珀判定 / 绿状态 / 紫存储；填色可见，不是发丝描边） |
-| 开源 README | `openai` / `openai-dark` |
-| 暗色文档 | `mocha` |
-| 轻松分享 | `sketch` |
+先按场景选主题，再决定 tone。`tone` 只影响块页（`card` / `kpi` / `table` / `task` …）和信息卡，不改图的形状与线条。
 
-`--brand` 只改扩展块强调色（卡片左边条、kpi 数字、swimlane 第一条跨带箭头），**不**把判定菱形改成品牌色。
+| 场景 | 首选 | 备选 | tone | preset / 备注 |
+| --- | --- | --- | --- | --- |
+| 技术方案 / 周报 / 通用交付（默认） | `tech` | `openai` | `neutral` | `slide` 投屏；形状分色最稳 |
+| 工程师文档 / README / 架构图 | `openai` | `tech` | `neutral` | 纯白、墨黑、薄荷绿点缀、发丝边框 |
+| 发布说明 / 工程博客 | `openai` | `tech` | `product` | 发丝边框、无衬线标题、紧凑 |
+| 对外报告 / 设计评审 / 打印 | `openai` | `tech` | `paper` | `a4`；衬线标题、16px 圆角 |
+| 金融 / 商业报告 / 对外材料 | `openai` | `tech` | `paper` | 克制的编辑风，留白充足 |
+| 知识库 / 内部说明 / 长文 | `tech` | `openai` | `neutral` | 信息密度最高 |
+| 企业架构 / 合规 / 正式交付 | `tech` | `openai` | `product` | `slide`；形状分色便于逐层讲解 |
+| 白板 / 头脑风暴 / 轻松分享 | `excalidraw` | `openai` | `neutral` | 手绘线条 + 粉彩填色；`--style-fill hachure` 切斜线 |
+| 投影 / PPT / 上会 / 大屏 | `tech` | `openai` | `neutral` | 必须 `--preset slide`；深色页面不要上投影 |
+| 品牌 VI | 任一 | — | 保持原 tone | `--brand #RRGGBB` 只改 accent |
+
+### 5a. 三套主题：特点、适合、避免
+
+| 主题 | 视觉特点 | 适合 | 避免 / 注意 | 推荐 tone |
+| --- | --- | --- | --- | --- |
+| `tech` | 白底、蓝/琥珀/绿/紫形状分色、1.5px 描边、信息密度最高 | 方案评审、架构图、周报、通用交付、投屏 | 对外品牌报告、需要编辑感的印刷品 | `neutral` |
+| `openai` | 纯白/墨黑、薄荷绿点缀、发丝边框、近单色；配 `paper` 得到衬线标题与 16px 圆角 | 对外报告、白皮书、设计评审、工程师文档、HTML 报告卡、`a4` 打印 | 高密度看板、白板脑暴 | `paper` / `neutral` |
+| `excalidraw` | 白底、粉彩填色、rough.js 手绘抖动、墨线、12px 圆角 | 白板、脑暴、工作坊、非正式分享 | 对外正式报告、打印稿、高密度数据图 | `neutral` |
+
+三套主题都有对应展示图：见 `docs/GALLERY.md`（总览 + `tech` / `openai` / `excalidraw` 分风格页）。
+
+### 5b. 两个 HTML 场景的推荐组合
+
+| 场景 | 主题 | tone | 说明 |
+| --- | --- | --- | --- |
+| HTML 报告卡（默认编辑风/原始观感） | `openai` | `paper` | 纯白、墨黑、薄荷绿点缀、衬线标题、16px 圆角 |
+| HTML 报告卡（工程/内部） | `openai` | `neutral` | 一页 card + kpi + table，克制、可打印 |
+| HTML 报告卡（对外/打印） | `openai` | `paper` | 大留白、衬线标题；`--preset a4` |
+| HTML 报告卡（产品/发布） | `openai` / `tech` | `product` | 紧凑、可上投屏 |
+| HTML 报告卡（企业/合规） | `tech` | `product` | 形状分色、信息密度高 |
+| 信息卡（对外/打印） | `openai` | `paper` | 长文摘要、报告封面 |
+| 信息卡（工程文档） | `tech` / `openai` | `neutral` | 无阴影、10px 圆角，默认档 |
+| 信息卡（产品/发布） | `openai` / `tech` | `product` | 6px 圆角、细阴影、紧凑 |
+
+信息卡是独立 skill：[`info-card-designer/SKILL.md`](info-card-designer/SKILL.md)。本 skill 只负责图表与块；需要 URL/文本 → 杂志感卡片时切到该 skill，命令仍是 `mmdx card`。
+
+### 5c. 手绘 HTML 模板（v1.4.2，非主题预设）
+
+上一个 tag 的展示页用的是两个 vendored 手绘 HTML skill。它们是手写 HTML + SVG，再走 `mmdx file.html --scale 3` 导出；当前 v2 的 `-t` 主题只做近似。
+
+| 模板 | 视觉特点 | 适合 | 避免 | 当前近似 |
+| --- | --- | --- | --- | --- |
+| `editorial`（diagram-design） | `#F7F4EE` 纸底、`#1F2328` 墨线、`#2563EB` 蓝强调、4px 网格、衬线标题、mono 小标签、2px 描边、手绘层带 | 封面、架构插图、方案一页纸、设计评审 | 高频周报、密集数据表、逐像素对齐的合规材料 | `openai` + `paper`（排版） |
+| `visual-explainer`（paper register） | `#F7F7F4` 暖纸底、`#17191C` 正文、`#2C4CD0` 墨蓝、Newsreader 衬线标题、Atkinson 正文、10px 圆角、叙事段落 + 手绘机制图 | 解释页、复盘页、评审页、recap、幻灯片页 | 合规/审计、严格数据表、高密度仪表盘 | `openai` + `paper`（衬线标题）；`excalidraw`（手绘感） |
+
+精确复现需要 v1.4.2 的 HTML 导出链路；当前 v2 可用 `mmdx card` 近似：
+
+```bash
+mmdx card --in note.md -t openai --tone paper -o editorial-like.png
+mmdx card --in note.md -t excalidraw --tone paper -o explainer-like.png
+```
+
+原始样张与映射见仓库 `docs/gallery/vendored-html.md`。
+
+`--brand` 只改 `theme.vars.accent`（卡片左边条、kpi 数字、swimlane 第一条跨带箭头），**不**把判定菱形改成品牌色。
+
+主题是 CSS 变量契约，`--css` 用 Pele 类名：
+
+```css
+.pele-flowchart .pele-shape-rect rect { rx: 14px; ry: 14px; }
+.pele-edge path { stroke-width: 2px; }
+.pele-label { font-weight: 600; }
+```
+
+`--theme-js` 是 v2 契约 `(theme) => theme`，改 `theme.vars` / `theme.shapes` / `theme.css`；不要再写 `config.themeVariables`。`--config` 只接受 `fontSize` / `padding` / `flowchart.nodeSpacing|rankSpacing|padding`。
+
+从 1.x 迁移：`--theme-js` 脚本报错并提示；`--config` 的 `themeVariables` 被忽略；`--layout elk` 自动切 Mermaid。
 
 ## 附录 — 开发文档场景（能渲染、不主推）
 
-sequence、state、class、ER、gitgraph、C4。办公选型不要从这里起。继续可用 mermaid-cli。
+sequence、state、class、ER、gitgraph、C4。办公选型不要从这里起。需要 ELK 或 Mermaid 专属语法时加 `--engine mermaid`；其余场景 Pele 已覆盖。

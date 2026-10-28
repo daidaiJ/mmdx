@@ -16,16 +16,18 @@
 | 🤖 AI Agent | [docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md) | 省 token 版：环境自检、选型表、参数速查、JSON 契约、错误速诊 |
 | 👤 人类用户 | [docs/HUMAN_GUIDE.md](docs/HUMAN_GUIDE.md) | 易读版：安装部署、CLI 全参数、主题定制、性能调优、排障 |
 | 🖼 扩展块 | [docs/EXTENSIONS.md](docs/EXTENSIONS.md) | 每种围栏一张工具渲染的 PNG + 语法 |
+| 🎭 风格画廊 | [docs/GALLERY.md](docs/GALLERY.md) | 同一案例在三种风格下的流程图 / KPI / 卡片 / 表格对照 |
+| 🧪 质量门禁 | [docs/QUALITY.md](docs/QUALITY.md) | 像素 lint 覆盖、已知盲区、发布前许可证清单 |
 | 📜 变更历史 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 
 各文档均为中文默认，同名 `.en.md` 为英文版。
 
 ## ✨ 核心特性
 
-- **tech 默认主题**：白底、形状分色可见填色（蓝=流程、琥珀=判定、绿=状态、紫=存储）；投屏/PPT 用 `--preset slide` 加粗描边和字号；另有 6 套预设，20 种 mermaid 图型全覆盖
+- **Pele 默认引擎**：Obsidian 开源的 Mermaid→SVG 渲染器，单图 SVG 生成 1–50ms；Mermaid 11 + ELK 保留为 `--engine mermaid` 回退
+- **CSS 变量主题**：Pele 把颜色/字体/圆角全部外置为 `--pele-*` 变量，`-f svg` 默认烘焙成 hex，`--svg-themeable` 保留可换肤 SVG；三套预设共用形状分色（蓝=流程、琥珀=判定、绿=状态、紫=存储）
 - **内置中文字体**：Noto Sans SC 子集（GB2312 全量汉字 + 拉丁，仅 1.9MB），任意机器渲染一致，中文标签换行正确
-- **ELK 布局引擎**：官方 `@mermaid-js/layout-elk`，只对 flowchart 懒加载；连线避让、长文本换行开箱即用
-- **像素级均匀留白**：每张图二次裁切到墨迹包围盒，四边留白对称是构造保证，不靠 mermaid 不可靠的 viewBox
+- **像素级均匀留白**：每张图二次裁切到墨迹包围盒，四边留白对称是构造保证，不靠引擎不可靠的 viewBox
 - **扩展块**：```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane 直出 PNG
 - **办公交付**：`--preset slide|a4|square`、图题/来源/单位 chrome、`--brand` 强调色；agent 友好的 `--json`（含 `warnings`）
 
@@ -57,13 +59,15 @@ echo "graph LR; A-->B" | mmdx - -f svg      # stdin 单图
 
 更多用法（多文件批量、精确命名、标题注入）见 [HUMAN_GUIDE 快速开始](docs/HUMAN_GUIDE.md#快速开始)。
 
+默认引擎是 Pele。需要 ELK 或 Mermaid 专属语法时加 `--engine mermaid`（传 `--layout elk` 也会自动选中 Mermaid）；`--engine auto` 先试 Pele，失败后回退。`-f svg` 默认把主题烘焙成 hex，`--svg-themeable` 保留 `--pele-*` CSS 变量。
+
 ## 🖼 使用示例
 
 ```bash
 mmdx a.md b.md other/*.md -o dist/          # 多文件批量，并行
 mmdx diagram.mmd -o out/arch.svg            # 精确命名，同目录附带 .png
 mmdx report.md --index 2 --title "架构总览" --title-pos bottom
-mmdx doc.md -t mocha --background transparent -f png --json
+mmdx doc.md -t tech --background transparent -f png --json
 ```
 
 Markdown 围栏：`mermaid`（图表）以及 `table` / `list` / `card` / `chart` / `kpi` / `compare` / `vs` / `funnel` / `task` / `progress` / `gauge` / `heatmap` / `swimlane`（扩展块，PNG only）。贴 PPT 用 `mmdx doc.md --preset slide --title "…" --source "…"`。
@@ -72,7 +76,7 @@ Markdown 围栏：`mermaid`（图表）以及 `table` / `list` / `card` / `chart
 
 ```card
 🚀 | 渲染管线 | 单浏览器页池复用，PNG 2x 无损导出
-🎨 | 主题系统 | 七套预设，支持 theme-js 与 css 自定义
+🎨 | 主题系统 | 三套预设，支持 theme-js、tone 与 css 自定义
 ```
 
 ![卡片渲染示例](docs/ext-card.png)
@@ -82,23 +86,40 @@ Markdown 围栏：`mermaid`（图表）以及 `table` / `list` / `card` / `chart
 | | |
 | --- | --- |
 | `tech`（默认） | 大厂方案文档风：白底、形状分色、细边框、正交连线 |
-| `openai` / `openai-dark` | 近单色、细边框、薄荷点缀 |
-| `minimal` | Obsidian Minimal 风格：暖中性色 + 单一紫罗兰强调 |
-| `latte` / `mocha` | Catppuccin 配色 |
-| `sketch` | Mermaid `look: handDrawn` 白板手绘风 |
+| `openai` | 近单色工程风：纯白底、墨黑文字、薄荷绿（teal）点缀、发丝边框；块页配 `--tone paper` 得到衬线标题与 16px 圆角 |
+| `excalidraw` | 手绘：粉彩填色 + 墨线抖动（rough.js），Excalifont/LXGW；块版式为白板卡片 |
 
-叠加顺序：预设 → `--theme-js` → `--config` → `--css`。定制方法（CSS 片段库、整套装色函数）见 [HUMAN_GUIDE 主题定制](docs/HUMAN_GUIDE.md#主题定制)。
+`excalidraw` 默认实心填色；需要斜线填色时加 `--style-fill hachure`（体积约 1.5–2×，PPT 可读性优先时保持默认）。
+
+`--tone paper|neutral|product` 只改块版式的结构（圆角、阴影、标题字体、表格头），配色仍由主题决定。信息卡是独立 skill [`info-card-designer`](skill/info-card-designer/SKILL.md)，把同一套主题和 tone 用到 Markdown/网页正文：
+
+```bash
+mmdx card --in note.md -t openai --tone neutral --width 600 -o note-card.png
+mmdx card --url https://example.com/post -t openai --tone paper
+```
+
+叠加顺序：预设 → `--brand` → `--theme-js` → `--config` → `--css`。v2 的 `--theme-js` 接收 `ThemeSpec`（`theme.vars` / `theme.shapes` / `theme.css`），示例见 [HUMAN_GUIDE 主题定制](docs/HUMAN_GUIDE.md#主题定制)。
+
+## 🎭 风格画廊
+
+同一个「灰度发布复盘」案例，只换 `-t` 就能切换 `tech`、`openai`、`excalidraw`。主页留一张流程图做简单对比：
+
+[![同一案例在三种风格下的流程图](docs/gallery/overview.png)](docs/GALLERY.md)
+
+另见 [两个 HTML 场景模板](docs/gallery/html-skills.md)（报告卡与信息卡跨风格对照）、[手绘 HTML 模板](docs/gallery/vendored-html.md)（v1.4.2 的 editorial / visual-explainer）与 [信息卡 tone 对照](docs/gallery/card-tones.md)（paper / neutral / product）。
+
+完整四场景（流程图 / KPI / 卡片 / 表格）按风格拆到独立页，选型建议和复现命令见 [docs/GALLERY.md](docs/GALLERY.md)。
 
 ## ⚡ 管线与性能
 
 单 Chromium + 页面池 + 有界 worker；`--profile` 可观测：
 
 ```
-browser-launch  ~0.5s ×1      mermaid-render ~95ms ×图
-page-init       ~1.2s ×页     screenshot      ~90ms ×图（含像素级二次裁切）
+browser-launch  ~0.5s ×1      pele-render     ~26ms ×图
+page-init       ~1.0s ×页     screenshot      ~90ms ×图（含像素级二次裁切）
 ```
 
-- ELK（7MB bundle）懒解析：只有 flowchart/graph 真正渲染时才加载，sequence/pie/gantt 等零开销
+- Pele bundle（~700KB）懒注入；Mermaid（3.5MB）与 ELK（7MB bundle）只在 `--engine mermaid` / `--engine auto` 回退时解析
 - 截图跨页面串行化（headless Chrome 只服务活动 tab）+ 视口按内容适配，2x 高清单图仍在 ~100ms 量级
 - 渲染卡死 60s 必然报错而不是挂住整批；每个图自动重试一次
 - PNG 为 2x 无损（典型架构图 20–80KB）；SVG 经 svgo 压缩——二进制内嵌 svgo 官方 browser 构建（自包含 ESM），压缩后的 SVG 与 PNG 一样开箱即得
@@ -107,11 +128,13 @@ page-init       ~1.2s ×页     screenshot      ~90ms ×图（含像素级二次
 
 ## 🧪 测试
 
-`bun run tests/run.ts`，两层设计——视觉审查只看脚本标记出的可疑项：
+`bun run tests/run.ts`，四层设计——视觉审查只看脚本标记出的可疑项：
 
-1. **库级筛查**：20 种 mermaid 图型 + 表格/列表/卡片，单浏览器会话渲染后做像素分析（边距对称 ±8px、内容占比、白图检测）
-2. **CLI 行为**：退出码、`--index` 命名、坏块隔离、stdin、JSON 契约、19 文件 4 并发批次
+1. **库级筛查**：20 种 mermaid 图型 + 表格/列表/卡片，单浏览器会话渲染后做像素分析（边距对称 ±8px、内容占比、底部空白、白图检测）
+2. **CLI 行为**：退出码、`--index` 命名、坏块隔离、stdin、JSON 契约、多文件 4 并发批次
+3. **信息卡**：Markdown/网页提取、宽度、实际像素分页、tone 结构差异
+4. **视觉 lint**：DOM 溢出/越界/图题重叠、SVG 标签溢出、渲染态对比度、PNG 边缘裁切、双跑确定性；规则见 [docs/QUALITY.md](docs/QUALITY.md)
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE)。第三方组件、字体和设计参考的许可证与来源见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

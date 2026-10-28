@@ -10,6 +10,67 @@ export interface ThemePreset {
   dark?: boolean;
   /** post-render hex→hex remap for colours mermaid hardcodes (journey) */
   remap?: Record<string, string>;
+  /** Pele theme (v2 default engine) */
+  pele?: ThemeSpec;
+}
+
+export interface ThemePaint {
+  fill: string;
+  stroke: string;
+}
+
+export interface PeleVars {
+  bg: string;
+  fg: string;
+  muted: string;
+  line: string;
+  surface: string;
+  surfaceAlt: string;
+  border: string;
+  accent: string;
+  critical: string;
+  radius?: string;
+  font?: string;
+  fontMono?: string;
+  series: string[];
+}
+
+/** Paint/post-processing knobs carried by a visual style. */
+export interface ThemeStyle {
+  rough?: boolean;
+  roughness?: number;
+  bowing?: number;
+  fillStyle?: 'solid' | 'hachure';
+  hachureGap?: number;
+  hachureAngle?: number;
+  fillWeight?: number;
+  seed?: number;
+  strokeWidth?: number;
+  /** cover the less-common Pele shape classes with role paint */
+  shapeCoverage?: boolean;
+}
+
+/** v2 theme contract: CSS-variable paint for Pele. */
+export interface ThemeSpec {
+  name: string;
+  dark: boolean;
+  background: string;
+  fontFamily?: string;
+  vars: PeleVars;
+  shapes: {
+    process: ThemePaint;
+    decision: ThemePaint;
+    state: ThemePaint;
+    store: ThemePaint;
+    cluster?: ThemePaint;
+  };
+  css: string;
+  /** rough.js / stroke / shape-coverage knobs */
+  style?: ThemeStyle;
+  /** extra CSS for block pages (card/kpi/table/...), appended after PAGE_CSS */
+  blockCss?: string;
+  /** font families the renderer should inject for this theme */
+  fonts?: string[];
 }
 
 const FONT_STACK = `"Noto Sans SC", -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"`;
@@ -377,240 +438,88 @@ const openai: ThemePreset = {
   background: '#FFFFFF',
 };
 
-const openaiDark: ThemePreset = {
-  config: clone(openai.config),
-  background: '#1A1A1A',
-  dark: true,
-};
-{
-  const v = openaiDark.config.themeVariables as Record<string, unknown>;
-  Object.assign(v, {
-    primaryColor: '#1A1A1A',
-    primaryTextColor: '#ECECF1',
-    primaryBorderColor: '#8E8EA0',
-    secondaryColor: '#12332B',
-    secondaryTextColor: '#ECECF1',
-    tertiaryColor: '#26262B',
-    tertiaryTextColor: '#ECECF1',
-    lineColor: '#6B6B78',
-    textColor: '#ECECF1',
-    titleColor: '#ECECF1',
-    clusterBkg: '#202123',
-    clusterBorder: '#3E3E44',
-    actorBkg: '#1A1A1A',
-    actorBorder: '#8E8EA0',
-    actorTextColor: '#ECECF1',
-    actorLineColor: '#3E3E44',
-    signalColor: '#B4B4BD',
-    signalTextColor: '#ECECF1',
-    noteBkgColor: '#26262B',
-    noteTextColor: '#ECECF1',
-    noteBorderColor: '#3E3E44',
-    edgeLabelBackground: '#1A1A1A',
-    attributeBackgroundColorOdd: '#1A1A1A',
-    attributeBackgroundColorEven: '#26262B',
-    sectionBkgColor: '#202123',
-    altSectionBkgColor: '#1A1A1A',
-  });
-  openaiDark.config.themeCSS =
-    (openaiDark.config.themeCSS as string) +
-    `
-.node rect, .node circle, .node ellipse, .node polygon, .node path { fill: #1A1A1A; stroke: #8E8EA0; }
-.node polygon { fill: #26262B; }
-.cluster rect { fill: #202123; stroke: #3E3E44; }
-`;
-}
-
 // ---------------------------------------------------------------------------
-// minimal — Kepano's Minimal theme for Obsidian: warm paper neutrals, quiet
-// gray borders, a single violet accent. For prose-first notes.
+// excalidraw — pastel fills, ink outlines, rough.js post-processing.
 // ---------------------------------------------------------------------------
 
-const MINIMAL_CSS = `
-.node rect, .node circle, .node ellipse, .node polygon, .node path { fill: #F6F5F2; stroke: #B7B5B0; }
-.node rect { fill: #FFFFFF; }
-.cluster rect { fill: #FAF9F7; stroke: #DDDCD8; }
-.cluster-label { color: #6B6961; }
+const EXCALIDRAW_MERMAID_CSS = `
+.node rect, .node circle, .node ellipse, .node polygon, .node path { stroke-width: 1.5px; }
+.node rect { rx: 12px; ry: 12px; }
+.node rect { fill: #A5D8FF; stroke: #1E1E1E; }
+.node polygon { fill: #FFEC99; stroke: #1E1E1E; }
+.node circle, .node ellipse { fill: #B2F2BB; stroke: #1E1E1E; }
+.node path { fill: #D0BFFF; stroke: #1E1E1E; }
+.cluster rect { rx: 12px; ry: 12px; fill: #F8F9FA; stroke: #ADB5BD; stroke-dasharray: 6 5; }
 `;
 
-const minimal: ThemePreset = {
+const excalidraw: ThemePreset = {
   config: {
     ...baseConfig('#FFFFFF'),
+    look: 'handDrawn',
     theme: 'base',
     themeVariables: {
-      fontFamily: FONT_STACK,
+      fontFamily: `"Excalifont", "LXGW WenKai", "Segoe Print", "Comic Sans MS", "KaiTi", "STKaiti", "Noto Sans SC", cursive, sans-serif`,
       fontSize: '15px',
-      primaryColor: '#FFFFFF',
-      primaryTextColor: '#222222',
-      primaryBorderColor: '#B7B5B0',
-      lineColor: '#8A8880',
-      textColor: '#222222',
-      titleColor: '#222222',
-      clusterBkg: '#FAF9F7',
-      clusterBorder: '#DDDCD8',
-      actorBkg: '#FFFFFF',
-      actorBorder: '#555350',
-      actorTextColor: '#222222',
-      actorLineColor: '#DDDCD8',
-      signalColor: '#555350',
-      signalTextColor: '#222222',
-      noteBkgColor: '#F6F5F2',
-      noteTextColor: '#222222',
-      noteBorderColor: '#DDDCD8',
-      activationBkgColor: '#F1EEFB',
-      activationBorderColor: '#7C5CFF',
-      labelColor: '#222222',
-      attributeBackgroundColorOdd: '#FFFFFF',
-      attributeBackgroundColorEven: '#F6F5F2',
-      gridColor: '#EAE8E3',
-      sectionBkgColor: '#FAF9F7',
-      altSectionBkgColor: '#FFFFFF',
-      sectionBkgColor2: '#F1EEFB',
+      primaryColor: '#A5D8FF',
+      primaryTextColor: '#1E1E1E',
+      primaryBorderColor: '#1E1E1E',
+      secondaryColor: '#FFEC99',
+      secondaryTextColor: '#1E1E1E',
+      secondaryBorderColor: '#1E1E1E',
+      tertiaryColor: '#B2F2BB',
+      tertiaryTextColor: '#1E1E1E',
+      tertiaryBorderColor: '#1E1E1E',
+      lineColor: '#1E1E1E',
+      textColor: '#1E1E1E',
+      titleColor: '#1E1E1E',
+      clusterBkg: '#F8F9FA',
+      clusterBorder: '#ADB5BD',
+      edgeLabelBackground: '#FFFFFF',
+      actorBkg: '#A5D8FF',
+      actorBorder: '#1E1E1E',
+      actorTextColor: '#1E1E1E',
+      actorLineColor: '#ADB5BD',
+      signalColor: '#1E1E1E',
+      signalTextColor: '#1E1E1E',
+      noteBkgColor: '#FFEC99',
+      noteTextColor: '#1E1E1E',
+      noteBorderColor: '#1E1E1E',
+      labelColor: '#1E1E1E',
+      stateBkg: '#B2F2BB',
+      stateBorder: '#1E1E1E',
     },
-    themeCSS: (baseConfig('#FFFFFF').themeCSS as string) + MINIMAL_CSS,
+    themeCSS: (baseConfig('#FFFFFF').themeCSS as string) + EXCALIDRAW_MERMAID_CSS,
   },
   background: '#FFFFFF',
 };
 
-// ---------------------------------------------------------------------------
-// latte / mocha — Catppuccin palettes (soft accent colors)
-// ---------------------------------------------------------------------------
-
-const catppuccin = (
-  bg: string,
-  text: string,
-  subtle: string,
-  edge: string,
-  containerFill: string,
-  containerBorder: string,
-  blue: string,
-  peach: string,
-  green: string,
-  mauve: string,
-  yellow: string,
-  dark: boolean,
-): ThemePreset => {
-  const css = `
-.node rect { fill: ${containerFill}; stroke: ${blue}; }
-.node polygon { fill: ${containerFill}; stroke: ${peach}; }
-.node circle, .node ellipse { fill: ${containerFill}; stroke: ${green}; }
-.node path { fill: ${containerFill}; stroke: ${mauve}; }
-.cluster rect { fill: ${containerFill}; stroke: ${containerBorder}; opacity: 0.55; }
+const EXCALIDRAW_BLOCK_CSS = `
+.wrap { padding: 24px 36px 32px 28px; background: #FFFFFF; color: #1E1E1E; font-family: "Excalifont", "LXGW WenKai", "Segoe Print", "Comic Sans MS", "KaiTi", "STKaiti", "Noto Sans SC", cursive, sans-serif; }
+.caption-title { font-size: 22px; font-weight: 600; }
+.caption-sub, .caption-foot { color: #868E96; }
+.cards { grid-template-columns: repeat(2, 280px); gap: 18px; }
+.card { background: #FFFFFF; border: 1.5px solid #1E1E1E; border-radius: 12px; box-shadow: 4px 4px 0 #E9ECEF; padding: 18px 20px; }
+.card::before { display: none; }
+.card-title { font-size: 16px; font-weight: 600; }
+.card-desc { color: #495057; font-size: 13px; }
+.kpi { border: 1.5px solid #1E1E1E; border-radius: 12px; box-shadow: 4px 4px 0 #E9ECEF; min-width: 420px; }
+.kpi-row { border-bottom: 1.5px dashed #DEE2E6; padding: 14px 18px; }
+.kpi-value { font-size: 28px; }
+.kpi-value.is-focus { color: #1971C2; }
+table { border: 1.5px solid #1E1E1E; border-radius: 12px; box-shadow: 4px 4px 0 #E9ECEF; }
+thead th { background: #F8F9FA; }
+th, td { border-bottom: 1px solid #DEE2E6; }
+tbody tr:nth-child(even) td { background: #F8F9FA; }
+.task, .cmp, .vs, .hm { border: 1.5px solid #1E1E1E; border-radius: 12px; box-shadow: 4px 4px 0 #E9ECEF; }
+.task-row { border-bottom: 1px dashed #DEE2E6; }
+.task-chip, .task-badge { border-radius: 9999px; }
+.fn-track, .fn-bar { border-radius: 9999px; }
 `;
-  return {
-    config: {
-      ...baseConfig(bg),
-      theme: 'base',
-      themeVariables: {
-        fontFamily: FONT_STACK,
-        fontSize: '15px',
-        primaryColor: containerFill,
-        primaryTextColor: text,
-        primaryBorderColor: blue,
-        secondaryColor: containerFill,
-        secondaryTextColor: text,
-        secondaryBorderColor: mauve,
-        tertiaryColor: containerFill,
-        tertiaryTextColor: text,
-        tertiaryBorderColor: containerBorder,
-        lineColor: edge,
-        textColor: text,
-        titleColor: text,
-        clusterBkg: containerFill,
-        clusterBorder: containerBorder,
-        actorBkg: containerFill,
-        actorBorder: subtle,
-        actorTextColor: text,
-        actorLineColor: containerBorder,
-        signalColor: edge,
-        signalTextColor: text,
-        noteBkgColor: containerFill,
-        noteTextColor: text,
-        noteBorderColor: yellow,
-        activationBkgColor: containerFill,
-        activationBorderColor: blue,
-        labelColor: text,
-        attributeBackgroundColorOdd: containerFill,
-        attributeBackgroundColorEven: bg,
-        gridColor: containerBorder,
-        sectionBkgColor: containerFill,
-        altSectionBkgColor: bg,
-        sectionBkgColor2: containerFill,
-      },
-      themeCSS: (baseConfig(bg).themeCSS as string) + css,
-    },
-    background: bg,
-    dark,
-  };
-};
-
-const latte = catppuccin(
-  '#EFF1F5', '#4C4F69', '#8C8FA1', '#7C7F93',
-  '#DCE7FD', '#BCC6DA', '#1E66F5', '#FE640B', '#40A02B', '#8839EF', '#DF8E1D', false,
-);
-
-const mocha = catppuccin(
-  '#1E1E2E', '#CDD6F4', '#9399B2', '#7F849C',
-  '#313244', '#585B70', '#89B4FA', '#FAB387', '#A6E3A1', '#CBA6F7', '#F9E2AF', true,
-);
-
-// ---------------------------------------------------------------------------
-// sketch — hand-drawn whiteboard look (Mermaid `look: handDrawn`)
-// ---------------------------------------------------------------------------
-
-const sketch: ThemePreset = {
-  config: {
-    ...baseConfig('#FBF7F0'),
-    look: 'handDrawn',
-    theme: 'base',
-    themeVariables: {
-      fontFamily: `"Segoe Print", "Comic Sans MS", "Noto Sans SC", cursive, sans-serif`,
-      fontSize: '15px',
-      primaryColor: '#FDF6E3',
-      primaryTextColor: '#4A4039',
-      primaryBorderColor: '#8A7968',
-      secondaryColor: '#F4E9DC',
-      secondaryTextColor: '#4A4039',
-      secondaryBorderColor: '#B08968',
-      tertiaryColor: '#FAF0E6',
-      tertiaryTextColor: '#4A4039',
-      tertiaryBorderColor: '#D6C3B3',
-      lineColor: '#8A7968',
-      textColor: '#4A4039',
-      titleColor: '#4A4039',
-      clusterBkg: '#F7F0E3',
-      clusterBorder: '#D6C3B3',
-      edgeLabelBackground: '#FBF7F0',
-      actorBkg: '#FDF6E3',
-      actorBorder: '#8A7968',
-      actorTextColor: '#4A4039',
-      actorLineColor: '#D6C3B3',
-      signalColor: '#8A7968',
-      signalTextColor: '#4A4039',
-      noteBkgColor: '#FFF9E8',
-      noteTextColor: '#4A4039',
-      noteBorderColor: '#D6C3B3',
-      labelColor: '#4A4039',
-    },
-    themeCSS: (baseConfig('#FBF7F0').themeCSS as string) + `
-.node rect { fill: #FDF6E3; stroke: #8A7968; }
-.node polygon { fill: #F4E9DC; stroke: #B08968; }
-.node circle, .node ellipse { fill: #FAF0E6; stroke: #8A7968; }
-.node path { fill: #F7F0E3; stroke: #8A7968; }
-.cluster rect { fill: #F7F0E3; stroke: #D6C3B3; }
-`,
-  },
-  background: '#FBF7F0',
-};
 
 export const PRESETS: Record<string, ThemePreset> = {
   tech,
   openai,
-  'openai-dark': openaiDark,
-  minimal,
-  latte,
-  mocha,
-  sketch,
+  excalidraw,
 };
 
 export const DEFAULT_THEME = 'tech';
@@ -658,6 +567,204 @@ export function deepMerge<T extends Record<string, unknown>>(base: T, extra: Rec
       v && typeof v === 'object' && !Array.isArray(v) && b && typeof b === 'object' && !Array.isArray(b)
         ? deepMerge(b as Record<string, unknown>, v as Record<string, unknown>)
         : v;
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// v2 themes — Pele CSS variables. Pele bakes no colours into the SVG, so the
+// same theme drives PNG, themeable SVG, and HTML blocks.
+// ---------------------------------------------------------------------------
+
+interface PeleSeed {
+  name: string;
+  dark: boolean;
+  bg: string;
+  fg: string;
+  muted: string;
+  line: string;
+  surface: string;
+  surfaceAlt: string;
+  border: string;
+  accent: string;
+  critical: string;
+  radius?: string;
+  font?: string;
+  series: string[];
+  style?: ThemeStyle;
+  blockCss?: string;
+  fonts?: string[];
+  shapes: {
+    process: [string, string];
+    decision: [string, string];
+    state: [string, string];
+    store: [string, string];
+    cluster?: [string, string];
+  };
+  css?: string;
+}
+
+const paint = ([fill, stroke]: [string, string]): ThemePaint => ({ fill, stroke });
+
+function mkTheme(s: PeleSeed): ThemeSpec {
+  return {
+    name: s.name,
+    dark: s.dark,
+    background: s.bg,
+    fontFamily: s.font ?? FONT_STACK,
+    vars: {
+      bg: s.bg, fg: s.fg, muted: s.muted, line: s.line,
+      surface: s.surface, surfaceAlt: s.surfaceAlt, border: s.border,
+      accent: s.accent, critical: s.critical, radius: s.radius ?? '4px',
+      font: s.font ?? FONT_STACK, series: s.series,
+    },
+    shapes: {
+      process: paint(s.shapes.process),
+      decision: paint(s.shapes.decision),
+      state: paint(s.shapes.state),
+      store: paint(s.shapes.store),
+      cluster: s.shapes.cluster ? paint(s.shapes.cluster) : undefined,
+    },
+    css: s.css ?? '',
+    ...(s.style ? { style: s.style } : {}),
+    ...(s.blockCss ? { blockCss: s.blockCss } : {}),
+    ...(s.fonts ? { fonts: s.fonts } : {}),
+  };
+}
+
+const PELE_THEMES: Record<string, ThemeSpec> = {
+  tech: mkTheme({
+    name: 'tech', dark: false, bg: '#FFFFFF', fg: '#1B1F26', muted: '#5B6470',
+    line: '#5B6570', surface: '#D7E4F4', surfaceAlt: '#EEF1F5', border: '#C3C8D1',
+    accent: '#2563EB', critical: '#A87428', radius: '6px',
+    series: ['#3B7FC4', '#3D9A6A', '#5C6570', '#C9A227', '#C45C4A', '#4A9BB8', '#7A6BA8', '#C4842A'],
+    shapes: {
+      process: ['#D7E4F4', '#3A6F9C'],
+      decision: ['#F3E4C8', '#A87428'],
+      state: ['#D4E8DA', '#3B7A4C'],
+      store: ['#E3DCEC', '#5A4E82'],
+      cluster: ['#EEF1F5', '#C3C8D1'],
+    },
+  }),
+  openai: mkTheme({
+    name: 'openai', dark: false, bg: '#FFFFFF', fg: '#0D0D0D', muted: '#6E6E80',
+    line: '#8E8EA0', surface: '#FFFFFF', surfaceAlt: '#F7F7F8', border: '#1F1F1F',
+    accent: '#10A37F', critical: '#C45C4A',
+    series: ['#10A37F', '#3B6FD4', '#C9A227', '#A05A72', '#5A4E82', '#3A7A74', '#C45C4A', '#5C6570'],
+    shapes: {
+      process: ['#FFFFFF', '#1F1F1F'],
+      decision: ['#F7F7F8', '#1F1F1F'],
+      state: ['#E9F5F1', '#10A37F'],
+      store: ['#F7F7F8', '#8E8EA0'],
+      cluster: ['#FAFAFA', '#E3E3E8'],
+    },
+  }),
+  excalidraw: mkTheme({
+    name: 'excalidraw', dark: false, bg: '#FFFFFF', fg: '#1E1E1E', muted: '#868E96',
+    line: '#1E1E1E', surface: '#A5D8FF', surfaceAlt: '#F8F9FA', border: '#ADB5BD',
+    accent: '#1971C2', critical: '#E03131', radius: '12px',
+    font: `"Excalifont", "LXGW WenKai", "Segoe Print", "Comic Sans MS", "KaiTi", "STKaiti", "Noto Sans SC", cursive, sans-serif`,
+    series: ['#1971C2', '#2F9E44', '#F08C00', '#E03131', '#7950F2', '#0C8599', '#E8590C', '#868E96'],
+    style: {
+      rough: true, roughness: 1.0, bowing: 1.2, fillStyle: 'solid',
+      hachureGap: 7, hachureAngle: -41, fillWeight: 1.1, seed: 41,
+      strokeWidth: 1.5, shapeCoverage: true,
+    },
+    blockCss: EXCALIDRAW_BLOCK_CSS,
+    shapes: {
+      process: ['#A5D8FF', '#1E1E1E'],
+      decision: ['#FFEC99', '#1E1E1E'],
+      state: ['#B2F2BB', '#1E1E1E'],
+      store: ['#D0BFFF', '#1E1E1E'],
+      cluster: ['#F8F9FA', '#ADB5BD'],
+    },
+  }),
+};
+
+for (const [name, preset] of Object.entries(PRESETS)) {
+  const t = PELE_THEMES[name];
+  if (t) preset.pele = t;
+}
+
+export function getTheme(name: string): ThemeSpec {
+  const t = PRESETS[name]?.pele;
+  if (!t) throw new Error(`theme "${name}" has no Pele palette`);
+  return clone(t);
+}
+
+export function applyBrandToTheme(theme: ThemeSpec, accent: string): void {
+  theme.vars.accent = accent;
+}
+
+/** CSS that carries the theme into Pele's SVG (injected as <style> inside it). */
+export function peleCss(theme: ThemeSpec, opts: { strokeWidth?: number; labelWeight?: number } = {}): string {
+  const v = theme.vars;
+  const sw = opts.strokeWidth ?? theme.style?.strokeWidth ?? 1.5;
+  const series = Array.from({ length: 8 }, (_, i) =>
+    `--pele-series-${i + 1}:${v.series[i % v.series.length]};`).join('');
+  const cluster = theme.shapes.cluster;
+  const full = theme.style?.shapeCoverage;
+  const extra = full ? [
+    `.pele-flowchart .pele-shape-rounded rect,.pele-flowchart .pele-shape-stadium rect,.pele-flowchart .pele-shape-fr-rect rect{fill:${theme.shapes.process.fill};stroke:${theme.shapes.process.stroke};stroke-width:${sw}px}`,
+    `.pele-flowchart .pele-shape-fr-rect path{stroke:${theme.shapes.process.stroke};stroke-width:${sw}px}`,
+    `.pele-flowchart .pele-shape-hex polygon,.pele-flowchart .pele-shape-lean-r polygon,.pele-flowchart .pele-shape-odd polygon{fill:${theme.shapes.decision.fill};stroke:${theme.shapes.decision.stroke};stroke-width:${sw}px}`,
+    `.pele .pele-state-start circle{fill:${theme.shapes.state.stroke};stroke:none}`,
+    `.pele .pele-state-end circle:first-child{fill:${v.bg};stroke:${theme.shapes.state.stroke};stroke-width:${sw}px}`,
+    `.pele .pele-state-end circle:last-child{fill:${theme.shapes.state.stroke};stroke:none}`,
+    `.pele .pele-state-composite > rect{fill:none;stroke:${theme.shapes.state.stroke};stroke-width:${sw}px;stroke-dasharray:6 5}`,
+    `.pele .pele-class > rect,.pele .pele-entity > rect{fill:${theme.shapes.process.fill};stroke:${theme.shapes.process.stroke};stroke-width:${sw}px}`,
+    `.pele .pele-annotation > rect{fill:${theme.shapes.decision.fill};stroke:${theme.shapes.decision.stroke};stroke-width:${sw}px}`,
+    `.pele .pele-divider,.pele .pele-er-divider{stroke:${theme.shapes.process.stroke};stroke-width:${sw}px}`,
+    `.pele .pele-er-stripes rect{fill:${v.surfaceAlt}}`,
+  ] : [];
+  return [
+    `.pele{--pele-bg:${v.bg};--pele-fg:${v.fg};--pele-muted:${v.muted};`,
+    `--pele-line:${v.line};--pele-surface:${v.surface};--pele-surface-alt:${v.surfaceAlt};`,
+    `--pele-border:${v.border};--pele-accent:${v.accent};--pele-critical:${v.critical};`,
+    `--pele-radius:${v.radius ?? '4px'};--pele-font:${v.font ?? FONT_STACK};${series}}`,
+    `.pele-flowchart .pele-shape-rect rect{fill:${theme.shapes.process.fill};stroke:${theme.shapes.process.stroke};stroke-width:${sw}px}`,
+    `.pele-flowchart .pele-shape-diam polygon{fill:${theme.shapes.decision.fill};stroke:${theme.shapes.decision.stroke};stroke-width:${sw}px}`,
+    `.pele-flowchart .pele-shape-circle circle,.pele-flowchart .pele-shape-double-circle circle{fill:${theme.shapes.state.fill};stroke:${theme.shapes.state.stroke};stroke-width:${sw}px}`,
+    `.pele-flowchart .pele-shape-cyl path{stroke:${theme.shapes.store.stroke};stroke-width:${sw}px}`,
+    `.pele-flowchart .pele-shape-cyl path:first-child{fill:${theme.shapes.store.fill}}`,
+    `.pele-state .pele-shape-rect rect{fill:${theme.shapes.state.fill};stroke:${theme.shapes.state.stroke};stroke-width:${sw}px}`,
+    cluster ? `.pele .pele-cluster rect{fill:${cluster.fill};stroke:${cluster.stroke};stroke-width:${sw}px}` : '',
+    `.pele .pele-edge path{stroke-width:${sw}px}`,
+    `.pele .pele-marker{stroke:none}`,
+    ...extra,
+    opts.labelWeight ? `.pele .pele-label{font-weight:${opts.labelWeight}}` : '',
+    theme.css,
+  ].filter(Boolean).join('\n');
+}
+
+/** Split a Mermaid-shaped config into the few knobs Pele honors. */
+export function peleConfig(cfg: Record<string, unknown>): {
+  fontSize?: number;
+  padding?: number;
+  flowchart?: { nodeSpacing?: number; rankSpacing?: number; padding?: number };
+  warnings: string[];
+} {
+  const warnings: string[] = [];
+  const out: {
+    fontSize?: number;
+    padding?: number;
+    flowchart?: { nodeSpacing?: number; rankSpacing?: number; padding?: number };
+    warnings: string[];
+  } = { warnings };
+  for (const [k, v] of Object.entries(cfg)) {
+    if (k === 'fontSize' && typeof v === 'number') out.fontSize = v;
+    else if (k === 'padding' && typeof v === 'number') out.padding = v;
+    else if (k === 'flowchart' && v && typeof v === 'object') {
+      const f = v as Record<string, unknown>;
+      const fc: { nodeSpacing?: number; rankSpacing?: number; padding?: number } = {};
+      for (const key of ['nodeSpacing', 'rankSpacing', 'padding'] as const) {
+        if (typeof f[key] === 'number') fc[key] = f[key] as number;
+        else if (key in f) warnings.push(`config.flowchart.${key} is not a number; ignored`);
+      }
+      out.flowchart = fc;
+    } else {
+      warnings.push(`config "${k}" is not supported by the pele engine; ignored`);
+    }
   }
   return out;
 }
