@@ -20,3 +20,12 @@
 - **当前状态：** `src/lint.ts` 覆盖 DOM 几何、SVG 标签溢出、渲染态文本对比度（3:1）、PNG 边缘裁切、`diffPng` 确定性；叠加底部长空白规则与超长列表 fixture，当前 148/148。`scripts/lint-visuals.ts` 遍历 `tech` / `openai` / `excalidraw` 输出可读报告。实测：44,548px 列表底部 51px、56,952px 流程图底部 22px、三套主题双跑像素差 0。
 - **规划：** 若引入 `foreignObject` 渲染路径需补文本度量、全图型确定性、HTML 块 4.5:1 档、固定 CI 后的 pixelmatch 基准图；参考 Playwright / jest-image-snapshot / reg-suit 策略，详见 [`docs/QUALITY.md`](docs/QUALITY.md)。
 - **发布前：** 第三方组件与字体清单在 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)，全文在 `licenses/`；发布包必须一并携带。传递依赖清单需从 lockfile 重新生成。
+
+### Zed 的 Mermaid 渲染与「图 / 源码」切换 — parked
+
+- **当前状态：** 只读 Zed 源码的调研，未动 mmdx 代码。Zed 分两层：交互层（每个 mermaid 块顶部「Preview / Code」两个 tab、渲染失败直接显示源码、按显示倍率重新栅格化的缩放、按源码内容缓存的图）值得先吸收，做法是给 CLI 加一个自包含 HTML 图块产物（内联 SVG + 源码 + 无 JS 的 tab）；引擎层（Zed 用纯 Rust 的 `merman` 出 parity SVG + usvg/resvg 栅格化，不跑浏览器）列为后续评估，换引擎要重做中文字体、rough 手绘、DOM lint 与 PNG 裁切。
+- **详情指针：** [`docs/research-zed-mermaid.md`](docs/research-zed-mermaid.md)
+- **未验证事项：**
+  - [ ] merman 对 woff2 / 变量字体的支持（现有资产是 woff2 子集）
+  - [ ] merman 的 `look: handDrawn` 与 rough.js 的差距
+  - [ ] `@mermanjs/node` 在本机（Windows x64）可用性

@@ -4,6 +4,8 @@
 
 > 状态：**done**（v1.3.0，2026-10-23）· 对象：[obsidianmd/pele](https://github.com/obsidianmd/pele)（MIT，v1.9.0，Mermaid-12.1 语法、自研布局）
 
+> 另见 [research-zed-mermaid.md](research-zed-mermaid.md)：Zed 用纯 Rust 的 merman 出 SVG，并把每个 mermaid 块做成「图 / 源码」两个 tab——引擎与交互两条线的移植评估（2026-10-29）。
+
 ## 已落地
 
 `--engine pele|mermaid`（默认 `pele`）。Pele 在页面内渲染（复用 Chromium 已加载的 CJK 字体），自研布局 + 宽 S 弯路由，流程图连线默认曲线。mermaid 保留为回退（`--engine mermaid`），并把 `flowchart.curve` 从 `linear` 改为 `basis`。
