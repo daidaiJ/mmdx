@@ -1,7 +1,7 @@
 # 后续：移植 Zed 的 Mermaid 渲染与「图 / 源码」切换
 
 > 状态：调研 · 2026-10-29（只读源码，未动 mmdx 代码）
-> 对象：Zed 的 mermaid 支持（`crates/mermaid_render`，GPL-3.0-or-later，只读设计、不搬代码）、上游引擎 [Latias94/merman](https://github.com/Latias94/merman)（MIT OR Apache-2.0）
+> 对象：Zed 的 mermaid 支持——引擎、交互、样式三层（`crates/mermaid_render`，GPL-3.0-or-later，只读设计、不搬代码）、上游引擎 [Latias94/merman](https://github.com/Latias94/merman)（MIT OR Apache-2.0）
 > 前提：mmdx 引擎固定 Pele（浏览器内渲染 → SVG 序列化 / PNG 截图裁切），产物是 PNG 与 SVG 文件，没有 HTML 产物
 
 ## 结论先行
@@ -9,9 +9,10 @@
 Zed 的 mermaid 支持是两层，价值差别很大：
 
 1. **交互层（值得先做）**——每个 mermaid 块是一个小状态机：顶部「Preview / Code」两个 tab、悬停出现的复制按钮、只在偏离自然尺寸时才出现的「Zoom NNN% + 复位」、渲染失败直接显示源码、缩放时先沿用旧栅格不闪白。这一层不依赖换引擎，mmdx 缺的正是它：把「图 / 源码」切换做成 HTML 图块产物，博客与文档站点贴上去就有（§3）。
-2. **引擎层（列为后续）**——Zed 不跑浏览器：纯 Rust 的 `merman` 出 Mermaid parity SVG，再用 usvg/resvg 栅格化，GPUI 原生绘制。换成这套要重做中文字体、手绘、lint 与 PNG 裁切，且扩展块与 HTML 整页截图仍需 Chromium，去不掉浏览器依赖（§4）。
+2. **样式层（挑机制，不照搬风格）**——平面单色底 + 8 色强调系列 + 逐图型 CSS 覆盖。可吸收的是**配色机制**：强调色填充按 15% 混主题背景、文字色由底色在 OKLCH 里推导并保证 4.5:1、逐图型的覆盖清单、SVG 归一化 pass（§3.4）。不吸收的是它的风格决定：所有节点同一底色会抹掉 mmdx 的形状分色语义。
+3. **引擎层（列为后续）**——Zed 不跑浏览器：纯 Rust 的 `merman` 出 Mermaid parity SVG，再用 usvg/resvg 栅格化，GPUI 原生绘制。换成这套要重做中文字体、手绘、lint 与 PNG 裁切，且扩展块与 HTML 整页截图仍需 Chromium，去不掉浏览器依赖（§4）。
 
-一句话：**先吸收交互，引擎换 merman 留作后续评估**。
+一句话：**先吸收交互与配色机制，引擎换 merman 留作后续评估**。
 
 ## 1. Zed 的实现事实
 
@@ -62,6 +63,46 @@ Zoom 140% ⟲                          ← 只在偏离 100% 时出现
 图 或 源码                            ← 渲染失败时这里只有源码，且没有 tab
 ```
 
+### 1.3 样式：单色底 + 8 色强调系列 + 逐图型 CSS 覆盖
+
+Zed 不配 `look`、曲线或手绘参数，风格全部来自三件事：Mermaid 主题变量、按图型注入的 class、追加进 SVG 的 CSS。
+
+**Mermaid 配置**（`crates/mermaid_render/src/render.rs`）：
+
+| 项 | 值 |
+| --- | --- |
+| 主题 | `theme: "base"` + `darkMode` + `fontFamily` |
+| 标签 | `htmlLabels: true`、`flowchart.htmlLabels: true`、`flowchart.padding: 16` |
+| 节点底色 | **所有节点同一个底色**：`mainBkg` = `primaryColor`、`nodeBorder` = `primaryBorderColor`、`nodeTextColor` = `primaryTextColor`——没有按形状或按节点分色 |
+| 覆盖槽位 | cluster、edgeLabel、note、actor、activation、class、ER 奇偶行、pie、quadrant（四象限同色）、journey 等 |
+| 8 色系列 | 主题的 player colors → `cScale0..7` / `cScaleLabel0..7` / `pie1..8` / git 分支色 |
+
+**四道后处理**（`postprocess.rs` 串成事件流，`crates/mermaid_render/src/postprocess/`）：
+
+| pass | 做什么 |
+| --- | --- |
+| `strip_foreignobject` | 保留 merman raster-safe 的 `<text>` 回退标签，丢掉与之重复的原生标签 |
+| `element_fixup` | 白底 `background-color: white` → 主题背景；`width`/`height` 缺失或 ≤0 的 `<rect>` 连子树整棵删掉（merman 会吐 `width="NaN"`）；`#333` / `black` / `white` 等硬编码文字色 → 主题文字色；`text` / `tspan` 强制 `font-family` |
+| `accent_colors` | 按图型给元素注入 `zed-accent-N` / `zed-chart-N` class |
+| `inject_css` | 把主题 CSS 追加进 SVG 的 `<style>`，**选择器全部 scope 到 `#merman-N`**，规则几乎全是 `!important` |
+
+**强调色怎么分**（`postprocess/accent_colors.rs` 及其子模块）：
+
+- 图型识别靠根 `<svg>` 的 class：`flowchart` / `mindmap` / `classDiagram` / `statediagram` / `journey`（不处理）/ 其余默认 sequence。
+- flowchart 与 class/state：`<g class="node">` 依次取 `node_counter++ % 8`；节点里的文字用 `translate(x,y)` + path 半高做位置匹配，落在节点矩形内的 `text`/`tspan` 拿同一色。
+- sequence：actor-top 与 actor-bottom 各自计数循环，actor 标签文字跟随最近的 actor。
+- pie / xychart / quadrant：图例 rect 依次 `.zed-chart-0..7`，饼图 `path.pieCircle` 循环，plot 用 chart-0（填充）与 chart-1（线），象限散点 `g.data-point` 循环 accent。
+- mindmap：走 CSS 的 `.section-*`（根 color[0]、二级 color[1]、其余 color[2..7] 循环）。
+
+**配色公式**（`postprocess/inject_css.rs`、`postprocess/util.rs`）：
+
+- `ACCENT_FILL_OPACITY = 0.15`：强调色填充 = accent 与主题背景按 15% 混合，描边 = accent 原色，文字 = 主题文字色。
+- error / warning 芯片：先 `adjust_lightness`（暗色 ×0.7、亮色 ×1.3），再用 `text_color_for_background` 取文字色。
+- `text_color_for_background`：在 OKLCH 里保留背景 15% 的彩度、亮度取 0.18 / 0.96，二分搜索保证 ≥4.5:1，兜底纯黑或纯白；有 property test 覆盖任意不透明背景。
+- 先剥掉 merman 自带的 `!important`，再注入自己的（`CssOverridePostprocessor::strip_existing_important`），保证宿主样式赢。
+
+一句话：**平面、单色底、无手绘**；强调色只做「系列区分」（节点轮转、actor、饼图、图例），不做语义分色。
+
 ## 2. mmdx 现状对照
 
 | Zed 的设计 | mmdx 现状 | 可移植性 |
@@ -74,6 +115,7 @@ Zoom 140% ⟲                          ← 只在偏离 100% 时出现
 | 引用外部 `.mmd` | 无 | ⚠️ 可选，文档站点收益一般 |
 | 复制按钮 | 无 | ✅ HTML 产物里可加 |
 | 主题跟随宿主 | `--svg-themeable` 保留 `--pele-*` 变量，默认烘焙成 hex | ✅ 博客暗色模式可用一份 SVG 切换 |
+| 配色机制 | 强调色 tint 固定混白、文字色只告警不推导、C4 / mindmap / gitgraph 未接同一组 token | ✅ 挑机制吸收，见 §3.4 |
 
 ## 3. 可落地方案：HTML 图块产物（图 / 源码切换）
 
@@ -116,6 +158,23 @@ Zed 在主题变化时清缓存重渲染（`markdown.rs:699`），静态产物�
 - 渲染失败的块只出源码，不出空框。
 - 与 `-f png` 并存：PNG 仍是办公默认，HTML 档 opt-in。
 
+### 3.4 可吸收的样式点
+
+| Zed 的做法 | mmdx 现状 | 建议 |
+| --- | --- | --- |
+| 强调色填充 = accent 与**主题背景**按 15% 混合，描边用原色 | `accentTint` 固定按 0.12 混白（`src/tokens.ts:46`）；三套预设的 `bg` 都是 `#FFFFFF`，所以现在没偏差，但 `--background` 换底色后 tint 就对不上了 | tint 改成按 `theme.vars.bg` 混，`--background` 覆盖时同步重算 |
+| 文字色从背景色推导（OKLCH + 4.5:1 二分 + 兜底黑/白） | `--brand` 只在白字对比不足时给 warning（`src/tokens.ts:80`）；渲染态对比度靠 lint 事后检测 3:1（`src/lint.ts:139`） | 引入同款 `textColorFor(background)` 做生成式兜底：芯片/徽标的文字色由底色推，warning 降为提示 |
+| 逐图型的 CSS 覆盖清单：state、ER 奇偶行、class 关系箭头（composition/extension/aggregation/dependency/lollipop）、actor、activation、note、pie、quadrant、gantt（含 crit/activeCrit 用 error/warning 色）、timeline、journey、gitGraph、mindmap | [research-layout-color.md](research-layout-color.md) 记的缺口：C4 / mindmap / gitgraph 没接到同一组 token | 把这份清单当 checklist，逐条把 Pele 的类名映射到现有 `--pele-*` 与 `--_s/--_b`；只补配色，不动布局 |
+| SVG 归一化 pass：白底、坏 rect、硬编码文字色、强制字体族 | 无：`-f svg` 直接序列化 Pele 的 DOM | 加一个同类归一化 pass；Pele 的硬编码色与坏尺寸跟 merman 不同，按实测缺陷写规则，不照抄清单 |
+| 注入的 CSS 全部 scope 到 SVG 的 id | Pele 自己给元素 id 加前缀，`<style>` 在 SVG 内部 | §3 的 HTML 内联场景必须 scope，否则同页多图互相污染 |
+| 8 色系列来自宿主主题 | 每套预设写死 8 色 `series`（`src/themes.ts:665`） | 保持写死：离线确定性优先，`--brand` 仍只改 accent |
+
+不吸收的样式决定：
+
+- **不用「所有节点同一底色」**：mmdx 的形状分色（蓝=流程、琥珀=判定、绿=状态、紫=存储）承载语义，`--brand` 也只碰 accent（`src/tokens.ts:2` 的注释写明了这条边界）。
+- **不新增第四套预设**：主题已收敛为三套，Zed 的平面风只作为配色机制的来源，不作为新预设。
+- **不做「主题变化时重渲染」**：那是编辑器的能力；静态产物走变量 + `prefers-color-scheme`（§3.2）。
+
 ## 4. 引擎线：换 merman 去 Chromium（后续评估）
 
 ### 4.1 收益
@@ -156,10 +215,10 @@ Zed 在主题变化时清缓存重渲染（`markdown.rs:699`），静态产物�
 - [ ] merman 的 `look: handDrawn` 在 flowchart 上的输出与 rough.js 的差距（官方只把 ishikawa / venn 的手绘列入 residual 说明）
 - [ ] merman 的 Mermaid 版本口径（README 的 12.1 / 开发分支 12.2 与对齐仪表盘的 11.16 基线不一致）
 - [ ] `@mermanjs/node` 在本机（Windows x64）的可用性
-- [ ] Zed 的 tab / 缩放交互实机目测（本文结论来自源码与默认设置，未跑 Zed）
+- [ ] Zed 的 tab / 缩放交互与配色实机目测（本文结论来自源码与默认设置，未跑 Zed）
 
 ## 来源（均已读）
 
-- Zed：`crates/markdown/Cargo.toml`、`crates/mermaid_render/Cargo.toml`、`crates/mermaid_render/src/mermaid_render.rs`、`crates/markdown/src/mermaid.rs`、`crates/markdown/src/markdown.rs`、`crates/markdown/src/parser.rs`、`crates/markdown_preview/src/markdown_preview_view.rs`、`assets/settings/default.json`
+- Zed：`crates/markdown/Cargo.toml`、`crates/mermaid_render/Cargo.toml`、`crates/mermaid_render/src/{mermaid_render.rs,render.rs,postprocess.rs}`、`crates/mermaid_render/src/postprocess/{element_fixup.rs,inject_css.rs,util.rs}`、`crates/mermaid_render/src/postprocess/accent_colors{,/class_diagram.rs,/sequence_diagram.rs}.rs`、`crates/markdown/src/{mermaid.rs,markdown.rs,parser.rs}`、`crates/markdown_preview/src/markdown_preview_view.rs`、`assets/settings/default.json`
 - merman：README、`docs/FEATURES.md`、`docs/rendering/SVG_OUTPUT_PIPELINE.md`、`docs/alignment/STATUS.md`、`crates/merman-cli/README.md`、`platforms/node/README.md`
-- 本仓库：`src/cli.ts`、`src/render.ts`、`src/engine/pele.ts`、`src/capture.ts`、`src/lint.ts`、`src/themes.ts`、[research-pele.md](research-pele.md)、[HUMAN_GUIDE.md](HUMAN_GUIDE.md)
+- 本仓库：`src/cli.ts`、`src/render.ts`、`src/engine/pele.ts`、`src/capture.ts`、`src/lint.ts`、`src/themes.ts`、`src/tokens.ts`、`src/tone.ts`、[research-pele.md](research-pele.md)、[research-layout-color.md](research-layout-color.md)、[HUMAN_GUIDE.md](HUMAN_GUIDE.md)

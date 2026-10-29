@@ -23,7 +23,7 @@
 
 ### Zed 的 Mermaid 渲染与「图 / 源码」切换 — parked
 
-- **当前状态：** 只读 Zed 源码的调研，未动 mmdx 代码。Zed 分两层：交互层（每个 mermaid 块顶部「Preview / Code」两个 tab、渲染失败直接显示源码、按显示倍率重新栅格化的缩放、按源码内容缓存的图）值得先吸收，做法是给 CLI 加一个自包含 HTML 图块产物（内联 SVG + 源码 + 无 JS 的 tab）；引擎层（Zed 用纯 Rust 的 `merman` 出 parity SVG + usvg/resvg 栅格化，不跑浏览器）列为后续评估，换引擎要重做中文字体、rough 手绘、DOM lint 与 PNG 裁切。
+- **当前状态：** 只读 Zed 源码的调研，未动 mmdx 代码。Zed 分三层：交互层（每个 mermaid 块顶部「Preview / Code」两个 tab、渲染失败直接显示源码、按显示倍率重新栅格化的缩放、按源码内容缓存的图）值得先吸收，做法是给 CLI 加一个自包含 HTML 图块产物（内联 SVG + 源码 + 无 JS 的 tab）；样式层挑机制不照搬风格——强调色填充按 15% 混主题背景、文字色由底色在 OKLCH 推导并保 4.5:1、逐图型的 CSS 覆盖清单、SVG 归一化 pass，但不用它的「所有节点同一底色」（会抹掉形状分色语义）、不加第四套预设；引擎层（Zed 用纯 Rust 的 `merman` 出 parity SVG + usvg/resvg 栅格化，不跑浏览器）列为后续评估，换引擎要重做中文字体、rough 手绘、DOM lint 与 PNG 裁切。
 - **详情指针：** [`docs/research-zed-mermaid.md`](docs/research-zed-mermaid.md)
 - **未验证事项：**
   - [ ] merman 对 woff2 / 变量字体的支持（现有资产是 woff2 子集）
