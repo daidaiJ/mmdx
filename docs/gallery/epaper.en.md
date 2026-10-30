@@ -12,6 +12,10 @@ Block pages use the same sheet: paper background with the same grain, transparen
 
 ![epaper flowchart](epaper-flow.png)
 
+## Pie
+
+![epaper pie](epaper-chart.png)
+
 ## KPI
 
 ![epaper KPI](epaper-kpi.png)

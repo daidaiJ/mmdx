@@ -3,6 +3,8 @@
 // meaningful color coding (rect=process, diamond=decision, circle=state,
 // cylinder=store) instead of the single-hue Mermaid default.
 
+import { blendOver, scaleLightness, textColorFor } from './color.ts';
+
 export interface ThemePreset {
   config: Record<string, unknown>;
   background: string;
@@ -48,6 +50,14 @@ export interface ThemeStyle {
   strokeWidth?: number;
   /** cover the less-common Pele shape classes with role paint */
   shapeCoverage?: boolean;
+  /**
+   * Colour flowchart nodes by reading order instead of by shape family: the
+   * outline cycles the eight series colours and the fill is that colour at 15%
+   * over the page. This is the rule Zed's own mermaid CSS applies
+   * (`node_counter % 8`), and it is what keeps the Zed pair from reading as
+   * another shape-coded light theme.
+   */
+  nodeRotation?: boolean;
 }
 
 /**
@@ -561,31 +571,37 @@ const IOS_BLOCK_CSS = `
 :root { color-scheme: light; }
 body { background: #F2F2F7; }
 .wrap { font-size: 15px; color: #1C1C1E; background: transparent; }
-.caption-title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+.caption-title { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
 .caption-sub, .caption-foot { color: #6E6E73; }
 .cards { grid-template-columns: repeat(2, 300px); gap: 14px; }
 .card {
-  background: #FFFFFF; border: 1px solid #D1D1D6; border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04); padding: 14px 16px;
+  background: #FFFFFF; border: 1px solid #D1D1D6; border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04); padding: 14px 34px 14px 16px;
 }
 .card::before { display: none; }
+/* The chevron is the one piece of chrome iOS puts on every row it can drill
+   into; it reads as the platform before the palette does. */
+.card::after {
+  content: "›"; position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+  color: #C7C7CC; font-size: 20px; line-height: 1; font-weight: 400;
+}
 .card-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
 .card-desc { font-size: 13px; color: #6E6E73; }
-.kpi { background: #FFFFFF; border: 1px solid #D1D1D6; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); min-width: 400px; }
-.kpi-row { border-bottom: 1px solid rgba(60,60,67,0.18); padding: 12px 16px; }
+.kpi { background: #FFFFFF; border: 1px solid #D1D1D6; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); min-width: 400px; }
+.kpi-row { border-bottom: 1px solid rgba(60,60,67,0.29); padding: 12px 16px; }
 .kpi-name { font-size: 13px; color: #6E6E73; }
 .kpi-value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
 .kpi-value.is-focus { color: #007AFF; }
 .kpi-up { color: #FF3B30; }
 .kpi-down { color: #34C759; }
-.task, .cmp, .vs, .hm { background: #FFFFFF; border: 1px solid #D1D1D6; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-.task-row { border-bottom: 1px solid rgba(60,60,67,0.18); padding: 12px 16px; }
+.task, .cmp, .vs, .hm { background: #FFFFFF; border: 1px solid #D1D1D6; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.task-row { border-bottom: 1px solid rgba(60,60,67,0.29); padding: 12px 16px; }
 .task-chip, .task-badge { border-radius: 9999px; background: #F2F2F7; }
 .fn-track { background: #E5E5EA; border-radius: 9999px; }
 .fn-bar { background: #007AFF; border-radius: 9999px; }
-table { background: #FFFFFF; border: 1px solid #D1D1D6; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+table { background: #FFFFFF; border: 1px solid #D1D1D6; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
 thead th { background: #FFFFFF; color: #6E6E73; font-size: 13px; font-weight: 500; }
-th, td { border-bottom: 1px solid rgba(60,60,67,0.18); }
+th, td { border-bottom: 1px solid rgba(60,60,67,0.29); }
 th + th, td + td { border-left: none; }
 tbody tr:nth-child(even) td { background: #FFFFFF; }
 li::before { color: #007AFF; }
@@ -602,20 +618,22 @@ const GLASS_BLOCK_CSS = `
 body {
   background-color: #E9EEF6;
   background-image:
-    linear-gradient(rgba(15,35,66,0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15,35,66,0.07) 1px, transparent 1px);
-  background-size: 28px 28px;
+    linear-gradient(rgba(15,35,66,0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15,35,66,0.22) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 .wrap { font-size: 15px; color: #1B1B1F; background: transparent; }
 .caption-title { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
 .caption-sub, .caption-foot { color: #4C4F57; }
 .card, .kpi, table, .task, .cmp, .vs, .hm {
-  background: rgba(255,255,255,0.72);
+  background: rgba(255,255,255,0.45);
   border: 1px solid rgba(255,255,255,0.85);
   border-radius: 8px;
   box-shadow: 0 1px 2px rgba(15,23,42,0.08);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  /* A light blur: the ruling has to stay recognisable behind the sheet, and a
+     heavy blur turns a 24px grid into one flat tone. */
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 }
 .card { padding: 16px 18px; }
 .card::before { display: none; }
@@ -627,14 +645,14 @@ body {
 .kpi-up { color: #C42B1C; }
 .kpi-down { color: #0E7A6B; }
 .task-row { border-bottom: 1px solid rgba(15,23,42,0.08); }
-.task-chip, .task-badge { border-radius: 9999px; background: rgba(255,255,255,0.55); }
-.fn-track { background: rgba(255,255,255,0.55); border-radius: 9999px; }
+.task-chip, .task-badge { border-radius: 9999px; background: rgba(255,255,255,0.4); }
+.fn-track { background: rgba(255,255,255,0.4); border-radius: 9999px; }
 .fn-bar { background: #0F6CBD; border-radius: 9999px; }
 table { overflow: hidden; }
-thead th { background: rgba(255,255,255,0.5); color: #4C4F57; font-weight: 500; }
+thead th { background: rgba(255,255,255,0.36); color: #4C4F57; font-weight: 500; }
 th, td { border-bottom: 1px solid rgba(15,23,42,0.08); }
 th + th, td + td { border-left: none; }
-tbody tr:nth-child(even) td { background: rgba(255,255,255,0.35); }
+tbody tr:nth-child(even) td { background: rgba(255,255,255,0.24); }
 li::before { color: #0F6CBD; }
 `;
 
@@ -738,6 +756,129 @@ const acnh: ThemePreset = {
 };
 
 // ---------------------------------------------------------------------------
+// zed — the editor's own chrome: One Dark / One Light tokens, 1px hairlines,
+// flat surfaces, no shadow and no texture. Shape families are painted the way
+// Zed paints a flowchart node: the accent itself as the outline, the same
+// accent at 15% over the page as the fill.
+// ---------------------------------------------------------------------------
+
+/** Zed's accent fill: the accent laid over the page colour, not over white. */
+function zedFill(accent: string, bg: string): string {
+  return blendOver(accent, bg, 0.15);
+}
+
+/**
+ * Zed walks the eight player colours by reading order (`node_counter % 8`) and
+ * paints each node with the accent plus its 15% tint, so a Zed flowchart is
+ * multi-hue rather than shape-coded. It runs that counter for flowchart, class
+ * and state diagrams; Pele writes a diagram's nodes into one `<g>` in document
+ * order, which makes the rotation a set of `:nth-child` rules. The shapes are
+ * direct children of the node group, so `>` keeps the paint off nested chrome.
+ * Start/end markers and composite frames are not nodes and stay as they are.
+ */
+function zedNodeRotation(series: string[], bg: string): string {
+  const groups = [
+    '.pele-flowchart .pele-nodes > .pele-node',
+    '.pele-class .pele-nodes > .pele-node',
+    '.pele-state .pele-nodes > .pele-node:not(.pele-state-start):not(.pele-state-end):not(.pele-state-composite)',
+  ];
+  const shapes = ['rect', 'circle', 'ellipse', 'polygon'];
+  const rules: string[] = [];
+  series.forEach((accent, i) => {
+    const at = groups.map((g) => `${g}:nth-child(${series.length}n+${i + 1})`);
+    const fill = zedFill(accent, bg);
+    const boxed = at.flatMap((a) => shapes.map((s) => `${a} > ${s}`)).join(',');
+    const paths = at.map((a) => `${a} > path`).join(',');
+    const head = at.map((a) => `${a} > path:first-child`).join(',');
+    rules.push(
+      `${boxed}{fill:${fill};stroke:${accent}}`,
+      `${paths}{stroke:${accent}}`,
+      // The cylinder body is its first path; the rest only carry the outline.
+      `${head}{fill:${fill}}`,
+    );
+  });
+  return rules.join('\n');
+}
+
+/**
+ * Task-status chips for a Zed page, built the way Zed builds its error and
+ * warning chips: scale the accent's lightness (down on a dark page, up on a
+ * light one), then derive the text from that stock. `adjust_lightness` in
+ * `postprocess/inject_css.rs` does the first half in HSL; OKLab L is the house
+ * metric, so `scaleLightness` does it there.
+ */
+function zedChips(dark: boolean): string {
+  const chip = (accent: string): string => {
+    const stock = scaleLightness(accent, dark ? 0.7 : 1.3);
+    return `color:${textColorFor(stock)};background:${stock}`;
+  };
+  return [
+    `.st-design{${chip('#5C78E2')}}`,
+    `.st-dev{${chip('#AD6E26')}}`,
+    `.st-test{${chip('#984EA5')}}`,
+    `.st-done{${chip('#3F953A')}}`,
+    `.st-block{${chip('#D36151')}}`,
+  ].join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// zed-light — the light half of the Zed pair. Block pages read as editor
+// panels: the surface token for the sheet, the border token for the hairline,
+// no accent bar down the side of a card. Its sibling below is the dark half.
+// ---------------------------------------------------------------------------
+const ZED_LIGHT_BLOCK_CSS = `
+:root { color-scheme: light; }
+${zedChips(false)}
+body { background-color: #FAFAFA; }
+.card, .kpi, .task, .cmp, .vs, .hm, table { background: #EBEBEC; border-color: #C9C9CA; border-radius: 6px; }
+.card::before { display: none; }
+.card-desc, .kpi-name, .cmp-sub, .fn-val, .vs-lab, .vs-val, .gg-sub,
+.hm-wday, .hm-ml, .hm-legend, .pr-leg-val, .sw-lane { color: #58585A; }
+thead th { background: #E4E4E5; color: #58585A; }
+th, td { border-color: #C9C9CA; }
+tbody tr:nth-child(even) td { background: #F2F2F3; }
+code { background: #E4E4E5; }
+.fn-track { background: #E4E4E5; }
+.task-chip { background: #E4E4E5; color: #58585A; }
+.hm-cell { background: #E4E4E5; }
+.sw-band { fill: #EBEBEC; }
+.sw-band.alt { fill: #E4E4E5; }
+.sw-step rect { fill: #EBEBEC; }
+.sw-edge { stroke: #7C7E86; }
+.pr-track { stroke: #C9C9CA; }
+`;
+
+const ZED_DARK_BLOCK_CSS = `
+:root { color-scheme: dark; }
+body { background-color: #282C33; }
+.wrap { color: #DCE0E5; background: transparent; }
+.caption-title { color: #DCE0E5; }
+.caption-sub, .caption-foot { color: #A9AFBC; }
+.card, .kpi, .task, .cmp, .vs, .hm, table { background: #2F343E; border-color: #464B57; }
+.card-desc, .kpi-name, .cmp-sub, .fn-val, .vs-lab, .vs-val, .gg-sub,
+.hm-wday, .hm-ml, .hm-legend, .pr-leg-val, .sw-lane { color: #A9AFBC; }
+thead th { background: #2E343E; color: #A9AFBC; }
+th, td { border-color: #464B57; }
+tbody tr:nth-child(even) td { background: #2E343E; }
+code { background: #2E343E; }
+.fn-track { background: #2E343E; }
+.task-seg { background: #464B57; }
+.task-chip { background: #2E343E; color: #A9AFBC; }
+.task-row.is-cancel { background: #2E343E; }
+.task-row.is-cancel .task-seg.on { background: #5D636F; }
+.kpi-up { color: #D07277; }
+.kpi-down { color: #A1C181; }
+.hm-cell { background: #2E343E; }
+.hm-cell.lv4 { background: var(--accent); color: #282C33; }
+.sw-band { fill: #2F343E; }
+.sw-band.alt { fill: #2E343E; }
+.sw-step rect { fill: #2F343E; }
+.sw-edge { stroke: #636D83; }
+.pr-track { stroke: #464B57; }
+${zedChips(true)}
+`;
+
+// ---------------------------------------------------------------------------
 // ios — grouped light-grey background, white translucent surfaces, hairlines,
 // system colours. The palette and the shadow are iOS system values.
 // ---------------------------------------------------------------------------
@@ -762,6 +903,22 @@ const epaper: ThemePreset = {
   background: '#F5F1EB',
 };
 
+// ---------------------------------------------------------------------------
+// zed / zed-light — Zed editor chrome. Same palette rules as above; the values
+// are the editor's own tokens (see PELE_THEMES).
+// ---------------------------------------------------------------------------
+
+const zed: ThemePreset = {
+  config: baseConfig('#282C33'),
+  background: '#282C33',
+  dark: true,
+};
+
+const zedLight: ThemePreset = {
+  config: baseConfig('#FAFAFA'),
+  background: '#FAFAFA',
+};
+
 export const PRESETS: Record<string, ThemePreset> = {
   tech,
   openai,
@@ -770,6 +927,8 @@ export const PRESETS: Record<string, ThemePreset> = {
   acnh,
   glass,
   epaper,
+  zed,
+  'zed-light': zedLight,
 };
 
 export const DEFAULT_THEME = 'tech';
@@ -914,7 +1073,7 @@ const PELE_THEMES: Record<string, ThemeSpec> = {
     name: 'tech', dark: false, bg: '#FFFFFF', fg: '#1B1F26', muted: '#5B6470',
     line: '#5B6570', surface: '#D7E4F4', surfaceAlt: '#EEF1F5', border: '#C3C8D1',
     accent: '#2563EB', critical: '#A87428', radius: '6px',
-    series: ['#3B7FC4', '#3D9A6A', '#5C6570', '#C9A227', '#C45C4A', '#4A9BB8', '#7A6BA8', '#C4842A'],
+    series: ['#3B7FC4', '#3D9A6A', '#5C6570', '#B98F00', '#C45C4A', '#4A9BB8', '#7A6BA8', '#C77A16'],
     shapes: {
       process: ['#D7E4F4', '#3A6F9C'],
       decision: ['#F3E4C8', '#A87428'],
@@ -927,7 +1086,7 @@ const PELE_THEMES: Record<string, ThemeSpec> = {
     name: 'openai', dark: false, bg: '#FFFFFF', fg: '#0D0D0D', muted: '#6E6E80',
     line: '#8E8EA0', surface: '#FFFFFF', surfaceAlt: '#F7F7F8', border: '#1F1F1F',
     accent: '#10A37F', critical: '#C45C4A',
-    series: ['#10A37F', '#3B6FD4', '#C9A227', '#A05A72', '#5A4E82', '#3A7A74', '#C45C4A', '#5C6570'],
+    series: ['#19A37F', '#3D6CD3', '#B98F00', '#A15163', '#5A4E82', '#38857B', '#C45C4A', '#5A6676'],
     shapes: {
       process: ['#FFFFFF', '#1F1F1F'],
       decision: ['#F7F7F8', '#1F1F1F'],
@@ -941,7 +1100,7 @@ const PELE_THEMES: Record<string, ThemeSpec> = {
     line: '#1E1E1E', surface: '#A5D8FF', surfaceAlt: '#F8F9FA', border: '#ADB5BD',
     accent: '#1971C2', critical: '#E03131', radius: '12px',
     font: `"Excalifont", "LXGW WenKai", "Segoe Print", "Comic Sans MS", "KaiTi", "STKaiti", "Noto Sans SC", cursive, sans-serif`,
-    series: ['#1971C2', '#2F9E44', '#F08C00', '#E03131', '#7950F2', '#0C8599', '#E8590C', '#868E96'],
+    series: ['#1971C2', '#23A048', '#DB7E00', '#D43031', '#7950F2', '#0F8599', '#E75D1C', '#868E96'],
     style: {
       rough: true, roughness: 1.0, bowing: 1.2, fillStyle: 'solid',
       hachureGap: 7, hachureAngle: -41, fillWeight: 1.1, seed: 41,
@@ -958,63 +1117,69 @@ const PELE_THEMES: Record<string, ThemeSpec> = {
   }),
   ios: mkTheme({
     name: 'ios', dark: false, bg: '#F2F2F7', fg: '#1C1C1E', muted: '#6E6E73',
-    line: '#8E8E93', surface: '#FFFFFF', surfaceAlt: '#FFFFFF',
-    border: '#D1D1D6', accent: '#007AFF', critical: '#D70015', radius: '10px',
+    line: '#7C7C82', surface: '#FFFFFF', surfaceAlt: '#FFFFFF',
+    border: '#D1D1D6', accent: '#007AFF', critical: '#D70015', radius: '14px',
     font: `-apple-system, "SF Pro Text", "SF Pro Display", "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif`,
-    series: ['#007AFF', '#248A3D', '#C93400', '#D70015', '#8944AB', '#0071A4', '#B25000', '#6C6C70'],
-    style: { strokeWidth: 1.25, shapeCoverage: true },
+    series: ['#007AFF', '#248A3D', '#C23A17', '#D70015', '#8944AB', '#006C9F', '#B15109', '#6C6C70'],
+    style: { strokeWidth: 1.6, shapeCoverage: true },
     // Flat grouped page: no wallpaper tint and no filter depth, so the sheet
     // reads as a system surface rather than as a rendered object.
     css: '.pele-edge path{stroke-opacity:0.9}',
     blockCss: IOS_BLOCK_CSS,
     shapes: {
       process: ['#FFFFFF', '#007AFF'],
-      decision: ['#FFF4E0', '#C93400'],
-      state: ['#E8F8EC', '#248A3D'],
-      store: ['#F2ECFC', '#8944AB'],
+      decision: ['#FFE9CF', '#C23A17'],
+      state: ['#E3F6E7', '#248A3D'],
+      store: ['#F1E9FB', '#8A48AC'],
       cluster: ['#FFFFFF', '#D1D1D6'],
     },
   }),
   glass: mkTheme({
     name: 'glass', dark: false, bg: '#E9EEF6', fg: '#1B1B1F', muted: '#4C4F57',
-    line: '#6E7480', surface: 'rgba(255,255,255,0.72)', surfaceAlt: 'rgba(255,255,255,0.45)',
+    line: '#6E7480', surface: 'rgba(255,255,255,0.55)', surfaceAlt: 'rgba(255,255,255,0.38)',
     border: 'rgba(255,255,255,0.85)', accent: '#0F6CBD', critical: '#C42B1C', radius: '8px',
     font: `"Segoe UI Variable Text", "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif`,
-    series: ['#0F6CBD', '#0E7A6B', '#8A6116', '#C42B1C', '#6B4FA8', '#2B7A9B', '#B0428A', '#5C6672'],
+    series: ['#005DBB', '#037667', '#8A6116', '#C42B1C', '#6B4EA2', '#267C9D', '#B04087', '#62707F'],
     style: { strokeWidth: 1.4, shapeCoverage: true },
     // Acrylic: a flat hue layer, one sheet of white over it, grain on top. The
     // tint stays inside a 12/255 step of the base, so the backdrop reads as
-    // material instead of as a colour field the margin gate would follow.
+    // material instead of as a colour field the margin gate would follow. The
+    // ruling is what proves the panels are translucent, so it carries real
+    // contrast and the white sheet over it stays thin.
     backdrop: {
       base: '#E9EEF6',
       blur: 70,
       blobs: [
-        { cx: 0.22, cy: 0.2, r: 0.55, color: '#DCE6F5', opacity: 0.9 },
-        { cx: 0.78, cy: 0.8, r: 0.55, color: '#DCE6F5', opacity: 0.9 },
-        { cx: 0.78, cy: 0.2, r: 0.5, color: '#E7E3F4', opacity: 0.85 },
-        { cx: 0.22, cy: 0.8, r: 0.5, color: '#E7E3F4', opacity: 0.85 },
+        { cx: 0.2, cy: 0.16, r: 0.58, color: '#D8E3F4', opacity: 0.95 },
+        { cx: 0.84, cy: 0.88, r: 0.55, color: '#D3DFF1', opacity: 0.9 },
+        // Light source: a white sheen, not a warm or violet wash (a coloured
+        // blob reads as a dirty patch on a cool canvas).
+        { cx: 0.24, cy: 0.2, r: 0.4, color: '#FFFFFF', opacity: 0.6 },
       ],
-      grid: { color: 'rgba(15,35,66,0.10)', gap: 28, width: 1 },
-      pane: { color: '#FFFFFF', opacity: 0.3, noise: 0.04 },
+      grid: { color: 'rgba(15,35,66,0.22)', gap: 24, width: 1 },
+      pane: { color: '#FFFFFF', opacity: 0.16, noise: 0.1 },
     },
     css: [
       '.pele-node rect,.pele-node circle,.pele-node ellipse,.pele-node polygon,.pele-node path{filter:drop-shadow(0 1px 2px rgba(15,23,42,0.10))}',
-      '.pele-cluster rect{fill:rgba(255,255,255,0.38);filter:drop-shadow(0 1px 1.5px rgba(15,23,42,0.06))}',
+      '.pele-cluster rect{fill:rgba(255,255,255,0.3);filter:drop-shadow(0 1px 1.5px rgba(15,23,42,0.06))}',
     ].join('\n'),
     blockCss: GLASS_BLOCK_CSS,
     shapes: {
-      process: ['rgba(255,255,255,0.72)', '#0F6CBD'],
-      decision: ['rgba(255,255,255,0.72)', '#B07514'],
-      state: ['rgba(255,255,255,0.72)', '#0E7A6B'],
-      store: ['rgba(255,255,255,0.72)', '#6B4FA8'],
-      cluster: ['rgba(255,255,255,0.38)', '#B8C0CC'],
+      process: ['rgba(255,255,255,0.55)', '#0F6CBD'],
+      decision: ['rgba(255,255,255,0.55)', '#B45309'],
+      state: ['rgba(255,255,255,0.55)', '#0E7A6B'],
+      store: ['rgba(255,255,255,0.55)', '#6B4FA8'],
+      cluster: ['rgba(255,255,255,0.3)', '#B8C0CC'],
     },
   }),
   epaper: mkTheme({
     name: 'epaper', dark: false, bg: '#F5F1EB', fg: '#1A1A1A', muted: '#666666',
     line: '#1A1A1A', surface: '#F5F1EB', surfaceAlt: '#EDE9E2', border: '#1A1A1A',
     accent: '#1A1A1A', critical: '#1A1A1A', radius: '0px',
-    series: ['#1A1A1A', '#4A4A4A', '#6E6E6E', '#8C8C8C', '#2E2E2E', '#5C5C5C', '#3A3A3A', '#7A7A7A'],
+    // Greys for the chart series: the lightest one stops at #8A8A8A, which is
+    // the first step that clears 3:1 against the stock (the pie prints its
+    // value in the page colour inside the slice).
+    series: ['#1A1A1A', '#4A4A4A', '#6E6E6E', '#8A8A8A', '#2E2E2E', '#5C5C5C', '#3A3A3A', '#7A7A7A'],
     style: { strokeWidth: 1.1, shapeCoverage: true },
     // Paper grain, not a tint: the sheet is the page colour and only the
     // turbulence shows, which is what makes it read as stock instead of a fill.
@@ -1034,7 +1199,7 @@ const PELE_THEMES: Record<string, ThemeSpec> = {
     accent: '#3E8C4A', critical: '#A33B2A', radius: '16px',
     font: `"ZCOOL KuaiLe", "Baloo 2", "YouYuan", "幼圆", "Segoe Print", "LXGW WenKai", "Noto Sans SC", sans-serif`,
     fonts: ['ZCOOL KuaiLe', 'Baloo 2'],
-    series: ['#3E8C4A', '#E8A33D', '#7A5C3E', '#A33B2A', '#5C8AC9', '#7A6350', '#D98BA0', '#6BAA75'],
+    series: ['#3E8C4A', '#CE7E00', '#7A5C3E', '#A33B2A', '#5B86C7', '#78675B', '#CB788D', '#619E6A'],
     style: { strokeWidth: 2.6, shapeCoverage: true },
     // Cream paper with the dotted grid the block pages draw in CSS.
     backdrop: { base: '#FFF8E7', dots: { color: '#F0DFC2', size: 1.1, gap: 18 } },
@@ -1052,6 +1217,45 @@ const PELE_THEMES: Record<string, ThemeSpec> = {
       state: ['#DDF2D4', '#3E8C4A'],
       store: ['#F1E4CC', '#7A5C3E'],
       cluster: ['#FDF1D6', '#D9C3A5'],
+    },
+  }),
+  zed: mkTheme({
+    name: 'zed', dark: true, bg: '#282C33', fg: '#DCE0E5', muted: '#A9AFBC',
+    // One Dark tokens: editor.background / text / text.muted / surface.background
+    // / element.background / border. Edges take terminal.dim_foreground, the
+    // editor's own de-emphasised stroke, lightened until it clears the 3:1 a
+    // connector needs against the dark page.
+    line: '#7A8598', surface: '#2F343E', surfaceAlt: '#2E343E', border: '#464B57',
+    accent: '#74ADE8', critical: '#D07277',
+    series: ['#70B2ED', '#CE5C4D', '#BF956A', '#B477CF', '#77ADB5', '#D07277', '#DEC78B', '#A1C181'],
+    // Zed colours flowchart nodes by reading order; state / class / ER keep the
+    // shape-family paint below.
+    style: { strokeWidth: 1, shapeCoverage: true, nodeRotation: true },
+    blockCss: ZED_DARK_BLOCK_CSS,
+    shapes: {
+      // info blue / syntax number / created green / syntax keyword, each filled
+      // with itself at 15% over the page.
+      process: [zedFill('#74ADE8', '#282C33'), '#74ADE8'],
+      decision: [zedFill('#BF956A', '#282C33'), '#BF956A'],
+      state: [zedFill('#A1C181', '#282C33'), '#A1C181'],
+      store: [zedFill('#B477CF', '#282C33'), '#B477CF'],
+      cluster: ['#2F343E', '#636D83'],
+    },
+  }),
+  'zed-light': mkTheme({
+    name: 'zed-light', dark: false, bg: '#FAFAFA', fg: '#242529', muted: '#58585A',
+    // One Light tokens; edges take syntax comment.doc for the same reason.
+    line: '#7C7E86', surface: '#EBEBEC', surfaceAlt: '#EBEBEC', border: '#C9C9CA',
+    accent: '#5C78E2', critical: '#D36151',
+    series: ['#5E77E2', '#9955A5', '#AE6D22', '#A142AD', '#3285BD', '#D1514D', '#A08210', '#5B934D'],
+    style: { strokeWidth: 1, shapeCoverage: true, nodeRotation: true },
+    blockCss: ZED_LIGHT_BLOCK_CSS,
+    shapes: {
+      process: [zedFill('#5C78E2', '#FAFAFA'), '#5C78E2'],
+      decision: [zedFill('#AD6E26', '#FAFAFA'), '#AD6E26'],
+      state: [zedFill('#3F953A', '#FAFAFA'), '#3F953A'],
+      store: [zedFill('#984EA5', '#FAFAFA'), '#984EA5'],
+      cluster: ['#EBEBEC', '#7C7E86'],
     },
   }),
 };
@@ -1090,7 +1294,7 @@ const PAPER = {
   critical: '#A01D48',
   grid: { color: 'rgba(31,32,36,0.09)', gap: 24, width: 1 },
   gridMajor: { color: 'rgba(31,32,36,0.16)', gap: 96, width: 1 },
-  series: ['#4F5D75', '#3F6B5A', '#8A6A3B', '#8C4A3A', '#5B4F7A', '#3C6E8F', '#7A6A80', '#6B6B5A'],
+  series: ['#505A6B', '#3F6B5A', '#8A6A3B', '#8C4A3A', '#5B4A7A', '#3A6F94', '#77607C', '#717363'],
   shapes: {
     process: ['#E7ECF3', '#3D5878'],
     decision: ['#F4E8D8', '#96601F'],
@@ -1164,6 +1368,7 @@ export function peleCss(theme: ThemeSpec, opts: { strokeWidth?: number; labelWei
     `.pele .pele-edge path{stroke-width:${sw}px}`,
     `.pele .pele-marker{stroke:none}`,
     ...extra,
+    theme.style?.nodeRotation ? zedNodeRotation(theme.vars.series, theme.vars.bg) : '',
     opts.labelWeight ? `.pele .pele-label{font-weight:${opts.labelWeight}}` : '',
     theme.css,
   ].filter(Boolean).join('\n');

@@ -16,6 +16,10 @@ iOS 系统界面风：分组浅灰底（`#F2F2F7`）+ 白卡片 + 发丝分隔�
 
 ![ios 流程图](ios-flow.png)
 
+## 饼图
+
+![ios 饼图](ios-chart.png)
+
 ## KPI
 
 ![ios KPI](ios-kpi.png)

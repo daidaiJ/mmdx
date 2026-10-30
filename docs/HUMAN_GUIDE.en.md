@@ -94,7 +94,7 @@ Output naming: by default next to the input, `<name>-m<N>.svg/.png` numbered by 
 | --- | --- |
 | `-o, --out <path>` | Output directory; exact filename when input has one diagram (default: next to input) |
 | `-f, --format <fmt>` | `svg` \| `png` \| `both` (default both; `--preset` defaults to png unless `-f` is explicit) |
-| `-t, --theme <name>` | `tech` (default) · `openai` · `excalidraw` · `ios` · `acnh` · `glass` · `epaper` |
+| `-t, --theme <name>` | `tech` (default) · `openai` · `excalidraw` · `ios` · `acnh` · `glass` · `epaper` · `zed` · `zed-light` |
 | `--tone <name>` | `paper` \| `neutral` \| `product`; structural block overrides (radius/shadow/display type/table headers), and `paper` also repaints the diagram onto a ruled off-white sheet |
 | `--style-fill <mode>` | `solid` (default) \| `hachure`; `excalidraw` only |
 | `--preset <name>` | `slide` (projection/PPT: 1600px@2, 18px type, heavier strokes, ~80px footer) \| `a4` (900px@2) \| `square` (1080px@2) \| `column` (chat/narrow column: 800px@2, about 1/3 of a 2560×1440 display, 18px type, 200px label wrap). Explicit `--width`/`--scale`/`-f` win |
@@ -201,6 +201,7 @@ Exemptions keep false positives down: own-group labels, line-riding labels (exem
 | Sticker-style weekly updates / team boards | `acnh` (cream paper, thick brown outlines, hard offset shadows, rounded type) |
 | Glass covers / modern product reviews | `glass` (Fluent acrylic: pale canvas, ruling, translucent white sheet with grain, 8px panels and a light rim) |
 | Black-and-white print / e-reader / compliance docs | `epaper` (paper stock, hairline black strokes, square corners, no shadow, grey-level shape coding) |
+| Dark docs sites, tech talks, terminal-adjacent diagrams | `zed` (Zed One Dark: dark canvas, hairlines, syntax-coloured shape families); `zed-light` for the matching light look |
 | A dark page | `openai` or `tech` plus `--background '#1A1A1A'` (do not project a dark page in a meeting room) |
 
 ### Fine-tuning (--css snippet library, appended after the theme)

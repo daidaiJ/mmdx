@@ -2,6 +2,8 @@
 // `--brand` only remaps accent (+ derived accent-tint). Flowchart shape
 // coding in TECH_CSS is intentionally not driven by these variables.
 
+import { blendOver, contrastRatio } from './color.ts';
+
 export interface Tokens {
   paper: string;
   ink: string;
@@ -22,6 +24,8 @@ export const DEFAULT_TOKENS: Tokens = {
   paper2: '#EEF1F5',
 };
 
+export { contrastRatio, relativeLuminance } from './color.ts';
+
 const HEX = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
 export function normalizeHex(raw: string): string | null {
@@ -37,32 +41,13 @@ function hexRgb(hex: string): [number, number, number] {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-function rgbHex(r: number, g: number, b: number): string {
-  const h = (n: number) => Math.round(n).toString(16).padStart(2, '0');
-  return `#${h(r)}${h(g)}${h(b)}`.toUpperCase();
-}
-
-/** accent @ 0.12 over white — light fill for chips / bars. */
-export function accentTint(accent: string): string {
-  const [r, g, b] = hexRgb(accent);
-  return rgbHex(255 * 0.88 + r * 0.12, 255 * 0.88 + g * 0.12, 255 * 0.88 + b * 0.12);
-}
-
-function channel(c: number): number {
-  const s = c / 255;
-  return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-}
-
-export function relativeLuminance(hex: string): number {
-  const [r, g, b] = hexRgb(hex);
-  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
-}
-
-export function contrastRatio(a: string, b: string): number {
-  const l1 = relativeLuminance(a);
-  const l2 = relativeLuminance(b);
-  const [hi, lo] = l1 > l2 ? [l1, l2] : [l2, l1];
-  return (hi + 0.05) / (lo + 0.05);
+/**
+ * accent at 12% over `bg` — the light fill for chips / bars. The mix is taken
+ * against the page colour, so a tinted chip stays inside a dark theme instead
+ * of turning into a white panel.
+ */
+export function accentTint(accent: string, bg = '#FFFFFF'): string {
+  return blendOver(accent, bg, 0.12);
 }
 
 export interface BrandResult {

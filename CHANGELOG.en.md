@@ -4,6 +4,45 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioned per [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Themes (added)
+
+- Added `zed` / `zed-light`: Zed's One Dark / One Light, palette taken from Zed's `assets/themes/one/one.json` and mapped the way `crates/markdown/src/mermaid.rs` (`build_mermaid_theme`) maps editor tokens. The first dark preset in the set
+- Nodes now follow Zed's own rule: **flowchart / class / state nodes walk the eight player colours by reading order (`node_counter % 8`), taking the accent as the outline and that accent at 15% over the page as the fill** (`blendOver` in `src/color.ts`, matching Zed's `ACCENT_FILL_OPACITY`). Pele writes a diagram's nodes into one `<g>` in document order, so this is `ThemeStyle.nodeRotation` plus a set of `:nth-child(8n+k)` rules, with `:not()` keeping state start/end markers and composite frames out of it. **This is the clearest difference from `tech`**: `tech` colour-codes by shape family on one hue, the Zed pair cycles hues by reading order
+- The shape-family rules now serve the remaining slots (ER entities, notes, class dividers, state markers, clusters) in Zed's syntax colours: `zed` `#74ADE8` / `#BF956A` / `#A1C181` / `#B477CF`, `zed-light` `#5C78E2` / `#AD6E26` / `#3F953A` / `#984EA5`
+- Status chips now use Zed's chip recipe: scale the accent's lightness (`adjust_lightness`: ×0.7 dark, ×1.3 light — the new `scaleLightness()` in `src/color.ts`, applied to OKLab L), then derive the text colour from that stock. They used the node-fill recipe (accent at 15% over the page) before
+- `zed-light`'s block pages became **editor panels** instead of document cards: `#EBEBEC` sheets, `#C9C9CA` hairlines, 6px radii, no accent stripe on a card, `#E4E4E5` for table headers and heat cells. They previously used the shared `PAGE_CSS` and read like `tech`
+- Added `textColorFor(bg)` (OKLab keeping 15% of the background chroma, binary search to hold 4.5:1): `zed`'s block-page status chips derive their text from their own stock, so one rule covers light and dark
+- `accentTint(accent, bg)` now mixes against the theme's page colour (it used to mix with white), and six `color-mix(..., white)` rules in `PAGE_CSS` became `color-mix(..., var(--paper))` (progress bars, comparison bars, heatmap levels 1-3). Themes with a white page render byte-identically; themes whose page is tinted (`ios` / `glass` / `epaper` / `acnh` / `--tone paper`) shift those bars and cells 1-3% toward their own stock
+- Added a dark block-page stylesheet: `color-scheme: dark`, `#2F343E` panels, `#464B57` hairlines; everything else still reads `var(--paper)` / `var(--ink)`
+- `src/tokens.ts` now re-exports `contrastRatio` / `relativeLuminance` from `src/color.ts` instead of keeping a second copy
+- Reworked `glass`'s material layer: 24px ruling at 0.22 opacity (was 28px at 0.10, invisible at 1x), white sheet 0.30 → 0.16, grain 4% → 10%, panels `rgba(255,255,255,.55)` → `.45` with `backdrop-filter: blur(5px)` (was 20px), so the ruling reads through the panels and the acrylic reads as material. Dropped the violet blob (`#E7E3F4`, which read as a dirty patch on a cool canvas) for a white sheen, and moved the decision outline `#B07514` → `#B45309` (the old one was olive and muddy)
+- Strengthened `ios`: 10 → 14px radii, 1.25 → 1.6px strokes, firmer system-colour tints for decision/state/store, plus HIG grouped-list chrome on block pages (a `›` chevron on every card, separators at iOS's 0.29 alpha, 20px/700 caption title)
+
+### Fixed
+
+- `mmdx card` failed under bun with `buf.readUInt32BE is not a function`: `pngSize()` in `src/card.ts` assumed a Node `Buffer`, while bun's screenshot path hands back a `Uint8Array`. It now wraps with `Buffer.from()` (as `src/capture.ts` / `src/lint.ts` already did), which takes `bun run test` from 205/209 to **209/209**
+
+### Accessibility (new gates)
+
+- Added `lint/theme-connectors`: connector colour ≥ 3:1 against the page (a connector carries meaning, so it clears the same non-text bar as a shape outline). Measured minimum 3.11 (`paper` tone); `zed` `#636D83` (2.70) and `ios` `#8E8E93` (2.92) missed it and became `#7A8598` (3.76) and `#7C7C82` (3.72)
+- Added `lint/theme-series-cvd`: **every pair** of the 8-colour chart series holds OKLab ΔE ≥ 0.02 under protan / deutan / tritan simulation (previously only the shape families were checked). Worst before the fix: `openai` protan 0.005, `zed-light` deutan 0.009, `zed` tritan 0.013, `ios` tritan 0.017, `paper` protan 0.019. After re-picking with the smallest possible movement (same hue, same chroma band) all nine themes reach ≥ 0.040, most of them by moving only 0–2 colours; `epaper`'s grey ramp was already there and stays as it was
+- Added `lint/theme-node-rotation`: in a rotating theme (`zed` / `zed-light`) every one of the eight player colours holds ≥ 3:1 against its own 15% tint (measured 3.00) — the rotation turns all eight into outlines, so checking the four shape families is no longer enough
+- Added `lint/theme-series-contrast`: every series colour holds ≥ 3:1 against the page. Pele prints a pie's value in the **page colour** punched into the slice, so a pale slice loses its number (the worst case was 2.04:1 in `acnh`); all nine now reach ≥ 3.00
+- `scripts/lint-a11y.ts` gained connector contrast, series colour-vision and series-against-page lines per theme
+
+### Gallery
+
+- The case's flowchart now uses all four shape families: `([需求冻结])` stadium, `[灰度 5%]` rect, `{错误率 < 1%?}` diamond, `[(发布台账)]` cylinder. The samples used to carry only rects and one diamond, so the shape coding was invisible in the gallery
+- Added a fifth scene, `chart`: a ` ```chart ` pie with six slices, so the shape families and the 8-colour series both appear in the samples; nine themes × five scenes
+- Regenerated the whole gallery from one machine (so the icon emoji glyphs match the rest of the pages) and re-rendered `tests/contact-sheet.png`, the diagram collage at the top of the README, from the current artifacts
+
+### Docs
+
+- `docs/gallery/zed.md` / `zed-light.md` (with English pages) and section 3.1c of `docs/STYLE_PORTS.md` record the palette, the mechanisms and the measured gates; the gallery overview is now nine themes in a 3x3 grid
+- The per-theme gallery pages, `docs/GALLERY.md`, `docs/QUALITY.md`, the skills and the README now carry the new grid / material / gate numbers
+
 ## [2.0.0] - 2026-10-30
 
 ### Rendering engine (Breaking)

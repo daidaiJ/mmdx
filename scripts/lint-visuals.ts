@@ -21,7 +21,7 @@ const card = fs.readFileSync(path.join(ROOT, 'tests', 'edge', 'card.md'), 'utf8'
 function tokensFor(t: ThemeSpec) {
   return {
     paper: t.vars.bg, ink: t.vars.fg, muted: t.vars.muted, rule: t.vars.border,
-    accent: t.vars.accent, accentTint: accentTint(t.vars.accent), paper2: t.vars.surfaceAlt,
+    accent: t.vars.accent, accentTint: accentTint(t.vars.accent, t.vars.bg), paper2: t.vars.surfaceAlt,
   };
 }
 

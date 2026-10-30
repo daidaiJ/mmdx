@@ -8,6 +8,10 @@ The big-company design-doc look. Shape coding carries meaning: blue = process, a
 
 ![tech flowchart](tech-flow.png)
 
+## Pie
+
+![tech pie](tech-chart.png)
+
 ## KPI
 
 ![tech KPI](tech-kpi.png)

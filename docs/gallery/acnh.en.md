@@ -12,6 +12,10 @@ The font stack starts with `ZCOOL KuaiLe` (Chinese) and `Baloo 2` (Latin) and fa
 
 ![acnh flowchart](acnh-flow.png)
 
+## Pie
+
+![acnh pie](acnh-chart.png)
+
 ## KPI
 
 ![acnh KPI](acnh-kpi.png)

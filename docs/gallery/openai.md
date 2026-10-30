@@ -8,6 +8,10 @@ OpenAI 设计系统的近单色版本：纯白底、墨黑正文，薄荷绿只�
 
 ![openai 流程图](openai-flow.png)
 
+## 饼图
+
+![openai 饼图](openai-chart.png)
+
 ## KPI
 
 ![openai KPI](openai-kpi.png)

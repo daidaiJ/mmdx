@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { blockPage, htmlKindToInner, type Caption } from '../src/blocks.ts';
 import { parseCardMarkdown, renderCardDoc } from '../src/card.ts';
+import { chartToMermaid, parseChart } from '../src/chart.ts';
 import { loadAssets } from '../src/embed.ts';
 import { Renderer } from '../src/render.ts';
 import { getTheme, paperize, PRESETS, type ThemeSpec } from '../src/themes.ts';
@@ -18,7 +19,7 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const OUT = path.join(ROOT, 'docs', 'gallery');
 const CASE = path.join(ROOT, 'examples', 'gallery', 'release-review.md');
 
-const THEMES = ['tech', 'openai', 'excalidraw', 'ios', 'acnh', 'glass', 'epaper'] as const;
+const THEMES = ['tech', 'openai', 'excalidraw', 'ios', 'acnh', 'glass', 'epaper', 'zed', 'zed-light'] as const;
 
 const THEME_LABELS: Record<string, string> = {
   tech: '通用方案文档',
@@ -28,9 +29,11 @@ const THEME_LABELS: Record<string, string> = {
   acnh: '动森',
   glass: 'Fluent 玻璃（亚克力）',
   epaper: '电子纸 / 墨水屏',
+  zed: 'Zed 暗色（One Dark）',
+  'zed-light': 'Zed 亮色（One Light）',
 };
 
-type SceneKind = 'mermaid' | 'kpi' | 'card' | 'table';
+type SceneKind = 'mermaid' | 'kpi' | 'card' | 'table' | 'chart';
 
 interface Scene {
   key: string;
@@ -43,6 +46,11 @@ const SCENES: Scene[] = [
     key: 'flow',
     kind: 'mermaid',
     caption: { title: '发布流程', subtitle: '灰度、校验、回滚在同一条流水线上' },
+  },
+  {
+    key: 'chart',
+    kind: 'chart',
+    caption: { title: '变更来源', subtitle: '近一个月 128 次变更', source: '发布平台' },
   },
   {
     key: 'kpi',
@@ -73,7 +81,12 @@ const code: Record<SceneKind, string> = {
   kpi: fence('kpi'),
   card: fence('card'),
   table: fence('table'),
+  chart: fence('chart'),
 };
+
+/** A chart fence renders through the same pie / xychart path the CLI uses. */
+const diagramFor = (scene: Scene): string =>
+  scene.kind === 'chart' ? chartToMermaid(parseChart(code.chart)) : code.mermaid;
 
 fs.mkdirSync(OUT, { recursive: true });
 const r = await Renderer.create(await loadAssets(), { scale: 2, width: 1200 });
@@ -81,7 +94,7 @@ const r = await Renderer.create(await loadAssets(), { scale: 2, width: 1200 });
 /** Block pages read the theme through tokens, exactly as the CLI does. */
 const tokensFor = (t: ThemeSpec) => ({
   paper: t.vars.bg, ink: t.vars.fg, muted: t.vars.muted, rule: t.vars.border,
-  accent: t.vars.accent, accentTint: accentTint(t.vars.accent), paper2: t.vars.surfaceAlt,
+  accent: t.vars.accent, accentTint: accentTint(t.vars.accent, t.vars.bg), paper2: t.vars.surfaceAlt,
 });
 
 const renderRaw = async (theme: ThemeSpec, diagram: string): Promise<Buffer> => {
@@ -96,8 +109,9 @@ const renderRaw = async (theme: ThemeSpec, diagram: string): Promise<Buffer> => 
   return png;
 };
 
-const renderDiagram = async (theme: ThemeSpec, scene: Scene): Promise<Buffer> => {  const { svg } = await r.render({
-    code: code.mermaid, background: theme.background, needPng: false,
+const renderDiagram = async (theme: ThemeSpec, scene: Scene): Promise<Buffer> => {
+  const { svg } = await r.render({
+    code: diagramFor(scene), background: theme.background, needPng: false,
     scale: 2, width: 1200, theme,
     mermaidConfig: (PRESETS[theme.name]?.config ?? {}) as Record<string, unknown>,
     fontSize: 15, padding: 0, svgThemeable: false, titlePos: 'top', titleText: '',
@@ -110,7 +124,7 @@ const renderDiagram = async (theme: ThemeSpec, scene: Scene): Promise<Buffer> =>
 };
 
 const renderBlock = async (theme: ThemeSpec, scene: Scene): Promise<Buffer> => {
-  const kind = scene.kind as Exclude<SceneKind, 'mermaid'>;
+  const kind = scene.kind as Exclude<SceneKind, 'mermaid' | 'chart'>;
   const inner = htmlKindToInner(kind, code[kind]);
   return r.renderHtml(
     blockPage(inner, { tokens: tokensFor(theme), blockCss: theme.blockCss, caption: scene.caption }),
@@ -121,7 +135,7 @@ const renderBlock = async (theme: ThemeSpec, scene: Scene): Promise<Buffer> => {
 for (const name of THEMES) {
   const theme = getTheme(name);
   for (const scene of SCENES) {
-    const png = scene.kind === 'mermaid'
+    const png = scene.kind === 'mermaid' || scene.kind === 'chart'
       ? await renderDiagram(theme, scene)
       : await renderBlock(theme, scene);
     const out = path.join(OUT, `${name}-${scene.key}.png`);
@@ -238,15 +252,15 @@ html,body{margin:0;background:#F6F7F9}
   font-family:"Inter","Segoe UI","Noto Sans SC",sans-serif;color:#1B1F26}
 h1{margin:0 0 4px;font-size:18px;font-weight:600}
 p{margin:0 0 18px;font-size:12px;color:#5B6470}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 figure{margin:0;background:#fff;border:1px solid #DCE1E7;border-radius:12px;padding:10px;overflow:hidden}
 figcaption{display:flex;justify-content:space-between;align-items:baseline;
   font-size:12px;padding:0 2px 8px;color:#1B1F26}
 figcaption span{color:#8A919C;font-size:10px;font-family:"Cascadia Code",Consolas,monospace}
 img{display:block;width:auto;max-width:100%;height:auto;margin:0 auto;border-radius:6px}
 </style></head><body><div class="wrap">
-<h1>一个案例，七种风格</h1>
-<p>灰度发布复盘 · 流程图快速对比 — 完整四场景见各风格分页。</p>
+<h1>一个案例，九种风格</h1>
+<p>灰度发布复盘 · 流程图快速对比 — 完整五场景见各风格分页。</p>
 <div class="grid">${strip}</div>
 </div></body></html>`;
 
@@ -271,14 +285,14 @@ html,body{margin:0;background:#F6F7F9}
   font-family:"Inter","Segoe UI","Noto Sans SC",sans-serif;color:#1B1F26}
 h1{margin:0 0 4px;font-size:20px;font-weight:600}
 p{margin:0 0 20px;font-size:13px;color:#5B6470}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 figure{margin:0;background:#fff;border:1px solid #DCE1E7;border-radius:12px;padding:10px;overflow:hidden}
 figcaption{display:flex;flex-direction:column;gap:2px;font-size:13px;padding:0 2px 9px;color:#1B1F26}
 figcaption span{color:#8A919C;font-size:10px;line-height:1.3}
 img{display:block;width:auto;max-width:100%;height:auto;margin:0 auto;border-radius:6px}
 </style></head><body><div class="wrap">
-<h1>7 套内置主题总览</h1>
-<p>同一份灰度发布流程 · tech（默认）/ openai / excalidraw / ios / acnh / glass / epaper 各一张 · 分页中有更大的流程图与块版式样例。</p>
+<h1>9 套内置主题总览</h1>
+<p>同一份灰度发布流程 · tech（默认）/ openai / excalidraw / ios / acnh / glass / epaper / zed / zed-light 各一张 · 分页中有更大的流程图与块版式样例。</p>
 <div class="grid">${strip}</div>
 </div></body></html>`;
   const png = await r.renderHtml(allOverview, '#F6F7F9');

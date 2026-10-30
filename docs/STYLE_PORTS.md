@@ -1,6 +1,6 @@
 # 风格移植方案：Excalidraw 手绘
 
-> 状态：**`excalidraw` / `ios` / `acnh` / `glass` / `epaper` 已实现；OpenAI 编辑风与办公/工程批次已放弃；主题集合为 `tech` / `openai` / `excalidraw` / `ios` / `acnh` / `glass` / `epaper` 七套** · 更新：2026-10-30 · 范围：mmdx 2.x 主题与渲染管线
+> 状态：**`excalidraw` / `ios` / `acnh` / `glass` / `epaper` / `zed` / `zed-light` 已实现；OpenAI 编辑风与办公/工程批次已放弃；主题集合为 `tech` / `openai` / `excalidraw` / `ios` / `acnh` / `glass` / `epaper` / `zed` / `zed-light` 九套** · 更新：2026-10-30 · 范围：mmdx 2.x 主题与渲染管线
 >
 > 本文是风格移植的决策与交接文档。色板与 rough 参数见第 3 节，Pele 集成见第 5 节，放弃的移植见第 6 节，未决问题见第 7 节。
 
@@ -68,18 +68,54 @@
 | 画布 | `#F2F2F7` | `#FFF8E7` | `#E9EEF6` | `#F5F1EB` | `#FAFAF8` |
 | 主文字 | `#1C1C1E` | `#5B4636` | `#1B1B1F` | `#1A1A1A` | `#1F2024` |
 | 次要文字 | `#6E6E73` | `#8A735C` | `#4C4F57` | `#5C5C5C` | `#5D6167` |
-| 面板 | `#FFFFFF` | `#FFFDF5` | `rgba(255,255,255,.72)` | `#F5F1EB` | `#FFFFFF` |
+| 面板 | `#FFFFFF` | `#FFFDF5` | `rgba(255,255,255,.45)` | `#F5F1EB` | `#FFFFFF` |
 | 描边 / 分隔 | `#D1D1D6` | `#D9C3A5`（线用 `#7A5C3E`） | `#6E7480`（面板边 `rgba(255,255,255,.85)`） | `#1A1A1A` | `#E1E1DC` |
 | 强调 | `#007AFF` | `#3E8C4A` | `#0F6CBD` | `#1A1A1A` | `#BF4520` |
 | 警示 | `#FF3B30` | `#A33B2A` | `#C42B1C` | `#1A1A1A` | `#A01D48` |
-| 圆角 | 10px | 16px | 8px | 0 | 10px |
-| 描边宽 | 1.25px | 2.6px | 1.4px | 1.1px | 沿用原主题 |
+| 圆角 | 14px | 16px | 8px | 0 | 10px |
+| 描边宽 | 1.6px | 2.6px | 1.4px | 1.1px | 沿用原主题 |
 
-形状族：`ios` 用系统色描边（蓝 / 橙 / 绿 / 紫）+ 白填充（**纯平面**：不画底、不加投影）；`acnh` 奶油白填充 + 棕描边 + 硬偏移贴纸阴影；`glass` 四个形状族共用半透明白填充、只换描边色（蓝 / 琥珀 / 青绿 / 紫）；`epaper` 全部黑描边，用灰阶填充（`#FFFFFF` / `#EFEEE9` / `#E4E3DE` / 纸底）区分；`--tone paper` 换成冷蓝 / 沙 / 鼠尾草 / 紫灰填充 + 墨色描边。
+形状族：`ios` 用系统色描边（蓝 / 橙 / 绿 / 紫）+ 白填充（**纯平面**：不画底、不加投影）；`acnh` 奶油白填充 + 棕描边 + 硬偏移贴纸阴影；`glass` 四个形状族共用半透明白填充、只换描边色（蓝 / 琥珀 / 青绿 / 紫）；`epaper` 全部黑描边，用灰阶填充（`#FFFFFF` / `#EFEEE9` / `#E4E3DE` / 纸底）区分；`--tone paper` 换成冷蓝 / 沙 / 鼠尾草 / 紫灰填充 + 墨色描边。2026-10-30 的复查把 `ios` 的系统感坐实：圆角 10 → 14px、描边 1.25 → 1.6px、判定/状态/存储填充换成系统色更实的浅调（`#FFE9CF` / `#E3F6E7` / `#F1E9FB`），块页补齐 HIG 分组列表的 `›` 折角、分隔线提到 iOS 的 0.29 alpha、标题 20px/700。
 
 `epaper` 取自 [E-Ink / Paper（ui-ux-pro-max #56）](https://jacky0328.github.io/ui-ux-pro-max-web/styles/56-eink-paper.html)：`#f5f1eb` 纸底 + `opacity-5` 的 `feTurbulence` 纸纹（SVG 里是同一条滤镜，块页用同一张 data-URI 贴图）、1px 墨线、直角、衬线标题 + 等宽小字标签。
 
 `--tone paper` 的配色取自 [diagram-design](https://github.com/cathrynlavery/diagram-design) 的 editorial skin（白烟纸 `#F5F5F5`、墨黑 `#2D3142`、蓝灰 `#4F5D75`、焦橙 `#BF4520`）。原型的暖黄纸底 `#FBF7EC` 已废弃：观感偏「信封」而不是「文档纸」，且强调色与背景的对比度余量小。现在纸底是灰白 `#FAFAF8` + 24px 细格线 / 96px 粗格线（`rgba(31,32,36,.09)` / `.16`），块页用 CSS 渐变画同一张网格，图用 SVG `<pattern>`。
+
+### 3.1c Zed 编辑风（2026-10-30）
+
+`zed` / `zed-light` 取 Zed 编辑器自带主题的 token，来源是 Zed 仓库的 `assets/themes/one/one.json`（`themes[0]` 暗 / `themes[1]` 亮），映射规则照 `crates/markdown/src/mermaid.rs` 的 `build_mermaid_theme`（编辑器 token → mermaid 主题槽位）。这是主题集合里第一套暗色。
+
+| 角色 | `zed`（One Dark） | `zed-light`（One Light） | Zed token |
+| --- | --- | --- | --- |
+| 画布 | `#282C33` | `#FAFAFA` | `editor.background` |
+| 主文字 | `#DCE0E5` | `#242529` | `text` |
+| 次要文字 | `#A9AFBC` | `#58585A` | `text.muted` |
+| 边线 | `#7A8598` | `#7C7E86` | `terminal.dim_foreground` / `comment.doc` |
+| 面板 / 描边 | `#2F343E` / `#464B57` | `#EBEBEC` / `#C9C9CA` | `surface.background` / `border` |
+| 强调 / 警示 | `#74ADE8` / `#D07277` | `#5C78E2` / `#D36151` | `info` / `error` |
+| 形状族描边 | 蓝 `#74ADE8` · 沙 `#BF956A` · 绿 `#A1C181` · 紫 `#B477CF` | 蓝 `#5C78E2` · 赭 `#AD6E26` · 绿 `#3F953A` · 品红 `#984EA5` | `info` / 语法 number / `created` / 语法 keyword |
+| 形状族填充 | `#333F4E` / `#3F3C3B` / `#3A423F` / `#3D374A` | `#E2E7F6` / `#EEE5DA` / `#DEEBDD` / `#EBE0ED` | 上面各色 15% 混画布 |
+| 8 色系列 | 主题 8 个 player 色的微调值 | 同上（亮的 8 个，微调） | `players[].cursor` |
+| 节点上色 | **按读取顺序轮转 8 个 player 色**（`node_counter % 8`） | 同上 | `postprocess/accent_colors.rs` |
+
+描边 1px（Zed 的发丝线），无投影、无底纹、无手绘、不画 `mmdx-backdrop`。
+
+**吸收的机制**（Zed 的实现事实见 [research-zed-mermaid.md](research-zed-mermaid.md) §1.3）：
+
+- **accent 填充 = accent 按 15% 混页面底色**，而不是混白。`src/color.ts` 的 `blendOver(fg, bg, opacity)` 按通道混合，对齐 Zed 的 `ACCENT_FILL_OPACITY = 0.15`。Zed 把它用在 flowchart 节点上（按节点序号轮转 8 个 player 色），mmdx 用在四个形状族上，保留形状分色语义。
+- **文字色由底色推导**：`src/color.ts` 的 `textColorFor(bg)` 在 OKLab 里保留底色 15% 的彩度、亮度取 0.18（浅底）/ 0.96（深底），二分搜索保 ≥4.5:1，兜底纯黑/纯白。`zed` 的块页状态 chip 用它生成，所以浅底深底共用一条规则。
+- **tint 跟着页面走**：`accentTint(accent, bg)` 现在接受底色，CLI / `mmdx card` / 门禁脚本都传 `theme.vars.bg`；`PAGE_CSS` 里 6 处 `color-mix(..., white)` 改成 `color-mix(..., var(--paper))`（进度条、对比条、热力图 lv1–3）。白底主题逐字节不变，非白底主题（`ios` / `glass` / `epaper` / `acnh` / `--tone paper`）的条与热力格向自己的纸色靠 1–3%。
+- **暗色块页**：`ZED_DARK_BLOCK_CSS` 覆写 `color-scheme`、面板底、发丝线、状态 chip、热力图最高档与泳道底；其余仍走 `var(--paper)` / `var(--ink)`，所以暗色块页不需要重写 `PAGE_CSS`。
+
+**节点轮转**：Zed 对 flowchart / class / state 的节点按 `node_counter % 8` 依次取 8 个 player 色，描边取该色、填充是该色按 15% 混页面底色——一张图因此是**多色轮转**而不是按形状分色。Pele 把一张图的节点按文档顺序写进一个 `<g>`，所以实现是一组 `:nth-child(8n+k)` 规则（`ThemeStyle.nodeRotation`，选择器只覆盖 `.pele-flowchart` / `.pele-class` / `.pele-state` 的 `.pele-nodes > .pele-node`，并用 `:not()` 排除状态起止标记与复合状态框）。形状族规则保留给其余槽位（ER 实体、注释、类图分隔线、状态起止、簇）。ER 的奇偶行覆盖、sequence actor 的轮转没有做：前者 Pele 走 `.pele-er-stripes`，后者 Pele 把上下两组 actor 放在同一个 `<g>` 里，纯 CSS 无法让同一 actor 的上下两个盒子取同色。
+
+**chip 亮度**：Zed 的 error / warning chip 先把颜色按 HSL 亮度缩放（暗色 ×0.7、亮色 ×1.3，`postprocess/inject_css.rs` 的 `adjust_lightness`），再用 `text_color_for_background` 取文字色。mmdx 的 `scaleLightness()` 做同一件事，只是把缩放放在 OKLab 的 L 上（本项目的统一度量）。
+
+**不吸收**：Zed 的「所有节点同一底色」（轮转与形状族规则覆盖了它）；Zed 的 `crates/mermaid_render` 代码（GPL-3.0-or-later，只读设计）；`mermaid_font_family` 设为 `null` 时的「跟随编辑器字体」——中文标签需要随包的 CJK 字体栈，沿用统一字体。
+
+门槛实测：`zed` 正文 10.57:1（AAA）、次要 6.37、强调 5.93、警示 4.24、形状描边对底 4.33–6.98 / 对填充 3.51–5.77、形状色觉最小 ΔE 0.065；`zed-light` 14.67 / 6.80 / 3.84 / 3.59 / 3.06–5.07 / 0.030。轮转带来的新门槛（`lint/theme-node-rotation`）：8 个 player 色对自己的 15% 底色各 ≥ 3:1，两套实测 3.00；系列色对底最低 3.51，系列两两色觉最低 0.040。
+
+2026-10-30 复查的两处修正（都为了过新的承载语义门槛）：边线 `terminal.dim_foreground` 原值 `#636D83` 对画布只有 2.70:1，低于连线门槛，提亮到 `#7A8598`（3.76:1）；8 个 player 色原值在色觉模拟下有两对几乎重合（`#74ADE8`/`#6EB4BF` tritan ΔE 0.013），按「只挪必要的色、保持色相」微调为 `#7DA9E4` / `#5FB9C6` 等，最小 ΔE 0.040。`zed-light` 同理（`#A349AB` / `#3A82B7` 调整，deutan 0.009 → 0.040）。
 
 ### 3.2 rough 参数（默认）
 
@@ -174,7 +210,7 @@ export interface ThemeSpec {
 
 ### 5.3 CLI 与兼容性
 
-- `--theme` 为 `tech` / `openai` / `excalidraw` / `ios` / `acnh` / `glass` / `epaper`；未知主题报错并列出可用值。
+- `--theme` 为 `tech` / `openai` / `excalidraw` / `ios` / `acnh` / `glass` / `epaper` / `zed` / `zed-light`；未知主题报错并列出可用值。
 - `--style-fill solid|hachure`：只对 `excalidraw` 有效；其他主题传了给 `config-ignored` 类 warning，不报错；非法值 exit 2。
 - `--engine` / `--layout` 已不存在：`excalidraw` 的手绘后处理只在 Pele 输出上执行，没有第二引擎的观感分叉。
 - `--brand` 只改 `vars.accent`，不改 shape fills。
@@ -199,7 +235,7 @@ export interface ThemeBackdrop {
 
 三条必须记住的约束：
 
-- **Chromium 不渲染 SVG 形状上的 `backdrop-filter`**（实测：有/无该属性时边缘过渡都是 0px）。毛玻璃只能靠「底下没有锐利细节 + 面板半透明」伪造；块页是 HTML，`backdrop-filter: blur(20px)` 在那里是真生效的。
+- **Chromium 不渲染 SVG 形状上的 `backdrop-filter`**（实测：有/无该属性时边缘过渡都是 0px）。毛玻璃只能靠「底下没有锐利细节 + 面板半透明」伪造；块页是 HTML，`backdrop-filter` 在那里是真生效的。`glass` 的模糊刻意压到 5px：24px 的格线一旦重度模糊就摊成一片平色，「材质」反而看不出来。
 - **PNG 整幅截取**：`captureElement(..., fullBleed = !!theme.backdrop)` 跳过墨迹裁边。按墨迹裁边会跟着底的边缘走，四边留白不对称；代价是底的留白由 `viewBox` 的 20/12px 决定。
 - **底的对比度必须压在墨迹阈值之下或做成纹理**：`tests/run.ts` 的 `analyze()` 以左上角像素为背景、差值 >40 记为墨迹。整片实色底会被记成墨迹、`ink` 直接超过 0.85 上限；所以 `glass` 的色差控制在每通道 ~12、`paper`/`glass` 的网格是线条（面积占比 <10%）。
 - **flatten 烘焙 `filter`**：否则 `ios` 的卡片投影与 `acnh` 的贴纸硬阴影进不了 SVG。
@@ -214,15 +250,20 @@ export interface ThemeBackdrop {
 | 正文色（`fg`） | ≥ 7:1（WCAG AAA） | 最低 8.35（`acnh`） |
 | 次要文字（`muted`） | ≥ 4.5:1（AA） | 最低 4.54（`ios`） |
 | 承载语义的色（`accent` / `critical`） | ≥ 3:1（非文本图形） | 最低 3.20（`openai` accent） |
-| 形状描边 vs 底、vs 自己的填充 | 各 ≥ 3:1 | 最低 3.01（`openai` state 填充调浅后才过） |
-| 色觉模拟（protan / deutan / tritan） | 描边色不同的形状族两两 ΔE(OKLab) ≥ 0.02 | 最低 0.025（`tech` tritan） |
+| 形状描边 vs 底、vs 自己的填充 | 各 ≥ 3:1 | 最低 3.06（`zed-light` state 描边对填充） |
+| 色觉模拟（protan / deutan / tritan） | 描边色不同的形状族两两 ΔE(OKLab) ≥ 0.02 | 最低 0.026（`glass` tritan） |
 | 形态冗余 | 四个形状族必须是四种不同形状（rect / diam / stadium / cyl） | 4/4 |
+| 连线色 vs 底（`lint/theme-connectors`） | ≥ 3:1 | 最低 3.11（`--tone paper`） |
+| 8 色系列两两色觉（`lint/theme-series-cvd`） | 任意两色 ΔE ≥ 0.02 | 最低 0.040（九套全部） |
+| 系列色 vs 底（`lint/theme-series-contrast`） | ≥ 3:1，因为饼图数值用页面底色「抠」在切片上 | 最低 3.01（`zed`） |
 
 配套实现：`src/color.ts`（WCAG 亮度/对比、Machado 2009 色觉模拟、OKLab 感知距离）、`scripts/lint-a11y.ts`（可读报告 + 退出码）、`src/lint.ts` 的渲染态文本审计改为 WCAG 分档（小字 4.5:1 / 大字 3:1，按 computed font-size 与字重判断）。
 
 改动过的色板：`openai` state 填充 `#E9F5F1 → #F2FAF7`、store 填充 `#F7F7F8 → #FFFFFF`（描边对填充只有 2.86:1）；`excalidraw` muted `#868E96 → #6C757D`（3.32 → 4.69）；`acnh` muted `#8A735C → #7A6350`（4.23 → 5.32）；`--tone paper` 的 store 描边 `#5B4F7A → #7A5AA8`（蓝/紫在红绿色盲下几乎重合，ΔE 0.009 → 0.089）。
 
-`ios` 的系统色同时换成 Apple 的深色变体（绿 `#248A3D`、橙 `#C93400`、红 `#D70015`、紫 `#8944AB`），描边对底从 2.9–3.4 提到 3.6–5.4。
+2026-10-30 第二批（连线与系列色门槛）：连线色 `zed` `#636D83 → #7A8598`（2.70 → 3.76）、`ios` `#8E8E93 → #7C7C82`（2.92 → 3.72）；8 色系列按「最小位移」重挑——修前最差 `openai` protan 0.005、`zed-light` deutan 0.009、`zed` tritan 0.013、`ios` tritan 0.017、`paper` protan 0.019，重挑后九套全部 ≥ 0.040（`tech` 0.043 与 `epaper` 0.041 未动）。重挑的做法：在 OKLab 里以「色相 ±18°、亮度 ±0.18、彩度 0.6–1.45×」为界做爬山，代价 = 色觉缺口 ×1000 + 页面底对比缺口 ×1000 + 与原色的感知距离之和——先保门槛、再最小化位移，所以多数主题只挪 0–2 个色。系列色另加「对页面底 ≥ 3:1」的软约束：Pele 的饼图数值是**页面底色**抠在切片上的，切片太浅数值就消失。
+
+`ios` 的系统色同时换成 Apple 的深色变体（绿 `#248A3D`、橙 `#C23A17`、红 `#D70015`、紫 `#8A48AC`），描边对底从 2.9–3.4 提到 3.6–5.4。
 
 ## 6. 已放弃的移植
 
@@ -272,9 +313,9 @@ export interface ThemeBackdrop {
 - `--tone paper|neutral|product`（`src/tone.ts`）：覆盖块页结构与信息卡；`paper` 另把图与块页都换成编辑风网格纸（`#FAFAF8` + 24px 细格 / 96px 粗格，`src/themes.ts` 的 `paperize()`）。
 - `mmdx card`（`src/card.ts`）：Markdown 或 URL → 信息卡 PNG，默认 `openai`，`--tone`、480/600/900+ 宽度、按实际像素高度拆页。
 - `scripts/make-style-review.ts` 生成 `review/styles/` 三套主题的 4 类图 + card/kpi/table，Excalidraw 另加 hachure 版。
-- `scripts/make-gallery.ts` 与 [docs/GALLERY.md](GALLERY.md)：同一「灰度发布复盘」案例在七套主题下的分场景对照，另出 `--tone paper` 的块页报告（`tone-paper-report.png`）。
-- `tests/run.ts` 覆盖样式契约、rough 形状、`--style-fill`、七套主题的渲染筛查（流程图 / 状态图 / 类图 / ER + 块页）、双跑确定性与无障碍门槛；当前 189/189 通过。
-- `scripts/lint-a11y.ts`：逐主题打印正文/次要文字/形状描边对比度与色觉模拟距离，作为色板改动的前置检查。
+- `scripts/make-gallery.ts` 与 [docs/GALLERY.md](GALLERY.md)：同一「灰度发布复盘」案例在九套主题下的五个分场景对照（流程图 / 饼图 / KPI / 卡片 / 表格），另出 `--tone paper` 的块页报告（`tone-paper-report.png`）。案例流程图用满四个形状族，饼图用满系列色。
+- `tests/run.ts` 覆盖样式契约、rough 形状、`--style-fill`、九套主题的渲染筛查（流程图 / 状态图 / 类图 / ER + 块页）、双跑确定性与无障碍门槛（文本分档、形状描边、形状色觉、形态冗余、连线对比度、系列色觉、系列对底对比度、节点轮转）；当前 **209/209 通过**。
+- `scripts/lint-a11y.ts`：逐主题打印正文/次要文字/形状描边对比度、色觉模拟距离、连线对比度与系列色报告，作为色板改动的前置检查。
 
 待做：
 

@@ -19,15 +19,26 @@ import { cardPage, extractCardHtml, parseCardMarkdown } from '../src/card.ts';
 import { chartToMermaid, parseChart } from '../src/chart.ts';
 import { loadAssets } from '../src/embed.ts';
 import { scanColumnHints, scanLimits } from '../src/limits.ts';
-import { CVD_KINDS, perceptualDelta, simulateCvd } from '../src/color.ts';
+import { blendOver, CVD_KINDS, perceptualDelta, simulateCvd } from '../src/color.ts';
 import { bottomBlankLimit, diffPng } from '../src/lint.ts';
 import { Renderer } from '../src/render.ts';
 import { applyColumnDensity, applySlideDensity, DEFAULT_THEME, getTheme, peleCss, PRESETS, type ThemeSpec } from '../src/themes.ts';
-import { accentTint, applyBrand, contrastRatio, normalizeHex } from '../src/tokens.ts';
+import { accentTint, applyBrand, contrastRatio, normalizeHex, type Tokens } from '../src/tokens.ts';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const CLI = path.join(ROOT, 'src', 'cli.ts');
 const KEEP = path.join(ROOT, 'tests', 'artifacts');
+
+/** The block-page tokens the CLI derives from a theme, so audits see its page. */
+const tokensFor = (spec: ThemeSpec): Tokens => ({
+  paper: spec.vars.bg,
+  ink: spec.vars.fg,
+  muted: spec.vars.muted,
+  rule: spec.vars.border,
+  accent: spec.vars.accent,
+  accentTint: accentTint(spec.vars.accent, spec.vars.bg),
+  paper2: spec.vars.surfaceAlt,
+});
 try {
   fs.rmSync(KEEP, { recursive: true, force: true });
 } catch {
@@ -457,7 +468,7 @@ for (const styleName of Object.keys(PRESETS)) {
       // The theme's own page background, not white: several styles paint the
       // page (grouped grey, acrylic, cream) and only show their real contrast
       // against it.
-      const png = await renderer.renderHtml(blockPage(inner, { blockCss: spec.blockCss }), spec.background);
+      const png = await renderer.renderHtml(blockPage(inner, { blockCss: spec.blockCss, tokens: tokensFor(spec) }), spec.background);
       const out = path.join(KEEP, `style-${styleName}-${kind}.png`);
       fs.writeFileSync(out, png);
       const a = analyze(out);
@@ -485,7 +496,7 @@ for (const styleName of Object.keys(PRESETS)) {
     for (const [kind, file] of [['card', 'card.md'], ['kpi', 'kpi.md'], ['table', 'table.md']] as Array<[BlockKind, string]>) {
       const inner = htmlKindToInner(kind, fenceSrc(file, kind));
       const { issues } = await renderer.renderHtmlAudit(
-        blockPage(inner, { blockCss: spec.blockCss, tone: 'neutral' }),
+        blockPage(inner, { blockCss: spec.blockCss, tokens: tokensFor(spec), tone: 'neutral' }),
         spec.background,
       );
       if (issues.length) {
@@ -528,11 +539,7 @@ for (const styleName of Object.keys(PRESETS)) {
 {
   const spec = getTheme('openai');
   const doc = parseCardMarkdown(fs.readFileSync(path.join(ROOT, 'tests', 'edge', 'card-info.md'), 'utf8'));
-  const tokens = {
-    paper: spec.vars.bg, ink: spec.vars.fg, muted: spec.vars.muted,
-    rule: spec.vars.border, accent: spec.vars.accent,
-    accentTint: accentTint(spec.vars.accent), paper2: spec.vars.surfaceAlt,
-  };
+  const tokens = tokensFor(spec);
   const problems: string[] = [];
   for (const tone of ['paper', 'neutral', 'product'] as const) {
     const html = cardPage(doc, doc.blocks, tone, 600, spec.fontFamily ?? 'sans-serif', 0, tokens);
@@ -572,11 +579,7 @@ for (const styleName of Object.keys(PRESETS)) {
   const { issues } = await renderer.renderHtmlAudit(
     blockPage(`<div class="fig">${svg}</div>`, {
       tone: 'neutral',
-      tokens: {
-        paper: spec.vars.bg, ink: spec.vars.fg, muted: spec.vars.muted,
-        rule: spec.vars.border, accent: spec.vars.accent,
-        accentTint: accentTint(spec.vars.accent), paper2: spec.vars.surfaceAlt,
-      },
+      tokens: tokensFor(spec),
     }),
     spec.background,
   );
@@ -698,6 +701,90 @@ for (const name of Object.keys(PRESETS)) {
   }
   record('lint/theme-cvd', bad.length === 0,
     bad.join('; ') || `min simulated dE ${worst.toFixed(3)} (${worstAt})`);
+}
+
+{
+  // A connector carries meaning, so it clears the same 3:1 bar as any other
+  // non-text mark against the page. A hairline that only whispers the link
+  // between two boxes is the usual failure of a light palette.
+  const bad: string[] = [];
+  let worst = 99;
+  let worstAt = '';
+  for (const name of Object.keys(PRESETS)) {
+    const t = getTheme(name);
+    const c = contrastRatio(t.vars.line, t.vars.bg);
+    if (c < worst) { worst = c; worstAt = name; }
+    if (c < 3) bad.push(`${name} line ${c.toFixed(2)}`);
+  }
+  record('lint/theme-connectors', bad.length === 0,
+    bad.join('; ') || `min connector contrast ${worst.toFixed(2)} (${worstAt})`);
+}
+
+{
+  // The 8-colour chart series is the other place colour alone carries meaning:
+  // any two slices can end up side by side, so every pair has to survive the
+  // same simulation as the shape families.
+  const bad: string[] = [];
+  let worst = 9;
+  let worstAt = '';
+  for (const name of Object.keys(PRESETS)) {
+    const s = getTheme(name).vars.series;
+    for (const kind of CVD_KINDS) {
+      for (let i = 0; i < s.length; i++) {
+        for (let j = i + 1; j < s.length; j++) {
+          const d = perceptualDelta(simulateCvd(s[i], kind), simulateCvd(s[j], kind));
+          if (d < worst) { worst = d; worstAt = `${name} ${kind} ${i}/${j}`; }
+          if (d < 0.02) bad.push(`${name} ${kind} ${i}/${j} dE ${d.toFixed(3)}`);
+        }
+      }
+    }
+  }
+  record('lint/theme-series-cvd', bad.length === 0,
+    bad.join('; ') || `min simulated dE ${worst.toFixed(3)} (${worstAt})`);
+}
+
+{
+  // Pie labels are painted in the page colour (Pele punches them out of the
+  // slice), so a slice has to carry that colour at the non-text mark bar or the
+  // value on it disappears. Body-text contrast would need every slice dark,
+  // which no chart palette survives.
+  const bad: string[] = [];
+  let worst = 99;
+  let worstAt = '';
+  for (const name of Object.keys(PRESETS)) {
+    const t = getTheme(name);
+    t.vars.series.forEach((c, i) => {
+      const v = contrastRatio(c, t.vars.bg);
+      if (v < worst) { worst = v; worstAt = `${name} #${i}`; }
+      if (v < 3) bad.push(`${name} #${i} ${v.toFixed(2)}`);
+    });
+  }
+  record('lint/theme-series-contrast', bad.length === 0,
+    bad.join('; ') || `min series/page contrast ${worst.toFixed(2)} (${worstAt})`);
+}
+
+{
+  // Themes that rotate the series colours across flowchart nodes (Zed's own
+  // `node_counter % 8` rule) paint each node with the accent plus its 15% tint,
+  // so every accent has to hold up as an outline against that tint as well as
+  // against the page.
+  const bad: string[] = [];
+  let worst = 99;
+  let worstAt = '';
+  let themes = 0;
+  for (const name of Object.keys(PRESETS)) {
+    const t = getTheme(name);
+    if (!t.style?.nodeRotation) continue;
+    themes++;
+    for (const [i, accent] of t.vars.series.entries()) {
+      const tint = blendOver(accent, t.vars.bg, 0.15);
+      const onTint = contrastRatio(accent, tint);
+      if (onTint < worst) { worst = onTint; worstAt = `${name} #${i}`; }
+      if (onTint < 3) bad.push(`${name} #${i} outline/tint ${onTint.toFixed(2)}`);
+    }
+  }
+  record('lint/theme-node-rotation', bad.length === 0,
+    bad.join('; ') || `${themes} theme(s), min outline/tint contrast ${worst.toFixed(2)} (${worstAt})`);
 }
 
 {
@@ -1066,7 +1153,7 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
     glassBackdrop > 0 && glassBackdrop < glassSvg.indexOf('pele-edges') &&
     /<pattern/.test(glassSvg) && /rgba\(15,35,66/.test(glassSvg) &&
     /feTurbulence/.test(glassSvg) && /feGaussianBlur/.test(glassSvg) &&
-    /fill="#fff" opacity=".3"/.test(glassSvg) && glassLayers >= 3 && /#0F6CBD/i.test(glassSvg),
+    /fill="#fff" opacity="\.16"/.test(glassSvg) && glassLayers >= 3 && /#0F6CBD/i.test(glassSvg),
     `exit=${glassRun.code} bg=${gj.background} backdrop=${glassBackdrop} layers=${glassLayers}`);
 
   const epaperRun = runCli([flow, '-t', 'epaper', '-f', 'svg', '--json', '--quiet', '-o', path.join(outDir, 'epaper')]);
@@ -1090,13 +1177,15 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
     /fill:#fff\b/i.test(epaperSvg) && hued.length === 0,
     `exit=${epaperRun.code} bg=${ej.background} grain=${/feTurbulence/.test(epaperSvg)} hued=${hued.slice(0, 3).join(',') || 'none'}`);
 
-  // iOS marks content with inset white cards and hairlines, so the shared
-  // accent stripe has to be switched off for this theme.
+  // iOS marks content with inset white cards, hairlines and a drill-in
+  // chevron, so the shared accent stripe has to be switched off for this theme.
   const iosBlockHtml = blockPage('<div class="card"><div class="card-title">x</div></div>',
     { blockCss: getTheme('ios').blockCss });
+  const noBar = /\.card::before\s*\{\s*display:\s*none/.test(iosBlockHtml);
+  const chevron = /\.card::after\s*\{[^}]*content:\s*"›"/.test(iosBlockHtml);
   record('cli/theme-ios-block',
-    /\.card::before\s*\{\s*display:\s*none/.test(iosBlockHtml) && /rgba\(60,60,67,0\.18\)/.test(iosBlockHtml),
-    `noBar=${/\.card::before\s*\{\s*display:\s*none/.test(iosBlockHtml)}`);
+    noBar && chevron && /rgba\(60,60,67,0\.29\)/.test(iosBlockHtml),
+    `noBar=${noBar} chevron=${chevron} sep=${/rgba\(60,60,67,0\.29\)/.test(iosBlockHtml)}`);
 
   const badTone = runCli([flow, '--tone', 'nope', '--quiet']);
   record('cli/tone-bad', badTone.code === 2 && /paper\|neutral\|product/.test(badTone.stderr), `exit=${badTone.code}`);

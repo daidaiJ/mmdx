@@ -135,7 +135,12 @@ export async function auditSvgText(page: Page, rootSelector = '.wrap'): Promise<
   }, rootSelector) as Promise<LayoutIssue[]>;
 }
 
-/** Rendered-text contrast for SVG labels, not just theme tokens. */
+/**
+ * Rendered-text contrast, for SVG labels and for block-page HTML alike. Checks
+ * the colour a reader actually sees: an HTML label is measured against the
+ * nearest painted ancestor, so a card title on a tinted panel is judged against
+ * the panel rather than against the page.
+ */
 export async function auditContrast(page: Page, rootSelector = '.wrap'): Promise<LayoutIssue[]> {
   return page.evaluate((selector) => {
     const root = document.querySelector(selector);
@@ -143,6 +148,12 @@ export async function auditContrast(page: Page, rootSelector = '.wrap'): Promise
     const svg = root.querySelector('svg');
     if (!svg) return [];
     const issues: LayoutIssue[] = [];
+
+    const describe = (el: Element): string => {
+      const tag = el.tagName.toLowerCase();
+      const cls = (el.getAttribute('class') ?? '').trim().split(/\s+/).filter(Boolean).slice(0, 2).join('.');
+      return cls ? `${tag}.${cls}` : tag;
+    };
 
     const parse = (value: string): [number, number, number, number] | null => {
       const v = value.trim().toLowerCase();
@@ -214,6 +225,31 @@ export async function auditContrast(page: Page, rootSelector = '.wrap'): Promise
           kind: 'low-contrast',
           selector: `text.${cls.split(/\s+/)[0]}`,
           detail: `"${text.textContent.trim().slice(0, 20)}" ${hex([fill[0], fill[1], fill[2]])} on ${hex(bg)} = ${r.toFixed(2)}:1 ` +
+            `(need ${need}:1, ${Math.round(size)}px/${weight})`,
+        });
+      }
+    }
+
+    // Block pages: same measurement for HTML text, skipping anything inside an
+    // SVG (the loop above already covered those labels).
+    for (const el of Array.from(root.querySelectorAll<HTMLElement>('*'))) {
+      if (el.closest('svg')) continue;
+      if (!Array.from(el.childNodes).some((n) => n.nodeType === 3 && n.textContent?.trim())) continue;
+      const style = getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') continue;
+      const fg = parse(style.color);
+      if (!fg || fg[3] < 0.05) continue;
+      const elBg = background(el);
+      const r = ratio([fg[0], fg[1], fg[2]], elBg);
+      const size = parseFloat(style.fontSize) || 0;
+      const weight = parseInt(style.fontWeight, 10) || 400;
+      const large = size >= 24 || (size >= 18.66 && weight >= 700);
+      const need = large ? 3.0 : 4.5;
+      if (r < need) {
+        issues.push({
+          kind: 'low-contrast',
+          selector: describe(el),
+          detail: `"${el.textContent?.trim().slice(0, 20)}" ${hex([fg[0], fg[1], fg[2]])} on ${hex(elBg)} = ${r.toFixed(2)}:1 ` +
             `(need ${need}:1, ${Math.round(size)}px/${weight})`,
         });
       }

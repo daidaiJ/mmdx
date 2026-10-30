@@ -8,6 +8,10 @@ Hand-drawn: rough.js redraws Pele's nodes and edges with jitter while keeping Ex
 
 ![excalidraw flowchart](excalidraw-flow.png)
 
+## Pie
+
+![excalidraw pie](excalidraw-chart.png)
+
 ## KPI
 
 ![excalidraw KPI](excalidraw-kpi.png)

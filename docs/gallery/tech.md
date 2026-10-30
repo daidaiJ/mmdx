@@ -8,6 +8,10 @@
 
 ![tech 流程图](tech-flow.png)
 
+## 饼图
+
+![tech 饼图](tech-chart.png)
+
 ## KPI
 
 ![tech KPI](tech-kpi.png)

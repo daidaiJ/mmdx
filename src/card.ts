@@ -463,7 +463,10 @@ function splitBlock(b: CardBlock): CardBlock[] {
 }
 
 function pngSize(buf: Buffer): { width: number; height: number } {
-  return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+  // Bun hands back a plain Uint8Array from the screenshot path, so the IHDR
+  // fields have to be read off a real Buffer (same reason capture.ts wraps).
+  const b = Buffer.from(buf);
+  return { width: b.readUInt32BE(16), height: b.readUInt32BE(20) };
 }
 
 export interface CardRenderOptions {
@@ -487,7 +490,7 @@ export async function renderCardDoc(
     muted: theme.vars.muted,
     rule: theme.vars.border,
     accent: theme.vars.accent,
-    accentTint: accentTint(theme.vars.accent),
+    accentTint: accentTint(theme.vars.accent, theme.vars.bg),
     paper2: theme.vars.surfaceAlt,
   };
   if (opts.brand) {

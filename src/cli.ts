@@ -60,7 +60,7 @@ Options:
                           input renders exactly one diagram (default: next to input)
   -f, --format <fmt>      svg | png | both                     (default: both;
                           --preset defaults to png)
-  -t, --theme <name>      tech (default) | openai | excalidraw | ios | acnh | glass | epaper
+  -t, --theme <name>      tech (default) | openai | excalidraw | ios | acnh | glass | epaper | zed | zed-light
   --tone <name>           paper | neutral | product — structural overrides for
                           block pages and info cards (radius/shadow/display type);
                           paper also repaints the diagram onto paper stock
@@ -504,7 +504,7 @@ async function main(): Promise<void> {
     muted: theme.vars.muted,
     rule: theme.vars.border,
     accent: theme.vars.accent,
-    accentTint: accentTint(theme.vars.accent),
+    accentTint: accentTint(theme.vars.accent, theme.vars.bg),
     paper2: theme.vars.surfaceAlt,
   };
   for (const w of configWarnings) log(o.quiet || o.json, `mmdx: ${w}`);

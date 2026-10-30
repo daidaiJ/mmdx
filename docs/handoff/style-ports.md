@@ -5,15 +5,15 @@ status: active
 
 > 本文件按用户要求随仓库提交，供跨会话/跨机器交接。评审图和原型脚本仍在本地 gitignored 的 `review/`、`.handoff/` 目录，不随仓库分发。
 >
-> 当前本地 `main` 比 `origin/main` 落后 21 个提交，且工作区有前序未提交的 v2 改动；本文档按独立分支推送，不直接改 `main`。合并前先对齐 `origin/main`。
+> 当前本地 `main` 与 `origin/main` 同点（`8443bd6`），工作区有本轮未提交的改动（主题、门槛、画廊与文档）；未提交、未推送。
 
 ## 1. 目标
 
-把 Excalidraw 手绘风作为内置主题移植进 mmdx（`-t excalidraw`），覆盖 Mermaid 图与扩展块，跨机器字体一致，先目测审核再推送。此后按「新机制」而非「新配色」扩张：预设集合现为 `tech`（默认）/ `openai` / `excalidraw` / `ios` / `acnh` / `glass` / `epaper` 七套。
+把 Excalidraw 手绘风作为内置主题移植进 mmdx（`-t excalidraw`），覆盖 Mermaid 图与扩展块，跨机器字体一致，先目测审核再推送。此后按「新机制」而非「新配色」扩张：预设集合现为 `tech`（默认）/ `openai` / `excalidraw` / `ios` / `acnh` / `glass` / `epaper` / `zed` / `zed-light` 九套。
 
 ## 2. 当前进度与状态
 
-- **当前阶段：** 七套主题全部落地（`excalidraw` 走 Pele + rough.js 与 `--style-fill solid|hachure`；`ios` 纯平面系统界面；`acnh` 奶油纸 + 点阵；`glass` Fluent 亚克力；`epaper` 电子纸 + 纸纹）。`--tone`（`paper` 另换网格纸）与 `mmdx card`（默认 `openai`）已落地。无障碍契约（对比度分档 + 色觉模拟 + 形态冗余）已由测试守住。OpenAI 编辑风与 5 套办公/工程主题的移植已放弃并移除。用户目测与推送仍待做。
+- **当前阶段：** 九套主题全部落地（`excalidraw` 走 Pele + rough.js 与 `--style-fill solid|hachure`；`ios` 纯平面系统界面，2026-10-30 加强系统感；`acnh` 奶油纸 + 点阵；`glass` Fluent 亚克力，2026-10-30 重做材质层；`epaper` 电子纸 + 纸纹；`zed` / `zed-light` 取 Zed 的 One Dark / One Light，是第一套暗色预设，节点按 Zed 的 `node_counter % 8` 轮转 8 个 player 色、描边取 accent 原色、填充 accent 15% 混页面底色）。`--tone`（`paper` 另换网格纸）与 `mmdx card`（默认 `openai`）已落地。无障碍契约已由测试守住，2026-10-30 又加三条承载语义的门槛（连线对底、8 色系列两两色觉、系列色对底）。画廊案例改用满四个形状族的流程图并新增饼图场景。OpenAI 编辑风与 5 套办公/工程主题的移植已放弃并移除。用户目测与推送仍待做。
 - **状态：** in-progress
 - **进度：** 调研 100% / 原型 100% / 生产实现 95% / 正式评审 0%
 - **工作区：** 存在前序未提交改动（`src/themes.ts`、`src/cli.ts`、`src/render.ts`、`scripts/build.ts` 等），不是本轮产生；开工前先 `git diff` 确认归属。
@@ -22,7 +22,7 @@ status: active
 
 - 决策与完整技术方案：`docs/STYLE_PORTS.md`。
 - 本地评审图：`review/style-porting/review-sheet.png`（6 图对照）；`excalidraw-solid.png`、`excalidraw-hachure.png` 为最终方案与其可选档；`sketch-pele.png`、`sketch-mermaid.png` 是移植前基线；`acnh-*.png` 属动森原型的历史记录（`-t acnh` 已按它落地，见 `docs/gallery/acnh.md`）。
-- 主题注册表：`src/themes.ts` 的 `PRESETS` 为 `tech` / `openai` / `excalidraw` / `ios` / `acnh` / `glass` / `epaper`，`DEFAULT_THEME = 'tech'`。
+- 主题注册表：`src/themes.ts` 的 `PRESETS` 为 `tech` / `openai` / `excalidraw` / `ios` / `acnh` / `glass` / `epaper` / `zed` / `zed-light`，`DEFAULT_THEME = 'tech'`。
 - Pele 形状类已核对：`rect / rounded / stadium / cyl / diam / circle / hex / lean-r / fr-rect / odd`。
 - Mermaid handDrawn 问题已复现：子图斜线填满、右侧裁切、roughness 固定 `.7`。
 - rough 后处理已跑通：圆柱的 `transform` 在 path 上，替换时必须复制。
@@ -40,7 +40,7 @@ status: active
 - [x] `--json` 无新增 warning；`--preset slide` 下描边与填色可分辨（5 米测试仍待目测）。
 - [ ] 无系统手写字体的机器上，中文仍按内置字体渲染（Excalifont / LXGW WenKai 尚未随包）。
 - [x] 信息卡按实际像素高度拆页，`--tone` 改变结构与像素输出。
-- [x] `tests/run.ts` 全绿（189/189，含 `lint/theme-contrast` / `theme-shape-marks` / `theme-cvd` / `shape-form-redundant`）；`scripts/lint-visuals.ts` 14/14、`scripts/lint-a11y.ts` 全过。
+- [x] `tests/run.ts` **209/209**（含 `lint/theme-contrast` / `theme-shape-marks` / `theme-cvd` / `shape-form-redundant` / `theme-connectors` / `theme-series-cvd` / `theme-series-contrast` / `theme-node-rotation`；`cli/card-*` 那 4 条已随 `pngSize()` 的 `Buffer.from()` 修好）；`scripts/lint-visuals.ts` 18/18、`scripts/lint-a11y.ts` 全过。
 - [x] 画廊：`docs/GALLERY.md` / `GALLERY.en.md` 用同一案例出分场景图 + 总览，README 已引用。
 - [ ] 用户对正式 `review/` 图与 `docs/gallery/` 完成二次目测并明确同意后，才提交/推送。
 
@@ -76,7 +76,7 @@ status: active
 - **已踩过的坑：** `flatten` 不烘焙 `filter`，做贴纸阴影要用复制轮廓，不要用 CSS `drop-shadow`。
 - **已踩过的坑：** `blockPage()` 吃不到 `theme.css` / `--css`；必须走 `blockCss`，否则扩展块只有 token 颜色。
 - **用户认同的稳定流程：** 先出 `review/` 图给用户目测，通过后才提交/推送；本轮不推送。
-- **环境限制：** 本机 `bun` 命令损坏，测试与脚本用 `node --experimental-transform-types --no-warnings` 运行。
+- **环境限制：** 脚本可用 `bun`（1.4.2）或 `node --experimental-transform-types --no-warnings` 运行；`tests/run.ts` 走 `bun run test`。
 - **工作区状态：** 已有前序未提交改动（`src/themes.ts`、`src/cli.ts`、`src/render.ts`、`scripts/build.ts` 等），不是本轮产生；不要误回滚，先 `git diff` 确认归属。
 - **字体许可：** Excalifont / LXGW WenKai 均为 OFL-1.1；若加入必须同步 `THIRD_PARTY_NOTICES.md` 与 `licenses/`。
 - **移除的主题：** `openai-editorial` / `openai-dark` / `vercel` / `linear` / `stripe` / `notion` / `ibm` / `minimal` / `latte` / `mocha` / `sketch` 现在报 `unknown theme`；`docs/gallery/` 里对应的 PNG 是历史样张，不要据此恢复预设。
@@ -95,7 +95,7 @@ status: active
 
 ## 11. 用户下个会话聚焦重点
 
-- 先目测 `review/scenario/`（1 网格纸场景图 / 2 平面 iOS 场景图 / 3 iOS 流程图 / 4 电子纸纸纹 / 5 电子纸块页 / 6 玻璃 / 7 `--tone paper` 块页报告 / 8 七套总览）与 `review/styles/{ios,acnh,glass,epaper}/`，再看 `docs/gallery/` 的对应分页。重出画廊跑 `node --experimental-transform-types --no-warnings scripts/make-gallery.ts`。
+- 先目测 `review/styles/before-after-2026-10-30.png`（glass 与 ios 的改前 / 改后）与 `review/styles/light-compare/review-sheet.png`（tech / openai / ios / glass 四套「浅色平面」并排，看同质化是否还成立）；再看 `review/styles/{tech,openai,excalidraw,ios,acnh,glass,epaper,zed,zed-light}/review-sheet.png`（每套 4 图 + 饼图 + 3 块），Zed 那一对另看 `review/styles/zed-compare/review-sheet.png`，最后看 `docs/gallery/` 的对应分页（每套主题五张：流程图 / 饼图 / KPI / 卡片 / 表格）。重出画廊跑 `node --experimental-transform-types --no-warnings scripts/make-gallery.ts`，重出评审图跑同参数的 `scripts/make-style-review.ts`。
 - 决定是否补齐生产字体子集；不提前混入 CLI 瘦身。
 - 任何提交/推送前，先让用户看正式图。
 
@@ -112,5 +112,7 @@ status: active
 - [x] Excalidraw 实心/斜线原型出图 — PASS（本地 PNG 目测）。
 - [x] Pele 形状类覆盖核对 — PASS（shape zoo SVG 检查）。
 - [x] Mermaid handDrawn 右侧裁切/子图斜线问题复现 — PASS（本地样本）。
-- [x] 七套主题的样式契约、双跑确定性与无障碍门槛 — PASS（`tests/run.ts` 189/189，node 24；`scripts/lint-a11y.ts` 全过）。
+- [x] 九套主题的样式契约、双跑确定性与无障碍门槛 — PASS（`tests/run.ts` 209/209；`scripts/lint-a11y.ts` 全过；新增的连线 / 系列色门槛实测连线最低 3.11、系列色觉最低 0.040、系列对底最低 3.00）。
+- [x] 本轮（2026-10-30）的 glass 材质层重做与 ios 系统感加强已出改前 / 改后对照 — PASS（`review/styles/before-after-2026-10-30.png`，改前取 HEAD 的 `docs/gallery` 同名图）。
+- [x] Zed 的节点轮转（`node_counter % 8`）与 chip 亮度配方已按 Zed 源码落地 — PASS（`crates/mermaid_render/src/postprocess/inject_css.rs` 的 `adjust_lightness` / `ACCENT_FILL_OPACITY` 与 `util.rs` 的 `text_color_for_background` 已核对；`lint/theme-node-rotation` 实测 3.00）。
 - [x] 本轮未改生产代码、未提交、未推送 — PASS（仅更新文档、CHANGELOG、AGENTS.md 与 `scripts/make-style-review.ts`；工作区另有前序未提交改动）。

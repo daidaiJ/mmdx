@@ -16,6 +16,10 @@ Block pages (`kpi` / `card` / `table`) are HTML layouts and use the same system 
 
 ![ios flowchart](ios-flow.png)
 
+## Pie
+
+![ios pie](ios-chart.png)
+
 ## KPI
 
 ![ios KPI](ios-kpi.png)

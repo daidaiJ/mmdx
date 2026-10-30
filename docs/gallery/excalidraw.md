@@ -8,6 +8,10 @@
 
 ![excalidraw 流程图](excalidraw-flow.png)
 
+## 饼图
+
+![excalidraw 饼图](excalidraw-chart.png)
+
 ## KPI
 
 ![excalidraw KPI](excalidraw-kpi.png)

@@ -12,6 +12,10 @@
 
 ![epaper 流程图](epaper-flow.png)
 
+## 饼图
+
+![epaper 饼图](epaper-chart.png)
+
 ## KPI
 
 ![epaper KPI](epaper-kpi.png)

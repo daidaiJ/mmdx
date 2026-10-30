@@ -12,6 +12,10 @@
 
 ![acnh 流程图](acnh-flow.png)
 
+## 饼图
+
+![acnh 饼图](acnh-chart.png)
+
 ## KPI
 
 ![acnh KPI](acnh-kpi.png)

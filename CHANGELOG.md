@@ -4,6 +4,45 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### 主题（新增）
+
+- 新增 `zed` / `zed-light`：Zed 编辑器的 One Dark / One Light，色板取自 Zed 仓库 `assets/themes/one/one.json`，映射照 `crates/markdown/src/mermaid.rs` 的 `build_mermaid_theme`。这是主题集合里第一套暗色预设
+- 节点上色改用 Zed 自己的规则：**flowchart / class / state 的节点按读取顺序轮转 8 个 player 色（`node_counter % 8`），描边 = 该色原色，填充 = 该色按 15% 混页面底色**（`src/color.ts` 的 `blendOver`，对齐 Zed 的 `ACCENT_FILL_OPACITY`）。Pele 把一张图的节点按文档顺序写进一个 `<g>`，所以实现是 `ThemeStyle.nodeRotation` 加一组 `:nth-child(8n+k)` 规则；状态起止标记与复合状态框用 `:not()` 排除。**这是与 `tech` 最直接的差别**：`tech` 按形状分色、单一蓝调，`zed` / `zed-light` 按顺序多色轮转
+- 形状族规则保留给其余槽位（ER 实体、注释、类图分隔线、状态起止、簇），仍取 Zed 的语法色：`zed` `#74ADE8` / `#BF956A` / `#A1C181` / `#B477CF`，`zed-light` `#5C78E2` / `#AD6E26` / `#3F953A` / `#984EA5`
+- 状态 chip 改用 Zed 的 chip 配方：先按 `adjust_lightness` 缩放强调色的亮度（暗色 ×0.7、亮色 ×1.3，新增 `src/color.ts` 的 `scaleLightness()`，缩放落在 OKLab 的 L 上），再由该底色推导文字色；原来用的是「强调色 15% 混页面」的节点填充配方
+- `zed-light` 的块页从文档卡片改成**编辑器面板**：`#EBEBEC` 面板 + `#C9C9CA` 发丝线 + 6px 圆角，卡片去掉强调色边条，表头与热力格用 `#E4E4E5`——此前它基本沿用共享 `PAGE_CSS`，卡片观感和 `tech` 一样
+- 新增 `textColorFor(bg)`（OKLab 保留底色 15% 彩度 + 二分保 ≥4.5:1）：`zed` 的块页状态 chip 文字由 chip 底色推导，浅底深底共用一条规则
+- `accentTint(accent, bg)` 改为按主题页面底色混合（原先固定混白）；`PAGE_CSS` 里 6 处 `color-mix(..., white)` 改成 `color-mix(..., var(--paper))`（进度条、对比条、热力图 lv1–3）。白底主题输出逐字节不变，非白底主题（`ios` / `glass` / `epaper` / `acnh` / `--tone paper`）的条与热力格向自己的纸色靠 1–3%
+- 新增暗色块页样式：`color-scheme: dark`、`#2F343E` 面板、`#464B57` 发丝线，其余仍走 `var(--paper)` / `var(--ink)`
+- `src/tokens.ts` 的 `contrastRatio` / `relativeLuminance` 收敛为从 `src/color.ts` 再导出
+- `glass` 的材质层重做：网格 24px、透明度 0.22（原 28px / 0.10，1x 下几乎看不见），白色半透膜 0.30 → 0.16、颗粒 4% → 10%，面板 `rgba(255,255,255,.72)` → `.45`、`backdrop-filter` 20px → 5px——面板后面能看见格线，亚克力才有材质感（模糊压轻是刻意的：24px 格线重度模糊就摊成一片平色）；去掉偏紫的色块（`#E7E3F4`，在冷底上读作一块脏晕），改为一块白色高光；判定描边 `#B07514` → `#B45309`（原色偏橄榄，压在冷底上发浑）
+- `ios` 的系统感加强：圆角 10 → 14px、描边 1.25 → 1.6px，判定/状态/存储填充换成系统色更实的浅色调；块页按 HIG 分组列表补齐每张卡片右侧的 `›` 折角、分隔线提到 iOS 的 0.29 alpha、标题改 20px/700
+
+### 修复
+
+- `mmdx card` 在 bun 下报 `buf.readUInt32BE is not a function`：`src/card.ts` 的 `pngSize()` 假定拿到的是 Node `Buffer`，而 bun 的截图路径给的是 `Uint8Array`。现在先 `Buffer.from()`（与 `src/capture.ts` / `src/lint.ts` 一致），`bun run test` 从 205/209 变为 **209/209**
+
+### 无障碍（新增门槛）
+
+- 新增 `lint/theme-connectors`：连线色对页面 ≥ 3:1（连线承载语义，与形状描边同一条非文本门槛）。实测最小 3.11（`paper` tone）；`zed` `#636D83` 2.70 与 `ios` `#8E8E93` 2.92 未过，改为 `#7A8598`（3.76）与 `#7C7C82`（3.72）
+- 新增 `lint/theme-series-cvd`：8 色图表的**任意两色**在 protan / deutan / tritan 模拟下 OKLab ΔE ≥ 0.02（原先只有形状族受检）。修前最差 `openai` protan 0.005、`zed-light` deutan 0.009、`zed` tritan 0.013、`ios` tritan 0.017、`paper` protan 0.019；按「只挪必要的色、保持原色相与彩度」重挑后，九套主题全部 ≥ 0.040（多数主题只挪 0–2 个色；`epaper` 的灰阶系列原本已达标，未动）
+- 新增 `lint/theme-node-rotation`：开轮转的主题（`zed` / `zed-light`）里，8 个 player 色对自己的 15% 底色各 ≥ 3:1（实测 3.00）——轮转让每个色都成了描边，不能只查形状族那 4 个
+- 新增 `lint/theme-series-contrast`：8 色系列每色对页面底 ≥ 3:1。Pele 的饼图数值是用**页面底色**「抠」在切片上的，切片太浅数值就消失（修前 `acnh` 最浅一片只有 2.04:1）；重挑后九套全部 ≥ 3.00
+- `scripts/lint-a11y.ts` 增加连线对比度、系列色色觉、系列色对底三行逐主题报告
+
+### 画廊
+
+- 案例的流程图改用四种形状族：`([需求冻结])` 胶囊起点、`[灰度 5%]` 矩形、`{错误率 < 1%?}` 菱形、`[(发布台账)]` 圆柱——此前样张只有矩形与菱形，四个形状族在画廊里看不见
+- 新增第 5 个场景 `chart`：` ```chart ` pie 六片，形状族与 8 色系列色都进样张；九套主题 × 5 场景
+- 画廊全量重出（本机一次渲染，图标 emoji 字形与其余分页一致）；`tests/contact-sheet.png`（README 的图型拼图）按当前产物重出
+
+### 文档
+
+- `docs/gallery/zed.md` / `zed-light.md`（含英文页）、`docs/STYLE_PORTS.md` 第 3.1c 节记录色板、机制与门槛实测；画廊总览改为九套主题 3×3
+- 分风格页、`docs/GALLERY.md`、`docs/QUALITY.md`、skill 与 README 的主题描述同步到新的网格 / 材质 / 门槛数字
+
 ## [2.0.0] - 2026-10-30
 
 ### 渲染引擎（Breaking）
@@ -15,7 +54,7 @@
 
 ### 主题（Breaking）
 
-- 主题改为 CSS 变量契约：统一输出 `--pele-*` 变量与 `pele-shape-*` 形状规则，PNG、SVG、HTML 扩展块共用同一色板；当前 **7 套预设**：`tech`（默认）/ `openai` / `excalidraw` / `ios` / `acnh` / `glass` / `epaper`
+- 主题改为 CSS 变量契约：统一输出 `--pele-*` 变量与 `pele-shape-*` 形状规则，PNG、SVG、HTML 扩展块共用同一色板；**7 套预设**：`tech`（默认）/ `openai` / `excalidraw` / `ios` / `acnh` / `glass` / `epaper`（`zed` / `zed-light` 见 Unreleased）
 - **Breaking：** `--theme-js` 改为 v2 签名 `(theme) => theme`，接收 `ThemeSpec`（`vars` / `shapes` / `css`）；1.x 的 `config.themeVariables` 脚本报迁移错误
 - **Breaking：** `--config` 改为 Pele 白名单（`fontSize` / `padding` / `flowchart.nodeSpacing` / `rankSpacing` / `padding`），`themeVariables` 等 key 给 `config-ignored` 警告
 - **Breaking：** 移除 11 套旧主题（`openai-dark`、`openai-editorial`、`vercel`、`linear`、`stripe`、`notion`、`ibm`、`minimal`、`latte`、`mocha`、`sketch`）；旧主题名报 `unknown theme`，可用主题见 `--help`

@@ -8,6 +8,10 @@ The near-monochrome end of the OpenAI design system: white ground, ink text, min
 
 ![openai flowchart](openai-flow.png)
 
+## Pie
+
+![openai pie](openai-chart.png)
+
 ## KPI
 
 ![openai KPI](openai-kpi.png)
