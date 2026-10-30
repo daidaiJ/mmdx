@@ -5,7 +5,7 @@ status: active
 
 > 本文件按用户要求随仓库提交，供跨会话/跨机器交接。评审图和原型脚本仍在本地 gitignored 的 `review/`、`.handoff/` 目录，不随仓库分发。
 >
-> 当前本地 `main` 与 `origin/main` 同点（`8443bd6`），工作区有本轮未提交的改动（主题、门槛、画廊与文档）；未提交、未推送。
+> 当前本地 `main` 与 `origin/main` 同点（`28e98f6`），工作区干净；2026-10-30 的本轮改动（主题、门槛、画廊与文档）已提交并推送。
 
 ## 1. 目标
 
@@ -13,10 +13,10 @@ status: active
 
 ## 2. 当前进度与状态
 
-- **当前阶段：** 九套主题全部落地（`excalidraw` 走 Pele + rough.js 与 `--style-fill solid|hachure`；`ios` 纯平面系统界面，2026-10-30 加强系统感；`acnh` 奶油纸 + 点阵；`glass` Fluent 亚克力，2026-10-30 重做材质层；`epaper` 电子纸 + 纸纹；`zed` / `zed-light` 取 Zed 的 One Dark / One Light，是第一套暗色预设，节点按 Zed 的 `node_counter % 8` 轮转 8 个 player 色、描边取 accent 原色、填充 accent 15% 混页面底色）。`--tone`（`paper` 另换网格纸）与 `mmdx card`（默认 `openai`）已落地。无障碍契约已由测试守住，2026-10-30 又加三条承载语义的门槛（连线对底、8 色系列两两色觉、系列色对底）。画廊案例改用满四个形状族的流程图并新增饼图场景。OpenAI 编辑风与 5 套办公/工程主题的移植已放弃并移除。用户目测与推送仍待做。
+- **当前阶段：** 九套主题全部落地（`excalidraw` 走 Pele + rough.js 与 `--style-fill solid|hachure`；`ios` 纯平面系统界面，2026-10-30 加强系统感；`acnh` 奶油纸 + 点阵；`glass` Fluent 亚克力，2026-10-30 重做材质层；`epaper` 电子纸 + 纸纹；`zed` / `zed-light` 取 Zed 的 One Dark / One Light，是第一套暗色预设，节点按 Zed 的 `node_counter % 8` 轮转 8 个 player 色、描边取 accent 原色、填充 accent 15% 混页面底色）。`--tone`（`paper` 另换网格纸）与 `mmdx card`（默认 `openai`）已落地。无障碍契约已由测试守住，2026-10-30 又加三条承载语义的门槛（连线对底、8 色系列两两色觉、系列色对底）。画廊案例改用满四个形状族的流程图并新增饼图场景。OpenAI 编辑风与 5 套办公/工程主题的移植已放弃并移除。用户已目测通过，本轮已提交并推送（`28e98f6`）；正式评审仍待做。
 - **状态：** in-progress
 - **进度：** 调研 100% / 原型 100% / 生产实现 95% / 正式评审 0%
-- **工作区：** 存在前序未提交改动（`src/themes.ts`、`src/cli.ts`、`src/render.ts`、`scripts/build.ts` 等），不是本轮产生；开工前先 `git diff` 确认归属。
+- **工作区：** 干净。2026-10-30 的改动已提交为 `28e98f6` 并推送；开工前先 `git log -1` / `git diff` 确认起点。
 
 ## 3. 关键证据
 
@@ -115,4 +115,4 @@ status: active
 - [x] 九套主题的样式契约、双跑确定性与无障碍门槛 — PASS（`tests/run.ts` 209/209；`scripts/lint-a11y.ts` 全过；新增的连线 / 系列色门槛实测连线最低 3.11、系列色觉最低 0.040、系列对底最低 3.00）。
 - [x] 本轮（2026-10-30）的 glass 材质层重做与 ios 系统感加强已出改前 / 改后对照 — PASS（`review/styles/before-after-2026-10-30.png`，改前取 HEAD 的 `docs/gallery` 同名图）。
 - [x] Zed 的节点轮转（`node_counter % 8`）与 chip 亮度配方已按 Zed 源码落地 — PASS（`crates/mermaid_render/src/postprocess/inject_css.rs` 的 `adjust_lightness` / `ACCENT_FILL_OPACITY` 与 `util.rs` 的 `text_color_for_background` 已核对；`lint/theme-node-rotation` 实测 3.00）。
-- [x] 本轮未改生产代码、未提交、未推送 — PASS（仅更新文档、CHANGELOG、AGENTS.md 与 `scripts/make-style-review.ts`；工作区另有前序未提交改动）。
+- [x] 本轮（2026-10-30）的主题、门槛、画廊与文档改动已提交并推送 — PASS（`28e98f6`，`origin/main`）。
