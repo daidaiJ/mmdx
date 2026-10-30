@@ -42,17 +42,26 @@ export function screenshotGate<T>(fn: () => Promise<T>): Promise<T> {
 /**
  * Screenshot `#id` at `scale`, cropped to its ink with symmetric margins.
  * The caller sizes the element's viewBox; this function only rasterizes.
+ * `fullBleed` skips the ink crop for themes that paint their own backdrop:
+ * there the whole box is ink, so cropping to it would follow the backdrop
+ * instead of the diagram and leave the margins asymmetric.
  */
 export async function captureElement(
   page: Page,
   id: string,
   background: string,
   scale: number,
+  fullBleed = false,
 ): Promise<Buffer> {
   return screenshotGate(async () => {
     const transparent = background === 'transparent';
     await page.evaluate(([elId, bg]) => {
       const el = document.getElementById(elId)!;
+      // Normalize the page box, not just the colour: a page that has not been
+      // through a reset still carries the browser's 8px body margin, which
+      // offsets the clip. Backdrop themes crop to the element box, so that
+      // offset lands in the PNG and shifts their margins.
+      document.body.style.cssText = 'margin:0;padding:0;overflow:hidden;background:transparent';
       document.body.style.background = bg;
     }, [id, transparent ? 'transparent' : background] as [string, string]);
 
@@ -74,7 +83,7 @@ export async function captureElement(
 
     // geometric bounds miss marker arrowheads and glyph overshoot; a second
     // capture clipped to the actual ink gives pixel-exact, symmetric margins
-    const ink = inkBBox(first);
+    const ink = fullBleed ? null : inkBBox(first);
     if (!ink) return first;
     const mx = Math.max(1, PAD_X * scale - 2);
     const my = Math.max(1, PAD_Y * scale - 2);

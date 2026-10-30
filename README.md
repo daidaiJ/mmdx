@@ -83,7 +83,7 @@ Markdown 围栏：`mermaid`（图表）以及 `table` / `list` / `card` / `chart
 
 ```card
 🚀 | 渲染管线 | 单浏览器页池复用，PNG 2x 无损导出
-🎨 | 主题系统 | 三套预设，支持 theme-js、tone 与 css 自定义
+🎨 | 主题系统 | 七套预设，支持 theme-js、tone 与 css 自定义
 ```
 
 ![卡片渲染示例](docs/ext-card.png)
@@ -95,10 +95,16 @@ Markdown 围栏：`mermaid`（图表）以及 `table` / `list` / `card` / `chart
 | `tech`（默认） | 大厂方案文档风：白底、形状分色、细边框、正交连线 |
 | `openai` | 近单色工程风：纯白底、墨黑文字、薄荷绿（teal）点缀、发丝边框；块页配 `--tone paper` 得到衬线标题与 16px 圆角 |
 | `excalidraw` | 手绘：粉彩填色 + 墨线抖动（rough.js），Excalifont/LXGW；块版式为白板卡片 |
+| `ios` | iOS 系统界面：**纯平面**分组浅灰底 + 白卡片 + 发丝分隔线 + 系统色（蓝 `#007AFF` / 绿 / 橙 / 紫）、12px 圆角；卡片按 iOS 分组列表做法不加强调色边条，不画底、不加投影 |
+| `acnh` | 动森：奶油纸 + 粗棕描边 + 硬偏移贴纸阴影 + 圆体字、胶囊标签；块页带点阵纸纹 |
+| `glass` | Fluent 亚克力玻璃：淡蓝灰画布 + 28px 网格 + 一层白色半透膜与细颗粒，面板 `rgba(255,255,255,.72)`、8px 圆角、白描边；强调色 Fluent 蓝 `#0F6CBD` |
+| `epaper` | 电子纸 / 墨水屏：`#F5F1EB` 纸底 + 纸纹颗粒 + `#1A1A1A` 发丝黑描边、直角、无阴影、无强调色，形状族用灰阶与形状区分；块页同纸底 + 墨线卡片 + 等宽大写表头 |
 
 `excalidraw` 默认实心填色；需要斜线填色时加 `--style-fill hachure`（体积约 1.5–2×，PPT 可读性优先时保持默认）。
 
-`--tone paper|neutral|product` 只改块版式的结构（圆角、阴影、标题字体、表格头），配色仍由主题决定。信息卡是独立 skill [`info-card-designer`](skill/info-card-designer/SKILL.md)，把同一套主题和 tone 用到 Markdown/网页正文：
+`acnh` / `glass` / `epaper` 都自带底：SVG 里插一层 `mmdx-backdrop`（`acnh` 是奶油纸 + 点阵网格，`glass` 是色块 + 网格 + 白色半透膜 + 噪点，`epaper` 是纸底 + 纸纹颗粒），PNG 整幅截取不裁边，所以 SVG 和 PNG 观感一致。`ios` 是纯平面风格，不画底也不加投影。传 `--background transparent` 时不画底，半透明面板会透出宿主页面的内容。
+
+`--tone paper|neutral|product` 改块版式的结构（圆角、阴影、标题字体、表格头）；`paper` 另把图的配色换成编辑风纸底墨线（`#FAFAF8` 灰白纸 + 24px 细格线 / 96px 粗格线 + 焦橙强调色 `#BF4520`），块页用同一张网格纸，`neutral` / `product` 不动图的配色。信息卡是独立 skill [`info-card-designer`](skill/info-card-designer/SKILL.md)，把同一套主题和 tone 用到 Markdown/网页正文：
 
 ```bash
 mmdx card --in note.md -t openai --tone neutral --width 600 -o note-card.png
@@ -106,6 +112,8 @@ mmdx card --url https://example.com/post -t openai --tone paper
 ```
 
 叠加顺序：预设 → `--brand` → `--theme-js` → `--config` → `--css`。v2 的 `--theme-js` 接收 `ThemeSpec`（`theme.vars` / `theme.shapes` / `theme.css`），示例见 [HUMAN_GUIDE 主题定制](docs/HUMAN_GUIDE.md#主题定制)。
+
+主题色板还有无障碍硬门槛（正文色 ≥7:1、次要文字 ≥4.5:1、形状描边对底与对自己的填充各 ≥3:1、红绿色盲模拟下形状族仍可区分，且四个形状族本来就是四种形状）：改色板后跑 `node --experimental-transform-types --no-warnings scripts/lint-a11y.ts`。
 
 ## 🖋 手绘 HTML 与 explain
 

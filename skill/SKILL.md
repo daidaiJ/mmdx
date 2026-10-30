@@ -28,7 +28,7 @@ CLI 获取（按优先级）：
 - [`editorial/`](editorial/README.md) — vendored diagram-design 手绘规格（偶发封面 / 方案插图动笔前）
 - [`info-card-designer/`](info-card-designer/SKILL.md) — URL / 文本 → 杂志感信息卡（`mmdx card`，见 §5b）
 
-**适用边界**：流程/审批/排期、轻量占比/趋势/对比、KPI/表格/卡片/任务快照 → 用本 skill。**多图叙事解释页 / diff·plan 评审 / recap / 幻灯片页** → [explain/](explain/README.md)。**已有 HTML 文件要导出图片**（如 diagram-design 产物）→ `mmdx page.html`（见 §1c-4）。反例：文生图；分组柱/双轴/散点 → [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
+**适用边界**：流程/审批/排期、轻量占比/趋势/对比、KPI/表格/卡片/任务快照、**场景引导（状态图讲一次故障 / 审批的处境变化）** → 用本 skill。**多图叙事解释页 / diff·plan 评审 / recap / 幻灯片页** → [explain/](explain/README.md)。**已有 HTML 文件要导出图片**（如 diagram-design 产物）→ `mmdx page.html`（见 §1c-4）。反例：文生图；分组柱/双轴/散点 → [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
 
 ## 0. 环境自检（会话内首次使用先跑，30 秒）
 
@@ -67,6 +67,7 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 | 四象限 / 优先级 | quadrant | ≤12 项 | |
 | 排期 / 工期 | gantt | | |
 | 流程 / 审批 / 判定 | flowchart | ≤9 节点 / ≤12 边 | 聊天/窄栏 `flowchart TD`；投屏才 `LR` + 命名 subgraph |
+| 场景引导：一次故障 / 一次审批里「处境怎么变」 | stateDiagram-v2 | 箭头 ≤20 | 见 §1a-2；`--tone paper` 出纸底 |
 | 跨部门交接 | ` ```swimlane ` | 泳道 ≤5、步骤 ≤8 | handoff 才是重点；有环/并行用 flowchart |
 | 需求池 / 多列看板 | kanban | | 当前状态快照改用 ` ```task ` |
 | 任务状态快照 | ` ```task ` | ≤10 行 | 6 态：未开始/设计/开发/测试/已上线/已取消 |
@@ -84,6 +85,22 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 | 多维打分 | radar | 维 ≤8、系列 ≤3 | |
 
 超限：拆「总览 + 局部」，或数据图交给 AntV mcp-server-chart。`--json` 的 `warnings` 与上表同一口径；`--strict-chart` 把 mermaid 超限升为错误。` ```chart ` 与版式块超限直接失败（exit 1），同文件其他块照常产出。
+
+### 1a-2. 场景引导（状态图讲一个场景）
+
+读者问「这东西什么时候会坏」「我点下去之后发生什么」时，画**处境的变化**，不画代码的走向。一次故障复盘、一次审批、一次发布都走这条。
+
+1. **状态 = 读者能看见的处境**：「已付款」「等待审核」「连接断开」，不写变量名、不写函数名、不写 `s1`。状态标签塞不进读者的话，说明这段不该画
+2. **箭头 = 读者视角的动作**：「你点了支付」「连接失败」，不写端口、协议、内部方法。只在部分情况下发生的动作，把条件写在方括号里：`你点了支付 [文件还在加载]`
+3. **一条箭头一句读者的话**；箭头总数 ≤20。超了先合并处境（值不同但读者同样处理的状态合成一个），再藏掉读者不需要的箭头（每个状态都能走回去的重置、和别的箭头重复的）
+4. **风险状态打标记**：`classDef risk fill:#FBE9E7,stroke:#B93A2B,stroke-width:2.5px` + `class s3 risk` 标「会坏在这」的状态，另一组标「最短路径」上的状态。Pele 把 `classDef` 烘成节点上的内联 `style`，主题盖不掉它——标记要的就是这个效果（与 §1b 第 6 条「每图 ≤2 个」同口径）
+5. **故障场景给最短路径**：先一句话说哪条规则被破坏，再给到那个状态的最短一条路，不要让读者在图里自己找
+
+```bash
+mmdx scenario.mmd --preset slide --tone paper --title "支付链路：会坏在哪" --source "故障复盘" --json --quiet
+```
+
+纸底墨线适合贴复盘报告和评审页；投屏改用默认 `neutral`（纸底在会议室灯光下发灰）。完整场景（触发词、两档样张、自检项）见 §1c-5。
 
 ### 1b. 写图规则
 
@@ -169,6 +186,23 @@ mmdx page.html -o out/page.png --scale 3
 - **护栏**：办公出图**不要**为绕开围栏纪律去手写 HTML——预算、超限警告、像素筛查只对围栏块生效，任意 HTML 不受这套契约约束。这条路径只用于「HTML 已经存在」的导出
 - 要**手绘 editorial 封面 / 方案插图**（低频、一次性、杂志感）：规格用 [`editorial/`](editorial/README.md)（diagram-design 规格层，MIT，随本 skill 分发）——读总则 + 对应 `type-*.md`，导出用上面的命令
 - 要**多图叙事解释页 / 评审页 / recap / 幻灯片页**：规格用 [`explain/`](explain/README.md)（visual-explainer 规格化改造版，MIT，随本 skill 分发）——复制 `explain/kit/starter-<register>.html`（`instrument` / `blueprint` / `paper` / `editorial`）再编辑页身，导出用上面的命令
+
+### 1c-5. 场景引导 / 故障复盘（状态图场景）
+
+触发词：**复盘、故障、事故、为什么挂了、什么时候会坏、上线流程、审批链路、状态流转、我点下去之后发生什么**。
+
+读者要看的是「处境怎么变」，不是代码怎么走。画法见 §1a-2，三件必做：
+
+1. 状态名 = 读者能看见的处境（「已付款」「等待审核」），箭头 = 读者视角的动作（「你点了支付」「连接失败」）；条件写方括号
+2. 风险状态打标记（`classDef risk` / `classDef path` + `class`），每图 ≤2 个标记类
+3. 一句话说清哪条规则被破坏，再给到那个状态的最短一条路，不让读者在图里找
+
+```bash
+mmdx scenario.md --preset a4 --tone paper --title "支付链路：会坏在哪" --source "故障复盘" --json --quiet
+mmdx scenario.md -t ios --preset column --title "支付链路：会坏在哪" --json --quiet   # 贴品牌页 / 深色底
+```
+
+同一张图两档观感的样张在仓库 `docs/gallery/scenario.md`（源码 `examples/gallery/scenario.md`）。自检：`rendered:1`、`warnings` 为空、Read 看 PNG 能分清「正常 / 会坏 / 最短路径」三种状态。
 
 ### 1d. 自检闭环（渲染后必做）
 
@@ -271,7 +305,7 @@ kpi 变化列默认**红涨绿跌**（可用 `--css` 覆盖）。progress 第一
 
 ## 5. 主题
 
-先按场景选主题，再决定 tone。`tone` 只影响块页（`card` / `kpi` / `table` / `task` …）和信息卡，不改图的形状与线条。
+先按场景选主题，再决定 tone。`tone` 改块页（`card` / `kpi` / `table` / `task` …）和信息卡的结构；`paper` 另把图换成纸底墨线（见 §1a-2、§5 末），不改图的形状、线条与字号。
 
 | 场景 | 首选 | 备选 | tone | preset / 备注 |
 | --- | --- | --- | --- | --- |
@@ -284,17 +318,31 @@ kpi 变化列默认**红涨绿跌**（可用 `--css` 覆盖）。progress 第一
 | 企业架构 / 合规 / 正式交付 | `tech` | `openai` | `product` | `slide`；形状分色便于逐层讲解 |
 | 白板 / 头脑风暴 / 轻松分享 | `excalidraw` | `openai` | `neutral` | 手绘线条 + 粉彩填色；`--style-fill hachure` 切斜线 |
 | 投影 / PPT / 上会 / 大屏 | `tech` | `openai` | `neutral` | 必须 `--preset slide`；深色页面不要上投影 |
+| 产品界面截图 / iOS 应用说明 | `ios` | `tech` | `neutral` | 纯平面分组浅灰底；系统色区分形状 |
+| 周报贴纸 / 团队看板 / 轻松汇报 | `acnh` | `excalidraw` | `neutral` | 图自带奶油纸 + 点阵；块页同样带纸纹 |
+| 玻璃质感封面 / 现代产品汇报 | `glass` | `tech` | `neutral` | 亚克力底：色块 + 网格 + 半透明白膜；面板 8px 圆角带白描边 |
+| 黑白打印 / 墨水屏 / 合规文档 | `epaper` | `openai` | `neutral` | 纸底 + 纸纹颗粒 + 发丝黑描边 + 直角；形状族用灰阶区分 |
 | 品牌 VI | 任一 | — | 保持原 tone | `--brand #RRGGBB` 只改 accent |
 
-### 5a. 三套主题：特点、适合、避免
+`--tone paper` 是唯一会动配色的 tone：图与块页都换成编辑风网格纸（`#FAFAF8` 纸底 + 24px 细格 / 96px 粗格，墨色文字、焦橙强调色 `#BF4520`），字号/圆角/手绘抖动不变。纸底适合复盘报告、评审页、`a4` 打印；投会议室还是用默认 `neutral`。要纸底手绘就 `-t excalidraw --tone paper`。
+
+### 5a. 七套主题：特点、适合、避免
 
 | 主题 | 视觉特点 | 适合 | 避免 / 注意 | 推荐 tone |
 | --- | --- | --- | --- | --- |
 | `tech` | 白底、蓝/琥珀/绿/紫形状分色、1.5px 描边、信息密度最高 | 方案评审、架构图、周报、通用交付、投屏 | 对外品牌报告、需要编辑感的印刷品 | `neutral` |
 | `openai` | 纯白/墨黑、薄荷绿点缀、发丝边框、近单色；配 `paper` 得到衬线标题与 16px 圆角 | 对外报告、白皮书、设计评审、工程师文档、HTML 报告卡、`a4` 打印 | 高密度看板、白板脑暴 | `paper` / `neutral` |
 | `excalidraw` | 白底、粉彩填色、rough.js 手绘抖动、墨线、12px 圆角 | 白板、脑暴、工作坊、非正式分享 | 对外正式报告、打印稿、高密度数据图 | `neutral` |
+| `ios` | 分组浅灰底 + 白卡片 + 发丝分隔线 + 系统色（蓝 `#007AFF`/绿/橙/紫）、10px 圆角；纯平面，不画底、不加投影 | 产品界面截图、iOS 应用说明、需要「系统感」的图 | 打印稿（浅灰底吃墨）、高密度数据图 | `neutral` |
+| `acnh` | 奶油纸 + 粗棕描边（2.6px）+ 硬偏移贴纸阴影 + 圆体字、16px 圆角、胶囊标签 | 周报贴纸、团队看板、轻松汇报、需要「有温度」的图 | 合规/审计、打印稿（硬阴影叠印发闷）、高密度数据图 | `neutral` |
+| `glass` | Fluent 亚克力：淡蓝灰画布 + 28px 网格 + 白色半透膜与细颗粒，面板 `rgba(255,255,255,.72)`、8px 圆角、白描边 | 玻璃质感封面、现代产品汇报、需要「材质感」的图 | 打印稿（浅色低对比）、高密度数据图 | `neutral` |
+| `epaper` | 电子纸：`#F5F1EB` 纸底 + 纸纹颗粒 + `#1A1A1A` 发丝黑描边 + 直角、无阴影、无强调色，形状族靠灰阶区分 | 黑白打印、墨水屏阅读、合规与审计文档、需要「印刷感」的图 | 需要彩色区分度的高密度图、投屏 | `neutral` |
 
-三套主题都有对应展示图：见 `docs/GALLERY.md`（总览 + `tech` / `openai` / `excalidraw` 分风格页）。
+`acnh` / `glass` / `epaper` 都**自带底**：SVG 里插一层 `<g class="mmdx-backdrop">`（`acnh` 奶油纸 + 点阵网格 + 硬偏移贴纸阴影，`glass` 色块 + 网格 + 白色半透膜 + 噪点，`epaper` 纸底 + 纸纹颗粒），PNG 整幅截取、不按墨迹裁边——裁边会跟着底的边缘走，左右留白就不对称。`ios` 是纯平面风格，不画底也不加投影。传 `--background transparent` 时不画底。
+
+七套主题都有对应展示图：见 `docs/GALLERY.md`（总览 + 每套主题的分风格页）。
+
+**无障碍底线（已由测试守住）**：正文色 ≥7:1（AAA）、次要文字 ≥4.5:1、承载形状语义的描边 ≥3:1（对底与对自己的填充都算）、四个形状族在红绿色盲模拟下仍可区分，且形状族本身在**形态**上就不同（矩形 / 菱形 / 胶囊 / 圆柱），不靠颜色单独承载信息。改色板前先跑 `scripts/lint-a11y.ts`。
 
 ### 5b. 两个 HTML 场景的推荐组合
 

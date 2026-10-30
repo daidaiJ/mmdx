@@ -201,18 +201,31 @@ export async function auditContrast(page: Page, rootSelector = '.wrap'): Promise
       if (!fill || fill[3] === 0) continue;
       const bg = background(text);
       const r = ratio([fill[0], fill[1], fill[2]], bg);
-      if (r < 3.0) {
+      // WCAG text tiers: 4.5:1 for body text, 3:1 once it is large (24px+, or
+      // 18.66px+ bold). Diagram labels are small by default, so the strict bar
+      // is what catches a caption that only looks legible.
+      const size = parseFloat(style.fontSize) || 0;
+      const weight = parseInt(style.fontWeight, 10) || 400;
+      const large = size >= 24 || (size >= 18.66 && weight >= 700);
+      const need = large ? 3.0 : 4.5;
+      if (r < need) {
         const cls = (text.getAttribute('class') ?? 'text').trim();
         issues.push({
           kind: 'low-contrast',
           selector: `text.${cls.split(/\s+/)[0]}`,
-          detail: `"${text.textContent.trim().slice(0, 20)}" ${hex([fill[0], fill[1], fill[2]])} on ${hex(bg)} = ${r.toFixed(2)}:1`,
+          detail: `"${text.textContent.trim().slice(0, 20)}" ${hex([fill[0], fill[1], fill[2]])} on ${hex(bg)} = ${r.toFixed(2)}:1 ` +
+            `(need ${need}:1, ${Math.round(size)}px/${weight})`,
         });
       }
     }
     return issues.slice(0, 30);
   }, rootSelector) as Promise<LayoutIssue[]>;
 }
+
+// Colour maths lives in ./color.ts so the theme gates, the in-page audit and
+// the CLI share one implementation.
+export { contrastRatio, perceptualDelta, relativeLuminance, simulateCvd } from './color.ts';
+export type { CvdKind, Rgb } from './color.ts';
 
 /** Fixed 2x padding or 5% of a tall page, whichever is larger. */
 export function bottomBlankLimit(height: number): number {

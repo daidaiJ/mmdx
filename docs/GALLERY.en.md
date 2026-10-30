@@ -4,13 +4,23 @@
 
 One case, split into one page per style. The overview keeps a single flowchart for a quick comparison; each new theme adds a page with the same structure instead of growing this page.
 
-[![The same case as a flowchart in three styles](gallery/overview.png)](gallery/overview.png)
+[![The same case as a flowchart in four styles](gallery/overview.png)](gallery/overview.png)
 
-## All 3 themes
+## All 7 themes
 
 One flow per built-in theme; use this for the overall comparison, then open the style pages for block layouts:
 
-[![All 3 built-in themes](gallery/all-themes-overview.png)](gallery/all-themes-overview.png)
+[![All 7 built-in themes](gallery/all-themes-overview.png)](gallery/all-themes-overview.png)
+
+## Scenario guide (statechart)
+
+The change of situation in an incident or an approval, drawn as a statechart with risky states marked. One chart, two looks: ruled paper stock (`--tone paper`) and the iOS system interface (`-t ios`).
+
+| Ruled paper | iOS system interface |
+| --- | --- |
+| [![Scenario guide · paper](gallery/scenario-paper.png)](gallery/scenario.en.md) | [![Scenario guide · iOS](gallery/scenario-ios.png)](gallery/scenario.en.md) |
+
+Rules and commands: [Scenario guide](gallery/scenario.en.md); source: [examples/gallery/scenario.md](../examples/gallery/scenario.md).
 
 ## HTML scenario templates
 
@@ -45,14 +55,19 @@ Pick the scenario from the “Use it for” column, then check the look. `tone` 
 | `tech` (default) | Design docs, weekly reports, general delivery | Blue / amber / green shape coding, 1.5px strokes, highest density | [tech](gallery/tech.en.md) |
 | `openai` | External reports, engineering docs, minimal READMEs | White, ink, mint accent, hairline borders; shapes differ only by thin borders | [openai](gallery/openai.en.md) |
 | `excalidraw` | Whiteboard sessions, brainstorming, informal sharing | Pastel fills with rough ink strokes, whiteboard cards, Kai fallback for Chinese | [excalidraw](gallery/excalidraw.en.md) |
+| `ios` | Product UI, iOS app docs, anything that should read as a system screenshot | Flat grouped grey page, white cards, hairline separators, system colours; no accent side stripe on cards | [ios](gallery/ios.en.md) |
+| `acnh` | Sticker-style weekly updates, team boards, casual reports | Cream paper, thick brown outlines, hard offset sticker shadows, rounded type; block pages carry a dotted grid | [acnh](gallery/acnh.en.md) |
+| `glass` | Glass covers, modern product reviews, anything that wants material depth | Fluent acrylic: pale blue-grey canvas, 28px ruling, a translucent white sheet with grain, 8px panels with a light rim | [glass](gallery/glass.en.md) |
+| `epaper` | Black-and-white print, e-reader reading, compliance and audit docs | `#F5F1EB` stock with paper grain, hairline black strokes, square corners, no shadow; families differ by grey level and shape | [epaper](gallery/epaper.en.md) |
+| Scenario guide (statechart) | Incident retros, approvals, releases: how the situation changes | States named for what the reader sees, risky states marked; ruled paper or iOS backdrop | [scenario](gallery/scenario.en.md) |
 | HTML report card / info card | The two imported HTML scenarios across themes | Same content; theme and `--tone` control palette and structure | [html-skills](gallery/html-skills.en.md) |
 | Hand-drawn HTML (v1.4.2) | editorial covers/illustrations; visual-explainer explainers/recaps | Hand-written HTML + SVG, paper/ink/blue; not a theme preset | [vendored-html](gallery/vendored-html.en.md) |
 
-All three themes consume the same Markdown: same diagram, same `kpi` / `card` / `table` fences, only `-t` changes. `--brand` overrides the accent; the theme keeps its shape coding.
+All seven themes consume the same Markdown: same diagram, same `kpi` / `card` / `table` fences, only `-t` changes. `--brand` overrides the accent; the theme keeps its shape coding.
 
 The two HTML scenarios are compared in [html-skills](gallery/html-skills.en.md); the three info-card tones are in [card tones](gallery/card-tones.en.md).
 
-The overview stays on these three built-in themes. A new theme adds a page and an index row; it does not add more images to the overview.
+The overview shows every built-in theme. A new theme adds a page, an index row and a tile.
 
 ## Reproduce
 
@@ -60,7 +75,7 @@ The overview stays on these three built-in themes. A new theme adds a page and a
 node --experimental-transform-types --no-warnings scripts/make-gallery.ts
 ```
 
-The script writes the per-theme scene pages, the report card and info card, 3 info-card tones, and both overview strips. `vendored-*.png` are the original v1.4.2 hand-drawn HTML samples; regenerate them from the `tests/` sources with `mmdx tests/editorial-showcase/layer-stack.html --scale 3` and the equivalent.
+The script writes the per-theme scene pages, the report card and info card, 3 info-card tones, the `--tone paper` block report (`tone-paper-report.png`), both scenario renders (ruled paper / iOS system interface) and both overview strips. `vendored-*.png` are the original v1.4.2 hand-drawn HTML samples; regenerate them from the `tests/` sources with `mmdx tests/editorial-showcase/layer-stack.html --scale 3` and the equivalent.
 
 Render one scene yourself:
 

@@ -16,7 +16,7 @@ import { scanColumnHints, scanLimits, type LimitHit } from './limits.ts';
 import { Renderer } from './render.ts';
 import { accentTint, applyBrand, type Tokens } from './tokens.ts';
 import {
-  applyBrandToTheme, applyColumnDensity, applySlideDensity, DEFAULT_THEME, deepMerge, getTheme, peleConfig,
+  applyBrandToTheme, applyColumnDensity, applySlideDensity, DEFAULT_THEME, deepMerge, getTheme, paperize, peleConfig,
   PRESETS, SIZE_PRESETS, type SizePreset, type ThemeSpec,
 } from './themes.ts';
 import { isToneName, type ToneName } from './tone.ts';
@@ -60,9 +60,10 @@ Options:
                           input renders exactly one diagram (default: next to input)
   -f, --format <fmt>      svg | png | both                     (default: both;
                           --preset defaults to png)
-  -t, --theme <name>      tech (default) | openai | excalidraw
+  -t, --theme <name>      tech (default) | openai | excalidraw | ios | acnh | glass | epaper
   --tone <name>           paper | neutral | product — structural overrides for
-                          block pages and info cards (radius/shadow/display type)
+                          block pages and info cards (radius/shadow/display type);
+                          paper also repaints the diagram onto paper stock
   --style-fill <mode>     solid (default) | hachure — excalidraw only
   --preset <name>         slide | a4 | square | column  (width+scale+png; explicit
                           --width/--scale/-f win). slide=1600px@2, a4=900px@2,
@@ -440,6 +441,7 @@ async function main(): Promise<void> {
   const configWarnings: string[] = [];
   const brandWarnings: string[] = [];
   let theme = getTheme(o.theme);
+  if (o.tone === 'paper') theme = paperize(theme);
   if (o.styleFill) {
     if (theme.name === 'excalidraw') {
       theme.style = { ...(theme.style ?? {}), fillStyle: o.styleFill };
@@ -779,6 +781,7 @@ async function main(): Promise<void> {
   if (o.json) {
     console.log(JSON.stringify({
       theme: o.theme, engine: 'pele', format: o.format, background,
+      ...(o.tone ? { tone: o.tone } : {}),
       ...(o.preset ? { preset: o.preset } : {}),
       ...(o.brand ? { brand: tokens.accent } : {}),
       ...(chromeOn ? {

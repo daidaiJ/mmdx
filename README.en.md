@@ -83,7 +83,7 @@ Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` /
 
 ```card
 🚀 | Render pipeline | single-browser page pool, lossless 2x PNG export
-🎨 | Theme system | three presets, customizable via theme-js, tone and css
+🎨 | Theme system | seven presets, customizable via theme-js, tone and css
 ```
 
 ![Card rendering sample](docs/ext-card.png)
@@ -95,10 +95,16 @@ Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` /
 | `tech` (default) | Design-doc style: white background, shape coding, thin borders, orthogonal edges |
 | `openai` | Near-monochrome engineering look: white ground, ink text, mint (teal) accent, hairline borders; pair with `--tone paper` for serif captions and 16px block cards |
 | `excalidraw` | Hand-drawn: pastel fills + rough ink strokes, Excalifont/LXGW; whiteboard-style blocks |
+| `ios` | iOS system interface: **flat** grouped grey page, white cards, hairline separators, system colours (blue `#007AFF` / green / orange / purple), 12px radii; cards follow the iOS grouped-list recipe, with no backdrop and no shadows |
+| `acnh` | Animal Crossing: cream paper, thick brown outlines, hard offset sticker shadows, rounded type and pill labels; block pages carry a dotted paper grid |
+| `glass` | Fluent acrylic glass: pale blue-grey canvas, 28px ruling, a white translucent sheet with fine grain over it, panels at `rgba(255,255,255,.72)` with 8px radii and a light rim; Fluent blue `#0F6CBD` accent |
+| `epaper` | E-ink: `#F5F1EB` stock with a paper grain, `#1A1A1A` hairline strokes, square corners, no shadow, no accent colour; shape families differ by grey level and shape. Block pages share the stock, with ink-bordered cards and monospace uppercase headers |
 
 `excalidraw` uses solid fills by default; add `--style-fill hachure` for hatched fills (about 1.5–2× larger SVG; keep solid for projectors).
 
-`--tone paper|neutral|product` changes block structure only (radius, shadow, display type, table headers); the palette still comes from the theme. Info cards are a standalone skill, [`info-card-designer`](skill/info-card-designer/SKILL.md), applying the same theme and tone to Markdown or a web article:
+`acnh`, `glass` and `epaper` paint their own backdrop: the SVG gets an `mmdx-backdrop` layer (cream paper with a dotted grid for `acnh`, tint plus ruling plus a translucent white sheet and grain for `glass`, paper stock with a turbulence grain for `epaper`), and the PNG is captured full-bleed, so the SVG and the PNG look the same. `ios` is flat: no backdrop and no shadows. With `--background transparent` no backdrop is drawn and translucent panels show the host page through them.
+
+`--tone paper|neutral|product` changes block structure (radius, shadow, display type, table headers); `paper` also repaints the diagram onto editorial stock (`#FAFAF8` sheet with a 24px fine / 96px bold grid, burnt-tangerine `#BF4520` accent) and gives block pages the same ruled sheet. `neutral` and `product` leave the diagram palette alone. Info cards are a standalone skill, [`info-card-designer`](skill/info-card-designer/SKILL.md), applying the same theme and tone to Markdown or a web article:
 
 ```bash
 mmdx card --in note.md -t openai --tone neutral --width 600 -o note-card.png
@@ -106,6 +112,8 @@ mmdx card --url https://example.com/post -t openai --tone paper
 ```
 
 Layering order: preset → `--brand` → `--theme-js` → `--config` → `--css`. v2 `--theme-js` receives a `ThemeSpec` (`theme.vars` / `theme.shapes` / `theme.css`); examples in the [HUMAN_GUIDE theming section](docs/HUMAN_GUIDE.en.md#theming).
+
+Theme palettes also carry accessibility bars (body text ≥7:1, secondary text ≥4.5:1, every shape outline ≥3:1 against the page and against its own fill, shape families still distinguishable under simulated red-green colour blindness, and four families drawn as four different shapes). After editing a palette run `node --experimental-transform-types --no-warnings scripts/lint-a11y.ts`.
 
 ## 🖋 Hand-drawn HTML & explain
 
@@ -120,7 +128,7 @@ Starters already inline the kit design system and that register's Latin fonts, s
 
 ## 🎭 Style gallery
 
-The same “gray release retrospective” case in `tech`, `openai`, and `excalidraw`; the Markdown stays identical and only `-t` changes. The overview keeps one flowchart for a quick comparison:
+The same “gray release retrospective” case in every built-in theme; the Markdown stays identical and only `-t` changes. The overview keeps one flowchart for a quick comparison:
 
 [![The same case as a flowchart in three styles](docs/gallery/overview.png)](docs/GALLERY.en.md)
 

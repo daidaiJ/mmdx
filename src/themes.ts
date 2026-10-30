@@ -50,6 +50,40 @@ export interface ThemeStyle {
   shapeCoverage?: boolean;
 }
 
+/**
+ * Backdrop painted into the SVG behind the diagram, for styles whose panels are
+ * translucent or whose paper carries a texture. Chromium parses
+ * `backdrop-filter` on SVG shapes but does not render it, so the frosted look
+ * comes from a backdrop with no sharp detail: soft radial blobs, blurred once
+ * as a group. Coordinates are normalized to the diagram box, so a blob lands in
+ * the same corner at any size. `dots` draws a dot grid instead (paper texture),
+ * `grid` rules the sheet, and `pane` adds the acrylic sheet on top.
+ */
+export interface ThemeBackdrop {
+  /** base fill under the blobs; also the PNG page background */
+  base: string;
+  /** gaussian blur radius applied to the blob group, in CSS px */
+  blur?: number;
+  blobs?: Array<{ cx: number; cy: number; r: number; color: string; opacity: number }>;
+  /** dot grid, drawn in place of blobs */
+  dots?: { color: string; size: number; gap: number };
+  /** graph ruling; `major` adds the heavier every-N line */
+  grid?: {
+    color: string;
+    gap: number;
+    width?: number;
+    major?: { color: string; gap: number; width?: number };
+  };
+  /**
+   * Where the edge fade starts, as a percentage of the backdrop's half-extent
+   * (default 92). A texture wants a high value so the sheet stays even; blobs
+   * want a low one so the tint does not reach the frame.
+   */
+  fade?: number;
+  /** sheet between the tint and the diagram; `noise` is its grain (0–1) */
+  pane?: { color: string; opacity?: number; noise?: number };
+}
+
 /** v2 theme contract: CSS-variable paint for Pele. */
 export interface ThemeSpec {
   name: string;
@@ -67,6 +101,8 @@ export interface ThemeSpec {
   css: string;
   /** rough.js / stroke / shape-coverage knobs */
   style?: ThemeStyle;
+  /** backdrop painted behind the diagram (translucent-panel styles) */
+  backdrop?: ThemeBackdrop;
   /** extra CSS for block pages (card/kpi/table/...), appended after PAGE_CSS */
   blockCss?: string;
   /** font families the renderer should inject for this theme */
@@ -496,7 +532,7 @@ const excalidraw: ThemePreset = {
 const EXCALIDRAW_BLOCK_CSS = `
 .wrap { padding: 24px 36px 32px 28px; background: #FFFFFF; color: #1E1E1E; font-family: "Excalifont", "LXGW WenKai", "Segoe Print", "Comic Sans MS", "KaiTi", "STKaiti", "Noto Sans SC", cursive, sans-serif; }
 .caption-title { font-size: 22px; font-weight: 600; }
-.caption-sub, .caption-foot { color: #868E96; }
+.caption-sub, .caption-foot { color: #6C757D; }
 .cards { grid-template-columns: repeat(2, 280px); gap: 18px; }
 .card { background: #FFFFFF; border: 1.5px solid #1E1E1E; border-radius: 12px; box-shadow: 4px 4px 0 #E9ECEF; padding: 18px 20px; }
 .card::before { display: none; }
@@ -516,10 +552,224 @@ tbody tr:nth-child(even) td { background: #F8F9FA; }
 .fn-track, .fn-bar { border-radius: 9999px; }
 `;
 
+// ---------------------------------------------------------------------------
+// ios — grouped-list chrome. The shared block CSS draws an accent bar down
+// every card and tints bullets; iOS marks content with white inset cards and
+// hairline separators, and spends the tint on values and controls only.
+// ---------------------------------------------------------------------------
+const IOS_BLOCK_CSS = `
+:root { color-scheme: light; }
+body { background: #F2F2F7; }
+.wrap { font-size: 15px; color: #1C1C1E; background: transparent; }
+.caption-title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+.caption-sub, .caption-foot { color: #6E6E73; }
+.cards { grid-template-columns: repeat(2, 300px); gap: 14px; }
+.card {
+  background: #FFFFFF; border: 1px solid #D1D1D6; border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04); padding: 14px 16px;
+}
+.card::before { display: none; }
+.card-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.card-desc { font-size: 13px; color: #6E6E73; }
+.kpi { background: #FFFFFF; border: 1px solid #D1D1D6; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); min-width: 400px; }
+.kpi-row { border-bottom: 1px solid rgba(60,60,67,0.18); padding: 12px 16px; }
+.kpi-name { font-size: 13px; color: #6E6E73; }
+.kpi-value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
+.kpi-value.is-focus { color: #007AFF; }
+.kpi-up { color: #FF3B30; }
+.kpi-down { color: #34C759; }
+.task, .cmp, .vs, .hm { background: #FFFFFF; border: 1px solid #D1D1D6; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.task-row { border-bottom: 1px solid rgba(60,60,67,0.18); padding: 12px 16px; }
+.task-chip, .task-badge { border-radius: 9999px; background: #F2F2F7; }
+.fn-track { background: #E5E5EA; border-radius: 9999px; }
+.fn-bar { background: #007AFF; border-radius: 9999px; }
+table { background: #FFFFFF; border: 1px solid #D1D1D6; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+thead th { background: #FFFFFF; color: #6E6E73; font-size: 13px; font-weight: 500; }
+th, td { border-bottom: 1px solid rgba(60,60,67,0.18); }
+th + th, td + td { border-left: none; }
+tbody tr:nth-child(even) td { background: #FFFFFF; }
+li::before { color: #007AFF; }
+`;
+
+// ---------------------------------------------------------------------------
+// glass — Fluent 2 acrylic: a flat tinted canvas, a faint grid, and one
+// translucent sheet over both, so the ruling shows through the panels the way
+// it does through frosted glass. Tint opacity, blur and grain follow the
+// acrylic recipe (hue layer at 80%, soft focus, noise).
+// ---------------------------------------------------------------------------
+const GLASS_BLOCK_CSS = `
+:root { color-scheme: light; }
+body {
+  background-color: #E9EEF6;
+  background-image:
+    linear-gradient(rgba(15,35,66,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15,35,66,0.07) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.wrap { font-size: 15px; color: #1B1B1F; background: transparent; }
+.caption-title { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+.caption-sub, .caption-foot { color: #4C4F57; }
+.card, .kpi, table, .task, .cmp, .vs, .hm {
+  background: rgba(255,255,255,0.72);
+  border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.card { padding: 16px 18px; }
+.card::before { display: none; }
+.card-title { font-size: 15px; font-weight: 600; }
+.card-desc { font-size: 13px; color: #4C4F57; }
+.kpi-row { border-bottom: 1px solid rgba(15,23,42,0.08); }
+.kpi-value { font-weight: 600; }
+.kpi-value.is-focus { color: #0F6CBD; }
+.kpi-up { color: #C42B1C; }
+.kpi-down { color: #0E7A6B; }
+.task-row { border-bottom: 1px solid rgba(15,23,42,0.08); }
+.task-chip, .task-badge { border-radius: 9999px; background: rgba(255,255,255,0.55); }
+.fn-track { background: rgba(255,255,255,0.55); border-radius: 9999px; }
+.fn-bar { background: #0F6CBD; border-radius: 9999px; }
+table { overflow: hidden; }
+thead th { background: rgba(255,255,255,0.5); color: #4C4F57; font-weight: 500; }
+th, td { border-bottom: 1px solid rgba(15,23,42,0.08); }
+th + th, td + td { border-left: none; }
+tbody tr:nth-child(even) td { background: rgba(255,255,255,0.35); }
+li::before { color: #0F6CBD; }
+`;
+
+// ---------------------------------------------------------------------------
+// epaper — e-ink: black hairlines, square corners, no shadow, no accent colour.
+// Shape families are told apart by grey level instead of hue, which is what a
+// monochrome panel (or a black-and-white print) can actually show.
+// ---------------------------------------------------------------------------
+const EPAPER_BLOCK_CSS = `
+:root { color-scheme: light; }
+body {
+  background-color: #F5F1EB;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-blend-mode: multiply;
+}
+.wrap {
+  color: #1A1A1A; background: transparent;
+  font-family: "Newsreader", "Noto Serif SC", Georgia, "Songti SC", SimSun, serif;
+}
+.caption-title { font-size: 20px; font-weight: 500; letter-spacing: -0.01em; }
+.caption-sub { color: #444444; }
+.caption-foot { color: #666666; font-family: "Cascadia Code", Consolas, ui-monospace, monospace; letter-spacing: 0.06em; }
+.cards { grid-template-columns: repeat(2, 300px); gap: 18px; }
+.card { background: transparent; border: 1px solid #1A1A1A; border-radius: 0; box-shadow: none; padding: 20px 22px; }
+.card::before { display: none; }
+.card-title { font-size: 17px; font-weight: 500; }
+.card-desc { font-size: 14px; color: #444444; }
+.kpi { background: transparent; border: 1px solid #1A1A1A; border-radius: 0; }
+.kpi-row { border-bottom: 1px solid #DDDDDD; padding: 14px 20px; }
+.kpi-row:last-child { border-bottom: none; }
+.kpi-name { color: #666666; }
+.kpi-value { font-weight: 500; }
+.task, .cmp, .vs, .hm { background: transparent; border: 1px solid #1A1A1A; border-radius: 0; }
+.task-row { border-bottom: 1px solid #DDDDDD; padding: 14px 20px; }
+.task-chip, .task-badge { border-radius: 0; background: transparent; border: 1px solid #1A1A1A; }
+.fn-track { background: #EDE9E2; border-radius: 0; }
+.fn-bar { background: #1A1A1A; border-radius: 0; }
+table { background: transparent; border: 1px solid #1A1A1A; border-radius: 0; }
+thead th {
+  background: transparent; color: #1A1A1A; font-size: 11px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
+  border-bottom: 1px solid #1A1A1A;
+}
+th, td { border-bottom: 1px solid #DDDDDD; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:nth-child(even) td { background: transparent; }
+th + th, td + td { border-left: none; }
+li::before { color: #1A1A1A; }
+`;
+
+// ---------------------------------------------------------------------------
+// acnh — cream paper, thick brown outlines, sticker shadows, rounded type.
+// Block pages get the same paper through ACNH_BLOCK_CSS.
+// ---------------------------------------------------------------------------
+const ACNH_BLOCK_CSS = `
+:root { color-scheme: light; }
+body {
+  background-color: #FFF8E7;
+  background-image: radial-gradient(#F0DFC2 1.1px, transparent 1.1px);
+  background-size: 18px 18px;
+}
+.wrap { font-size: 15px; color: #5B4636; background: transparent; }
+.caption-title { font-size: 20px; font-weight: 700; color: #5B4636; }
+.caption-title::before { content: "\\1F343  "; }
+.caption-sub, .caption-foot { color: #7A6350; }
+.cards { gap: 18px; }
+.card {
+  background: #FFFDF5; border: 3px solid #7A5C3E; border-radius: 22px;
+  box-shadow: 0 6px 0 #E2CFA9; padding: 18px 20px;
+}
+.card::before { display: none; }
+.card-icon { font-size: 22px; }
+.card-title { font-size: 16px; font-weight: 700; color: #5B4636; }
+.card-desc { font-size: 14px; color: #7A6350; }
+.kpi { border: 3px solid #7A5C3E; border-radius: 22px; background: #FFFDF5; box-shadow: 0 6px 0 #E2CFA9; min-width: 380px; }
+.kpi-row { border-bottom: 2px dashed #E2CFA9; padding: 14px 20px; }
+.kpi-name { color: #7A6350; font-size: 14px; }
+.kpi-value { color: #3E8C4A; font-size: 28px; }
+.kpi-delta { font-size: 14px; }
+.task, .cmp, .vs, .hm { border: 3px solid #7A5C3E; border-radius: 22px; background: #FFFDF5; box-shadow: 0 6px 0 #E2CFA9; }
+.task-row { border-bottom: 2px dashed #E2CFA9; padding: 14px 18px; }
+.task-name { font-size: 15px; }
+.task-seg { width: 18px; height: 8px; border-radius: 99px; }
+.task-seg.on { background: #4FA85B; }
+.task-badge { border-radius: 99px; padding: 3px 12px; font-size: 12px; }
+.st-dev { color: #8A5A1F; background: #FFE8A3; }
+.st-idle { color: #6B5B4A; background: #F1E4CC; }
+.st-done { color: #2F7A43; background: #DDF2D4; }
+.st-block { color: #A33B2A; background: #FFE0D6; }
+.task-chip { border-radius: 99px; background: #FDF1D6; color: #7A6350; }
+table { border: 3px solid #7A5C3E; border-radius: 22px; background: #FFFDF5; box-shadow: 0 6px 0 #E2CFA9; }
+thead th { background: #FDF1D6; color: #5B4636; }
+th, td { border-bottom: 2px dashed #E2CFA9; }
+tbody tr:nth-child(even) td { background: #FFFBEF; }
+`;
+
+const acnh: ThemePreset = {
+  config: baseConfig('#FFF8E7'),
+  background: '#FFF8E7',
+};
+
+// ---------------------------------------------------------------------------
+// ios — grouped light-grey background, white translucent surfaces, hairlines,
+// system colours. The palette and the shadow are iOS system values.
+// ---------------------------------------------------------------------------
+const ios: ThemePreset = {
+  config: baseConfig('#F2F2F7'),
+  background: '#F2F2F7',
+};
+
+// ---------------------------------------------------------------------------
+// glass — Fluent 2 acrylic surfaces over a tinted, ruled canvas.
+// ---------------------------------------------------------------------------
+const glass: ThemePreset = {
+  config: baseConfig('#E9EEF6'),
+  background: '#E9EEF6',
+};
+
+// ---------------------------------------------------------------------------
+// epaper — monochrome e-ink: black hairlines on off-white, no colour, no depth.
+// ---------------------------------------------------------------------------
+const epaper: ThemePreset = {
+  config: baseConfig('#F5F1EB'),
+  background: '#F5F1EB',
+};
+
 export const PRESETS: Record<string, ThemePreset> = {
   tech,
   openai,
   excalidraw,
+  ios,
+  acnh,
+  glass,
+  epaper,
 };
 
 export const DEFAULT_THEME = 'tech';
@@ -617,6 +867,7 @@ interface PeleSeed {
   font?: string;
   series: string[];
   style?: ThemeStyle;
+  backdrop?: ThemeBackdrop;
   blockCss?: string;
   fonts?: string[];
   shapes: {
@@ -652,6 +903,7 @@ function mkTheme(s: PeleSeed): ThemeSpec {
     },
     css: s.css ?? '',
     ...(s.style ? { style: s.style } : {}),
+    ...(s.backdrop ? { backdrop: s.backdrop } : {}),
     ...(s.blockCss ? { blockCss: s.blockCss } : {}),
     ...(s.fonts ? { fonts: s.fonts } : {}),
   };
@@ -679,13 +931,13 @@ const PELE_THEMES: Record<string, ThemeSpec> = {
     shapes: {
       process: ['#FFFFFF', '#1F1F1F'],
       decision: ['#F7F7F8', '#1F1F1F'],
-      state: ['#E9F5F1', '#10A37F'],
-      store: ['#F7F7F8', '#8E8EA0'],
+      state: ['#F2FAF7', '#10A37F'],
+      store: ['#FFFFFF', '#8E8EA0'],
       cluster: ['#FAFAFA', '#E3E3E8'],
     },
   }),
   excalidraw: mkTheme({
-    name: 'excalidraw', dark: false, bg: '#FFFFFF', fg: '#1E1E1E', muted: '#868E96',
+    name: 'excalidraw', dark: false, bg: '#FFFFFF', fg: '#1E1E1E', muted: '#6C757D',
     line: '#1E1E1E', surface: '#A5D8FF', surfaceAlt: '#F8F9FA', border: '#ADB5BD',
     accent: '#1971C2', critical: '#E03131', radius: '12px',
     font: `"Excalifont", "LXGW WenKai", "Segoe Print", "Comic Sans MS", "KaiTi", "STKaiti", "Noto Sans SC", cursive, sans-serif`,
@@ -704,6 +956,104 @@ const PELE_THEMES: Record<string, ThemeSpec> = {
       cluster: ['#F8F9FA', '#ADB5BD'],
     },
   }),
+  ios: mkTheme({
+    name: 'ios', dark: false, bg: '#F2F2F7', fg: '#1C1C1E', muted: '#6E6E73',
+    line: '#8E8E93', surface: '#FFFFFF', surfaceAlt: '#FFFFFF',
+    border: '#D1D1D6', accent: '#007AFF', critical: '#D70015', radius: '10px',
+    font: `-apple-system, "SF Pro Text", "SF Pro Display", "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif`,
+    series: ['#007AFF', '#248A3D', '#C93400', '#D70015', '#8944AB', '#0071A4', '#B25000', '#6C6C70'],
+    style: { strokeWidth: 1.25, shapeCoverage: true },
+    // Flat grouped page: no wallpaper tint and no filter depth, so the sheet
+    // reads as a system surface rather than as a rendered object.
+    css: '.pele-edge path{stroke-opacity:0.9}',
+    blockCss: IOS_BLOCK_CSS,
+    shapes: {
+      process: ['#FFFFFF', '#007AFF'],
+      decision: ['#FFF4E0', '#C93400'],
+      state: ['#E8F8EC', '#248A3D'],
+      store: ['#F2ECFC', '#8944AB'],
+      cluster: ['#FFFFFF', '#D1D1D6'],
+    },
+  }),
+  glass: mkTheme({
+    name: 'glass', dark: false, bg: '#E9EEF6', fg: '#1B1B1F', muted: '#4C4F57',
+    line: '#6E7480', surface: 'rgba(255,255,255,0.72)', surfaceAlt: 'rgba(255,255,255,0.45)',
+    border: 'rgba(255,255,255,0.85)', accent: '#0F6CBD', critical: '#C42B1C', radius: '8px',
+    font: `"Segoe UI Variable Text", "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif`,
+    series: ['#0F6CBD', '#0E7A6B', '#8A6116', '#C42B1C', '#6B4FA8', '#2B7A9B', '#B0428A', '#5C6672'],
+    style: { strokeWidth: 1.4, shapeCoverage: true },
+    // Acrylic: a flat hue layer, one sheet of white over it, grain on top. The
+    // tint stays inside a 12/255 step of the base, so the backdrop reads as
+    // material instead of as a colour field the margin gate would follow.
+    backdrop: {
+      base: '#E9EEF6',
+      blur: 70,
+      blobs: [
+        { cx: 0.22, cy: 0.2, r: 0.55, color: '#DCE6F5', opacity: 0.9 },
+        { cx: 0.78, cy: 0.8, r: 0.55, color: '#DCE6F5', opacity: 0.9 },
+        { cx: 0.78, cy: 0.2, r: 0.5, color: '#E7E3F4', opacity: 0.85 },
+        { cx: 0.22, cy: 0.8, r: 0.5, color: '#E7E3F4', opacity: 0.85 },
+      ],
+      grid: { color: 'rgba(15,35,66,0.10)', gap: 28, width: 1 },
+      pane: { color: '#FFFFFF', opacity: 0.3, noise: 0.04 },
+    },
+    css: [
+      '.pele-node rect,.pele-node circle,.pele-node ellipse,.pele-node polygon,.pele-node path{filter:drop-shadow(0 1px 2px rgba(15,23,42,0.10))}',
+      '.pele-cluster rect{fill:rgba(255,255,255,0.38);filter:drop-shadow(0 1px 1.5px rgba(15,23,42,0.06))}',
+    ].join('\n'),
+    blockCss: GLASS_BLOCK_CSS,
+    shapes: {
+      process: ['rgba(255,255,255,0.72)', '#0F6CBD'],
+      decision: ['rgba(255,255,255,0.72)', '#B07514'],
+      state: ['rgba(255,255,255,0.72)', '#0E7A6B'],
+      store: ['rgba(255,255,255,0.72)', '#6B4FA8'],
+      cluster: ['rgba(255,255,255,0.38)', '#B8C0CC'],
+    },
+  }),
+  epaper: mkTheme({
+    name: 'epaper', dark: false, bg: '#F5F1EB', fg: '#1A1A1A', muted: '#666666',
+    line: '#1A1A1A', surface: '#F5F1EB', surfaceAlt: '#EDE9E2', border: '#1A1A1A',
+    accent: '#1A1A1A', critical: '#1A1A1A', radius: '0px',
+    series: ['#1A1A1A', '#4A4A4A', '#6E6E6E', '#8C8C8C', '#2E2E2E', '#5C5C5C', '#3A3A3A', '#7A7A7A'],
+    style: { strokeWidth: 1.1, shapeCoverage: true },
+    // Paper grain, not a tint: the sheet is the page colour and only the
+    // turbulence shows, which is what makes it read as stock instead of a fill.
+    backdrop: { base: '#F5F1EB', pane: { color: '#F5F1EB', noise: 0.05 } },
+    blockCss: EPAPER_BLOCK_CSS,
+    shapes: {
+      process: ['#FFFFFF', '#1A1A1A'],
+      decision: ['#EDE9E2', '#1A1A1A'],
+      state: ['#E4E0D8', '#1A1A1A'],
+      store: ['#F5F1EB', '#1A1A1A'],
+      cluster: ['#F5F1EB', '#1A1A1A'],
+    },
+  }),
+  acnh: mkTheme({
+    name: 'acnh', dark: false, bg: '#FFF8E7', fg: '#5B4636', muted: '#7A6350',
+    line: '#7A5C3E', surface: '#FFFDF5', surfaceAlt: '#FDF1D6', border: '#D9C3A5',
+    accent: '#3E8C4A', critical: '#A33B2A', radius: '16px',
+    font: `"ZCOOL KuaiLe", "Baloo 2", "YouYuan", "幼圆", "Segoe Print", "LXGW WenKai", "Noto Sans SC", sans-serif`,
+    fonts: ['ZCOOL KuaiLe', 'Baloo 2'],
+    series: ['#3E8C4A', '#E8A33D', '#7A5C3E', '#A33B2A', '#5C8AC9', '#7A6350', '#D98BA0', '#6BAA75'],
+    style: { strokeWidth: 2.6, shapeCoverage: true },
+    // Cream paper with the dotted grid the block pages draw in CSS.
+    backdrop: { base: '#FFF8E7', dots: { color: '#F0DFC2', size: 1.1, gap: 18 } },
+    css: [
+      // Hard offset sticker shadow: 0 blur keeps it a solid silhouette.
+      '.pele-node rect,.pele-node circle,.pele-node ellipse,.pele-node polygon,.pele-node path{filter:drop-shadow(0 5px 0 #E2CFA9)}',
+      '.pele-cluster rect{filter:drop-shadow(0 4px 0 #EFE2C6)}',
+      '.pele-node text,.pele-edge-label text{font-weight:700}',
+      '.pele-node .pele-label{stroke:none}',
+    ].join('\n'),
+    blockCss: ACNH_BLOCK_CSS,
+    shapes: {
+      process: ['#FFFDF5', '#7A5C3E'],
+      decision: ['#FFE8A3', '#7A5C3E'],
+      state: ['#DDF2D4', '#3E8C4A'],
+      store: ['#F1E4CC', '#7A5C3E'],
+      cluster: ['#FDF1D6', '#D9C3A5'],
+    },
+  }),
 };
 
 for (const [name, preset] of Object.entries(PRESETS)) {
@@ -719,6 +1069,63 @@ export function getTheme(name: string): ThemeSpec {
 
 export function applyBrandToTheme(theme: ThemeSpec, accent: string): void {
   theme.vars.accent = accent;
+}
+
+/**
+ * Editorial paper stock: cool off-white sheet, near-black ink, burnt-tangerine
+ * accent, ruled with a graph grid. The palette follows the editorial
+ * (diagram-design) skin — white-smoke paper, jet-black ink, blue-slate muted —
+ * so a `--tone paper` diagram matches a document page instead of a manila
+ * envelope.
+ */
+const PAPER = {
+  bg: '#FAFAF8',
+  fg: '#1F2024',
+  muted: '#5D6167',
+  line: '#8B8F96',
+  surface: '#FFFFFF',
+  surfaceAlt: '#F1F1EE',
+  border: '#E1E1DC',
+  accent: '#BF4520',
+  critical: '#A01D48',
+  grid: { color: 'rgba(31,32,36,0.09)', gap: 24, width: 1 },
+  gridMajor: { color: 'rgba(31,32,36,0.16)', gap: 96, width: 1 },
+  series: ['#4F5D75', '#3F6B5A', '#8A6A3B', '#8C4A3A', '#5B4F7A', '#3C6E8F', '#7A6A80', '#6B6B5A'],
+  shapes: {
+    process: ['#E7ECF3', '#3D5878'],
+    decision: ['#F4E8D8', '#96601F'],
+    state: ['#E3EDE7', '#3B6B4A'],
+    store: ['#EAE7F1', '#7A5AA8'],
+    cluster: ['#F1F1EE', '#E1E1DC'],
+  } satisfies Record<string, [string, string]>,
+};
+
+/**
+ * `--tone paper` repaints the SVG palette onto ruled paper. The tone already
+ * means paper for block pages, so it means the same thing for a diagram: the
+ * sheet gets the same graph ruling the block pages draw in CSS. Font, radius
+ * and the rough.js knobs stay, which makes
+ * `--theme excalidraw --tone paper` a sketch on paper.
+ */
+export function paperize(theme: ThemeSpec): ThemeSpec {
+  const out = clone(theme);
+  out.dark = false;
+  out.background = PAPER.bg;
+  out.vars = {
+    ...out.vars,
+    bg: PAPER.bg, fg: PAPER.fg, muted: PAPER.muted, line: PAPER.line,
+    surface: PAPER.surface, surfaceAlt: PAPER.surfaceAlt, border: PAPER.border,
+    accent: PAPER.accent, critical: PAPER.critical, series: PAPER.series,
+  };
+  out.shapes = {
+    process: paint(PAPER.shapes.process),
+    decision: paint(PAPER.shapes.decision),
+    state: paint(PAPER.shapes.state),
+    store: paint(PAPER.shapes.store),
+    cluster: paint(PAPER.shapes.cluster),
+  };
+  out.backdrop = { base: PAPER.bg, grid: { ...PAPER.grid, major: PAPER.gridMajor }, fade: 97 };
+  return out;
 }
 
 /** CSS that carries the theme into Pele's SVG (injected as <style> inside it). */

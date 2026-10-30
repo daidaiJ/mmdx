@@ -158,7 +158,7 @@ Rule of thumb: **exit 2 = wrong flags; exit 1 = wrong diagram or over limit; loo
 ## Theme notes
 
 `-t`: `tech` (default, shape-coded tinted fills — docs and projection) · `openai` (clean engineering docs: white, ink, mint accent, hairline borders) · `excalidraw` (hand-drawn strokes + pastel fills).
-`excalidraw` uses solid fills by default; `--style-fill hachure` switches to hatched fills. Block pages and info cards use `--tone paper|neutral|product` for structure; the palette stays with the theme. Layering: theme → `--brand` → `--theme-js` → `--config` → `--css`. `--brand` does not recolor flowchart decision diamonds.
+`ios` is the iOS system interface (grouped grey page, white cards, hairline separators, system colours), `acnh` is Animal Crossing (cream paper, thick brown outlines, hard offset shadows, rounded type), `glass` is Fluent acrylic (pale canvas, ruling, a translucent white sheet with grain) and `epaper` is e-ink (paper stock, hairline black strokes, square corners, no shadow, grey-level shape coding). `acnh`, `glass` and `epaper` paint their own backdrop (`mmdx-backdrop`) so PNG and SVG look alike; `ios` is flat, with no backdrop and no shadows. `excalidraw` uses solid fills by default; `--style-fill hachure` switches to hatched fills. Block pages and info cards use `--tone paper|neutral|product` for structure; `paper` also repaints the diagram onto a ruled off-white sheet (`#FAFAF8`, 24px fine / 96px bold grid, burnt-tangerine accent) and the palette otherwise stays with the theme. Layering: theme → `--brand` → `--theme-js` → `--config` → `--css`. `--brand` does not recolor flowchart decision diamonds.
 
 | Scenario | First choice | Alternative | tone |
 | --- | --- | --- | --- |
@@ -172,6 +172,10 @@ Rule of thumb: **exit 2 = wrong flags; exit 1 = wrong diagram or over limit; loo
 | Product review | `openai` | `tech` | `product` |
 | Whiteboard / brainstorm | `excalidraw` | `openai` | `neutral` |
 | Casual sharing | `excalidraw` | `tech` | `paper` |
+| Product UI / iOS docs | `ios` | `tech` | `neutral` |
+| Sticker weekly updates / team boards | `acnh` | `excalidraw` | `neutral` |
+| Glass cover / modern product review | `glass` | `tech` | `neutral` |
+| Black-and-white print / e-reader / compliance | `epaper` | `openai` | `neutral` |
 
 Info cards: external/print → `openai` + `paper`; engineering docs → `tech` + `neutral`; release/product → `openai` + `product`. See `skill/info-card-designer/SKILL.md`.
 

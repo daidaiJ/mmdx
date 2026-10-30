@@ -33,8 +33,8 @@ export const TONES: Record<ToneName, ToneSpec> = {
   paper: {
     name: 'paper',
     label: '纸质报告',
-    radius: '16px',
-    radiusSm: '10px',
+    radius: '10px',
+    radiusSm: '6px',
     shadow: '0 1px 0 rgba(33,27,18,0.05)',
     headingFont: '"Source Serif 4", "Noto Serif SC", Georgia, "Songti SC", SimSun, serif',
     headingWeight: 400,
@@ -97,8 +97,24 @@ export function isToneName(v: string): v is ToneName {
  */
 export function toneCss(name: ToneName): string {
   const t = TONES[name];
+  // Paper draws the same ruled sheet the `--tone paper` diagram gets, so a
+  // figure and the page it sits on share one stock.
+  const sheet = t.name === 'paper'
+    ? `
+body {
+  background-color: var(--paper, #FAFAF8);
+  background-image:
+    linear-gradient(rgba(31,32,36,0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31,32,36,0.09) 1px, transparent 1px),
+    linear-gradient(rgba(31,32,36,0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31,32,36,0.16) 1px, transparent 1px);
+  background-size: 24px 24px, 24px 24px, 96px 96px, 96px 96px;
+}
+.wrap { background: transparent; }
+`
+    : '';
   return `
-.wrap {
+${sheet}.wrap {
   --tone-radius:${t.radius}; --tone-radius-sm:${t.radiusSm}; --tone-shadow:${t.shadow};
   --tone-heading-font:${t.headingFont}; --tone-heading-weight:${t.headingWeight};
   --tone-heading-size:${t.headingSize}; --tone-heading-tracking:${t.headingTracking};
@@ -108,6 +124,7 @@ export function toneCss(name: ToneName): string {
 .cards { gap:${t.gap}; }
 .card, .kpi, table, .task, .cmp, .vs, .hm { border-radius:${t.radius}; box-shadow:${t.shadow}; }
 .card { padding:${t.cardPad}; }
+.card::before { display:${t.name === 'paper' ? 'none' : 'block'}; }
 .card-title { font-family:${t.headingFont}; }
 .kpi-value { font-weight:${t.headingWeight}; }
 .task-row { padding-top:${t.name === 'paper' ? '16px' : '12px'}; padding-bottom:${t.name === 'paper' ? '16px' : '12px'}; }

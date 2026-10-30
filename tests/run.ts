@@ -19,6 +19,7 @@ import { cardPage, extractCardHtml, parseCardMarkdown } from '../src/card.ts';
 import { chartToMermaid, parseChart } from '../src/chart.ts';
 import { loadAssets } from '../src/embed.ts';
 import { scanColumnHints, scanLimits } from '../src/limits.ts';
+import { CVD_KINDS, perceptualDelta, simulateCvd } from '../src/color.ts';
 import { bottomBlankLimit, diffPng } from '../src/lint.ts';
 import { Renderer } from '../src/render.ts';
 import { applyColumnDensity, applySlideDensity, DEFAULT_THEME, getTheme, peleCss, PRESETS, type ThemeSpec } from '../src/themes.ts';
@@ -453,7 +454,10 @@ for (const styleName of Object.keys(PRESETS)) {
   for (const [kind, file] of [['card', 'card.md'], ['kpi', 'kpi.md'], ['table', 'table.md']] as Array<[BlockKind, string]>) {
     try {
       const inner = htmlKindToInner(kind, fenceSrc(file, kind));
-      const png = await renderer.renderHtml(blockPage(inner, { blockCss: spec.blockCss }), '#FFFFFF');
+      // The theme's own page background, not white: several styles paint the
+      // page (grouped grey, acrylic, cream) and only show their real contrast
+      // against it.
+      const png = await renderer.renderHtml(blockPage(inner, { blockCss: spec.blockCss }), spec.background);
       const out = path.join(KEEP, `style-${styleName}-${kind}.png`);
       fs.writeFileSync(out, png);
       const a = analyze(out);
@@ -619,28 +623,103 @@ for (const name of Object.keys(PRESETS)) {
 }
 
 {
+  // WCAG tiers: body text 4.5:1 (7:1 is AAA), secondary text 4.5:1, and any
+  // colour that carries a mark 3:1.
   const lows: string[] = [];
   let minMuted = 100;
   let minMutedName = '';
+  let minFg = 100;
+  let minFgName = '';
   for (const name of Object.keys(PRESETS)) {
     const t = getTheme(name);
     const fg = contrastRatio(t.vars.fg, t.vars.bg);
-    if (fg < 4.5) lows.push(`${name} fg ${fg.toFixed(2)}`);
-    for (const [key, value] of [
-      ['muted', t.vars.muted],
-      ['accent', t.vars.accent],
-      ['critical', t.vars.critical],
+    if (fg < minFg) { minFg = fg; minFgName = name; }
+    if (fg < 7) lows.push(`${name} fg ${fg.toFixed(2)} < 7 (AAA)`);
+    for (const [key, value, min] of [
+      ['muted', t.vars.muted, 4.5],
+      ['accent', t.vars.accent, 3.0],
+      ['critical', t.vars.critical, 3.0],
     ] as const) {
       const c = contrastRatio(value, t.vars.bg);
       if (key === 'muted' && c < minMuted) {
         minMuted = c;
         minMutedName = name;
       }
-      if (c < 3.0) lows.push(`${name} ${key} ${c.toFixed(2)}`);
+      if (c < min) lows.push(`${name} ${key} ${c.toFixed(2)} < ${min}`);
     }
   }
   record('lint/theme-contrast', lows.length === 0,
-    lows.join('; ') || `fg>=4.5; min muted ${minMuted.toFixed(2)} (${minMutedName})`);
+    lows.join('; ') || `min fg ${minFg.toFixed(2)} (${minFgName}, AAA); min muted ${minMuted.toFixed(2)} (${minMutedName}, AA)`);
+}
+
+{
+  // Every shape family needs an outline that separates from the page *and* from
+  // its own fill, or a light fill swallows the outline that codes the family.
+  const bad: string[] = [];
+  let worst = 99;
+  let worstAt = '';
+  for (const name of Object.keys(PRESETS)) {
+    const t = getTheme(name);
+    for (const family of ['process', 'decision', 'state', 'store'] as const) {
+      const { fill, stroke } = t.shapes[family];
+      const onBg = contrastRatio(stroke, t.vars.bg);
+      const onFill = contrastRatio(stroke, fill);
+      const min = Math.min(onBg, onFill);
+      if (min < worst) { worst = min; worstAt = `${name}/${family}`; }
+      if (min < 3) bad.push(`${name}/${family} bg=${onBg.toFixed(2)} fill=${onFill.toFixed(2)}`);
+    }
+  }
+  record('lint/theme-shape-marks', bad.length === 0,
+    bad.join('; ') || `min outline contrast ${worst.toFixed(2)} (${worstAt})`);
+}
+
+{
+  // "Never colour alone": families that share one outline colour are separated
+  // by shape (checked below), and the ones that differ by colour have to stay
+  // distinguishable for protan / deutan / tritan viewers.
+  const bad: string[] = [];
+  let worst = 9;
+  let worstAt = '';
+  for (const name of Object.keys(PRESETS)) {
+    const t = getTheme(name);
+    const families = ['process', 'decision', 'state', 'store'] as const;
+    for (const kind of CVD_KINDS) {
+      for (let i = 0; i < families.length; i++) {
+        for (let j = i + 1; j < families.length; j++) {
+          const a = t.shapes[families[i]].stroke;
+          const b = t.shapes[families[j]].stroke;
+          if (a === b) continue;
+          const d = perceptualDelta(simulateCvd(a, kind), simulateCvd(b, kind));
+          if (d < worst) { worst = d; worstAt = `${name} ${kind} ${families[i]}/${families[j]}`; }
+          if (d < 0.02) bad.push(`${name} ${kind} ${families[i]}/${families[j]} dE ${d.toFixed(3)}`);
+        }
+      }
+    }
+  }
+  record('lint/theme-cvd', bad.length === 0,
+    bad.join('; ') || `min simulated dE ${worst.toFixed(3)} (${worstAt})`);
+}
+
+{
+  // The redundant channel for a monochrome palette: the four families must be
+  // drawn as four different SVG element kinds, not four colours of one shape.
+  const { svg } = await renderer.render({
+    code: [
+      'flowchart TD',
+      '  A[流程] --> B{判定}',
+      '  B --> C([状态])',
+      '  B --> D[(存储)]',
+      '',
+    ].join('\n'),
+    background: themeSpec.background, needPng: false, scale: 1, width: 900,
+    theme: themeSpec, mermaidConfig: tech as Record<string, unknown>,
+    fontSize: 15, padding: 0, svgThemeable: true, titlePos: 'top', titleText: '',
+    remap: PRESETS[DEFAULT_THEME].remap,
+  });
+  // The shape class is the redundant channel: four families, four forms.
+  const forms = [...svg.matchAll(/<g class="pele-node (pele-shape-[a-z-]+)"/g)].map((m) => m[1]);
+  record('lint/shape-form-redundant', forms.length >= 4 && new Set(forms).size >= 4,
+    `node forms: ${forms.join(',') || 'none'} (${new Set(forms).size} distinct)`);
 }
 
 await renderer.close();
@@ -953,8 +1032,83 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
   const badFill = runCli([flow, '-t', 'excalidraw', '--style-fill', 'nope', '--quiet']);
   record('cli/style-fill-bad', badFill.code === 2 && /solid\|hachure/.test(badFill.stderr), `exit=${badFill.code}`);
 
+  const iosRun = runCli([flow, '-t', 'ios', '-f', 'svg', '--json', '--quiet', '-o', path.join(outDir, 'ios')]);
+  const iosSvg = fs.readFileSync(path.join(outDir, 'ios', 'flowchart.svg'), 'utf8');
+  const ij = JSON.parse(iosRun.stdout || '{}') as { background?: string };
+  // Flat by design: no wallpaper tint, no filter depth, flat white surfaces.
+  record('cli/theme-ios',
+    iosRun.code === 0 && ij.background === '#F2F2F7' &&
+    !/mmdx-backdrop/.test(iosSvg) && !/feGaussianBlur/.test(iosSvg) && !/filter:drop-shadow/.test(iosSvg) &&
+    /fill:#fff(?![0-9a-f])/i.test(iosSvg) && /#007AFF/i.test(iosSvg),
+    `exit=${iosRun.code} bg=${ij.background} backdrop=${/mmdx-backdrop/.test(iosSvg)} ` +
+    `blur=${/feGaussianBlur/.test(iosSvg)} shadow=${/filter:drop-shadow/.test(iosSvg)} ` +
+    `white=${/fill:#fff/i.test(iosSvg)} blue=${/#007AFF/i.test(iosSvg)} len=${iosSvg.length}`);
+
+  const acnhRun = runCli([flow, '-t', 'acnh', '-f', 'svg', '--json', '--quiet', '-o', path.join(outDir, 'acnh')]);
+  const acnhSvg = fs.readFileSync(path.join(outDir, 'acnh', 'flowchart.svg'), 'utf8');
+  const aj = JSON.parse(acnhRun.stdout || '{}') as { background?: string };
+  const dots = acnhSvg.indexOf(`${'<pattern'}`);
+  record('cli/theme-acnh',
+    acnhRun.code === 0 && aj.background === '#FFF8E7' &&
+    dots > 0 && dots < acnhSvg.indexOf('pele-edges') &&
+    /#F0DFC2/i.test(acnhSvg) && /filter:drop-shadow\([^)]*0 5px 0/.test(acnhSvg) &&
+    /font-weight:700/.test(acnhSvg),
+    `exit=${acnhRun.code} bg=${aj.background} pattern=${dots}`);
+
+  const glassRun = runCli([flow, '-t', 'glass', '-f', 'svg', '--json', '--quiet', '-o', path.join(outDir, 'glass')]);
+  const glassSvg = fs.readFileSync(path.join(outDir, 'glass', 'flowchart.svg'), 'utf8');
+  const gj = JSON.parse(glassRun.stdout || '{}') as { background?: string };
+  const glassBackdrop = glassSvg.indexOf('mmdx-backdrop');
+  // svgo rewrites the defs ids, so assert on what survives: the acrylic layers.
+  const glassLayers = (glassSvg.match(/<rect[^>]*width="9\d\d"/g) ?? []).length;
+  record('cli/theme-glass',
+    glassRun.code === 0 && gj.background === '#E9EEF6' &&
+    glassBackdrop > 0 && glassBackdrop < glassSvg.indexOf('pele-edges') &&
+    /<pattern/.test(glassSvg) && /rgba\(15,35,66/.test(glassSvg) &&
+    /feTurbulence/.test(glassSvg) && /feGaussianBlur/.test(glassSvg) &&
+    /fill="#fff" opacity=".3"/.test(glassSvg) && glassLayers >= 3 && /#0F6CBD/i.test(glassSvg),
+    `exit=${glassRun.code} bg=${gj.background} backdrop=${glassBackdrop} layers=${glassLayers}`);
+
+  const epaperRun = runCli([flow, '-t', 'epaper', '-f', 'svg', '--json', '--quiet', '-o', path.join(outDir, 'epaper')]);
+  const epaperSvg = fs.readFileSync(path.join(outDir, 'epaper', 'flowchart.svg'), 'utf8');
+  const ej = JSON.parse(epaperRun.stdout || '{}') as { background?: string };
+  // Monochrome is the point of the style: no hex in the sheet may carry a
+  // saturated hue (the paper itself is a warm off-white).
+  // Pele's own `var(--pele-x, #fallback)` defaults are not theme paint.
+  const epaperPaint = epaperSvg.replace(/var\(--pele-[^,)]*,[^)]*\)/g, '');
+  const hued = [...epaperPaint.matchAll(/#([0-9a-f]{6})\b/gi)]
+    .map((m) => m[1])
+    .filter((hex) => {
+      const r = parseInt(hex.slice(0, 2), 16);
+      const g = parseInt(hex.slice(2, 4), 16);
+      const b = parseInt(hex.slice(4, 6), 16);
+      return Math.max(r, g, b) - Math.min(r, g, b) > 24;
+    });
+  record('cli/theme-epaper',
+    epaperRun.code === 0 && ej.background === '#F5F1EB' &&
+    /feTurbulence/.test(epaperSvg) && /stroke:#1a1a1a/i.test(epaperSvg) &&
+    /fill:#fff\b/i.test(epaperSvg) && hued.length === 0,
+    `exit=${epaperRun.code} bg=${ej.background} grain=${/feTurbulence/.test(epaperSvg)} hued=${hued.slice(0, 3).join(',') || 'none'}`);
+
+  // iOS marks content with inset white cards and hairlines, so the shared
+  // accent stripe has to be switched off for this theme.
+  const iosBlockHtml = blockPage('<div class="card"><div class="card-title">x</div></div>',
+    { blockCss: getTheme('ios').blockCss });
+  record('cli/theme-ios-block',
+    /\.card::before\s*\{\s*display:\s*none/.test(iosBlockHtml) && /rgba\(60,60,67,0\.18\)/.test(iosBlockHtml),
+    `noBar=${/\.card::before\s*\{\s*display:\s*none/.test(iosBlockHtml)}`);
+
   const badTone = runCli([flow, '--tone', 'nope', '--quiet']);
   record('cli/tone-bad', badTone.code === 2 && /paper\|neutral\|product/.test(badTone.stderr), `exit=${badTone.code}`);
+
+  const paperRun = runCli([flow, '--tone', 'paper', '-f', 'svg', '--svg-themeable', '--json', '--quiet', '-o', path.join(outDir, 'paper')]);
+  const paperSvg = fs.readFileSync(path.join(outDir, 'paper', 'flowchart.svg'), 'utf8');
+  const pj = JSON.parse(paperRun.stdout || '{}') as { tone?: string; background?: string };
+  record('cli/tone-paper-svg',
+    paperRun.code === 0 && pj.tone === 'paper' && pj.background === '#FAFAF8' &&
+    paperSvg.includes('--pele-bg:#FAFAF8') && /fill:#E7ECF3/i.test(paperSvg) &&
+    /<pattern/.test(paperSvg) && /rgba\(31,32,36/.test(paperSvg),
+    `exit=${paperRun.code} tone=${pj.tone} bg=${pj.background} ruling=${/<pattern/.test(paperSvg)}`);
 
   const wrongFill = runCli([flow, '-t', 'tech', '--style-fill', 'hachure', '-f', 'png', '--json', '--quiet', '-o', path.join(outDir, 'wrong-fill')]);
   const wj = JSON.parse(wrongFill.stdout || '{}') as { warnings?: Array<{ code: string; message: string }> };

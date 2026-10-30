@@ -4,56 +4,60 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [2.0.0] - 2026-10-23
+## [2.0.0] - 2026-10-30
 
-### 渲染引擎
+### 渲染引擎（Breaking）
 
-- **默认引擎改为 Pele 1.9.0**（`obsidianmd/pele`）：Mermaid 语法直出 SVG，单图 SVG 生成 1–50ms；Mermaid 11 + ELK 保留为 `--engine mermaid` 回退，二进制同时内嵌两套资源
-- 新增 `--engine pele|mermaid|auto`；`auto` 先 Pele，解析失败回退 Mermaid，`--json` 输出 `fallbacks`
+- **引擎收敛为 Pele 一套**（`pele@1.9.0`，obsidianmd/pele）：Mermaid 语法直出 SVG，单图 SVG 生成 1–50ms。移除 `--engine pele|mermaid|auto`、`--layout elk|dagre` 与 `--json.fallbacks`，同时移除 `mermaid` / `@mermaid-js/layout-elk` 依赖及随包资源（约 3.5MB 的 mermaid.min.js 与 5.0MB 的 elk.bundle.mjs）。输入语法仍是 Mermaid（围栏 / `.mmd` / stdin），`--json.engine` 固定为 `pele`；Pele 解不了的图型不再有回退引擎
 - 新增 `--svg-themeable`：SVG 保留 `--pele-*` CSS 变量；默认把颜色烘焙成 hex，便于 Office/PPT 打开
-- `--layout elk` 现在只属于 Mermaid，传它会自动选中 `--engine mermaid`；显式 `--engine pele --layout elk` 报参数冲突
-- PeleError 直接映射为 exit 1，错误信息带 `--engine mermaid` / `--engine auto` 提示
+- PeleError 直接映射为 exit 1；`--json` 输出 `engine: "pele"`
+- Iconify `--icon` 通过 Pele `icons` 回调注入，图标按 24×24 视图缩放
 
 ### 主题（Breaking）
 
-- 主题改为 CSS 变量契约：7 套预设统一输出 `--pele-*` 变量与 `pele-shape-*` 形状规则；PNG、SVG、HTML 扩展块共用同一色板
+- 主题改为 CSS 变量契约：统一输出 `--pele-*` 变量与 `pele-shape-*` 形状规则，PNG、SVG、HTML 扩展块共用同一色板；当前 **7 套预设**：`tech`（默认）/ `openai` / `excalidraw` / `ios` / `acnh` / `glass` / `epaper`
 - **Breaking：** `--theme-js` 改为 v2 签名 `(theme) => theme`，接收 `ThemeSpec`（`vars` / `shapes` / `css`）；1.x 的 `config.themeVariables` 脚本报迁移错误
 - **Breaking：** `--config` 改为 Pele 白名单（`fontSize` / `padding` / `flowchart.nodeSpacing` / `rankSpacing` / `padding`），`themeVariables` 等 key 给 `config-ignored` 警告
-- **Breaking：** `sketch` 保留暖纸色和手写字体，形状改为干净圆角；Pele 不绘制手绘抖动线条
-- `--brand` 继续只改 `theme.vars.accent`，低对比度警告保留
-- `--title-pos bottom` 只对 Mermaid 回退生效；Pele 的 frontmatter 标题固定在图内顶部，底栏标题请用 `--title`
-- Iconify `--icon` 通过 Pele `icons` 回调注入，图标按 24×24 视图缩放
+- **Breaking：** 移除 11 套旧主题（`openai-dark`、`openai-editorial`、`vercel`、`linear`、`stripe`、`notion`、`ibm`、`minimal`、`latte`、`mocha`、`sketch`）；旧主题名报 `unknown theme`，可用主题见 `--help`
+- 新增 `excalidraw`：Pele + rough.js 手绘线条、粉彩填色、Excalifont/LXGW 字体栈；块版式为白板卡片；`--style-fill solid|hachure` 切换填色（斜线体积约 1.5–2×）
+- 新增 `ios`：纯平面 iOS 系统界面——分组浅灰底 `#F2F2F7` + 白卡片 + 发丝分隔线 `#D1D1D6` + Apple 深色变体系统色（蓝 `#007AFF` / 绿 `#248A3D` / 橙 `#C93400` / 红 `#D70015` / 紫 `#8944AB`）；块页按 HIG 分组列表做法，不给卡片加强调色边条
+- 新增 `acnh`：动森风——奶油纸 `#FFF8E7` + 点阵网格 + 粗棕描边 2.6px + 硬偏移贴纸阴影 + 圆体字 + 胶囊标签；块页同纸底
+- 新增 `glass`：Fluent 亚克力——淡蓝灰画布 `#E9EEF6` + 28px 网格 + 一层白色半透膜（0.30）与 4% 颗粒，面板 `rgba(255,255,255,.72)`、8px 圆角、白描边；块页走 HTML，`backdrop-filter: blur(20px)` 真实生效
+- 新增 `epaper`：电子纸 / 墨水屏——`#F5F1EB` 纸底 + 5% `feTurbulence` 纸纹 + `#1A1A1A` 发丝黑描边 + 直角 + 无阴影 + 无强调色，形状族靠灰阶与形状区分；块页衬线正文 + 等宽大写表头
+- 新增 `ThemeSpec.backdrop`（自带底的风格）：引擎往 SVG 插一层 `<g class="mmdx-backdrop">`（色块 + 高斯模糊 / 点阵 / 网格 `<pattern>` / 半透膜 + 噪点，外配内缩 14px 的径向淡出遮罩）；PNG 走整幅截取不按墨迹裁边，`--background transparent` 时不画底；flatten 会把 CSS `filter` 一起烘焙进 SVG
+- 新增 `--tone paper|neutral|product`：覆盖块页结构（圆角/阴影/标题字体/表格头/chip 圆角）；`paper` 另把图与块页一起换成编辑风网格纸（`#FAFAF8` 纸底 + 24px 细格 / 96px 粗格、焦橙强调色 `#BF4520`），`neutral` / `product` 不动图的配色
+- 新增 `--style-fill solid|hachure`：只对 `excalidraw` 生效，其他主题传了给 `config-ignored` 类 warning
+
+### 无障碍（信息不只靠颜色承载）
+
+- 主题色板加硬门槛，由测试守住：正文色对底 ≥ 7:1（AAA）、次要文字 ≥ 4.5:1、强调/警示色 ≥ 3:1；每个形状族的描边对底、对自己的填充都 ≥ 3:1；红绿色盲（protan / deutan / tritan）模拟下描边色不同的形状族仍两两可区分（OKLab ΔE ≥ 0.02）；四个形状族必须是四种形态（矩形 / 菱形 / 胶囊 / 圆柱）
+- 新增 `src/color.ts`：WCAG 亮度与对比度、Machado 2009 色觉模拟、OKLab 感知距离；新增 `scripts/lint-a11y.ts` 逐主题报告
+- 渲染态文本对比度审计改为 WCAG 分档（小字 4.5:1 / 大字 3:1，按 computed font-size 与字重判断）
+- 为过门槛修正的色板：`openai` 状态/存储填充调浅（描边对填充原为 2.86:1）、`excalidraw` muted `#6C757D`、`acnh` muted `#7A6350`、`--tone paper` 存储描边 `#7A5AA8`（蓝/紫在红绿色盲下几乎重合）
+
+### 新增
+
+- 新增 `mmdx card`：Markdown 或 URL → 信息卡 PNG；默认主题 `openai`，配合 `--tone`、480/600/900+ 宽度、按实际像素高度自动拆页、`--json` 输出 `cards` / `files` / `pages`；新增独立 skill `skill/info-card-designer/`
+- 新增 `scripts/lint-a11y.ts`（无障碍报告）、`scripts/lint-visuals.ts`（七套主题的渲染筛查报告）、`scripts/make-style-review.ts`（主题预览）
+- 画廊扩为 **7 套主题 × 4 场景**，并新增 [场景引导（状态图）](docs/gallery/scenario.md)（同一张状态图两档观感）、[两个 HTML 场景模板](docs/gallery/html-skills.md)、[信息卡 tone 对照](docs/gallery/card-tones.md)、`glass` / `epaper` 分风格页，以及 v1.4.2 的 `editorial` / `visual-explainer` 手绘 HTML 原始样张与近似映射；README 已引用
+- skill 增加「场景 → 主题 / tone / preset」推荐表（含玻璃封面、黑白打印、故障复盘），并为 HTML 报告卡与信息卡给出主题组合；新增场景引导的绘制规则（状态 = 读者能看见的处境、箭头 = 读者的动作）
 
 ### 管线与产物
 
-- 引擎 bundle 改为按需注入：Pele ~700KB；Mermaid（3.5MB）和 ELK（7MB）只在回退时解析
-- 二进制体积增加约 0.7MB（保留 Mermaid 回退），不再移除 mermaid/ELK 资源
-- 测试新增引擎/主题契约：Mermaid 回退、auto 回退、flat/themeable SVG、theme-js v2、v1 迁移错误、config 警告
-- 文档与 skill 同步到 v2：HUMAN_GUIDE / AGENT_GUIDE / README / SKILL.md 增加引擎语义、迁移表和排障项
+- 引擎 bundle 按需注入：Pele ~700KB；不再随包 Mermaid / ELK 资源
+- 块页面与图表截图统一关闭动画/过渡/光标，并等待内置字体加载；截取前归一化 body 盒（浏览器默认 8px body margin 会让整幅截取错位）
+- 视觉 lint 覆盖 DOM 几何（根/文本溢出、元素越界、图题重叠）、SVG 标签溢出、真实渲染文本对比度、PNG 边缘裁切、底部长空白规则（`max(90px, 5% × 高度)`）与超长列表 fixture；确定性检查覆盖全部内置主题
+- 测试矩阵扩到 **189 项**：七套主题 × 4 类图（flowchart / state / class / ER）+ 3 类块页审计、双跑确定性、无障碍门槛、CLI 契约（preset / caption / brand / 坏块隔离 / stdin / `--json` / 信息卡分页 / `.html` 输入与 figure lint）
+- 新增 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 `licenses/`：列明 Pele / rough.js / svgo / puppeteer-core / Noto Sans SC 等来源与许可证；新增 [质量门禁规划](docs/QUALITY.md)
 
-## [Unreleased]
+### 其它
 
-- **Breaking：** 引擎收敛为 Pele 一套：移除 `--engine pele|mermaid|auto`、`--layout elk|dagre` 与 `--json` 的 `fallbacks` 字段，并移除 `mermaid` / `@mermaid-js/layout-elk` 依赖及随包资源（约 3.5MB 的 mermaid.min.js 与 5.0MB 的 elk.bundle.mjs）。输入语法仍是 Mermaid（围栏 / `.mmd` / stdin），`--json` 的 `engine` 固定为 `pele`；遇到 Pele 解不了的图型不再有回退引擎
-- **Breaking：** 主题收敛为三套预设：`tech`（默认）/ `openai` / `excalidraw`；移除 `openai-dark`、`openai-editorial`、`vercel`、`linear`、`stripe`、`notion`、`ibm`、`minimal`、`latte`、`mocha`、`sketch` 共 11 套。旧命令里的主题名现在按 `unknown theme` 报错，可用主题见 `--help`
-- 新增 `--tone paper|neutral|product`：只覆盖块页结构（圆角/阴影/标题字体/表格头/chip 圆角），配色仍由主题决定；显式传参才生效，不传时输出不变
-- 新增 `mmdx card`：Markdown 或 URL → 信息卡 PNG；默认主题 `openai`，配合 `--tone`、480/600/900+ 宽度、按实际像素高度自动拆页、`--json` 输出 `cards`/`files`/`pages`
-- 画廊新增[两个 HTML 场景模板](docs/gallery/html-skills.md)与[信息卡 tone 对照页](docs/gallery/card-tones.md)；`scripts/make-gallery.ts` 同步生成三套主题的流程图/KPI/卡片、报告卡/信息卡的跨风格图与三种 tone
-- skill 增加“场景 → 主题 / tone / preset”推荐表，并为 HTML 报告卡与信息卡给出主题组合；新增独立 skill `skill/info-card-designer/`
-- 画廊补回 v1.4.2 的 `editorial` / `visual-explainer` 手绘 HTML 原始样张与当前主题近似映射；skill 增加手绘 HTML 模板的特点与适用场景
-- 视觉 lint 增加 SVG 标签溢出（屏幕矩形对形状矩形）、真实渲染文本对比度（fill 对实际背景，3:1）、PNG 边缘裁切；确定性检查覆盖全部内置主题（含手绘抖动的 Excalidraw）
-- 测试新增信息卡解析/网页提取/宽度/分页/tone 差异，以及三套主题的 4 类图与块版式审计
-- 新增 `excalidraw` 主题：Pele + rough.js 手绘线条、粉彩填色、Excalifont/LXGW 字体栈；块版式改为白板卡片；`--style-fill solid|hachure` 切换填色
-- `ThemeSpec` 增加 `style` / `blockCss` / `fonts`；扩展块可通过 `blockCss` 使用主题级版式
-- `peleCss` 为启用 `shapeCoverage` 的主题补齐 rounded/stadium/fr-rect/hex/lean-r/odd、class/entity、state 起止等形状覆盖；旧主题保持原输出
-- 新增 `scripts/make-style-review.ts`：生成 `review/styles/` 三套主题的图表与块版式预览
-- 新增 [风格画廊](docs/GALLERY.md)：同一「灰度发布复盘」案例在 `tech` / `openai` / `excalidraw` 下的流程图、KPI、卡片、表格对照；总览只留一张流程图，完整四场景按风格拆页；`scripts/make-gallery.ts` 一键复现，README 已引用
-- 视觉 lint 增加底部长空白规则（`max(90px, 5% × 高度)`）与超长列表 fixture，防止截屏把视口高度写进 PNG；新增 [质量门禁规划](docs/QUALITY.md)
-- 新增 `src/lint.ts`：DOM 几何审计（根/文本溢出、元素越界、图题重叠）、`diffPng` 双跑确定性对比、主题对比度门禁；参考 Playwright / jest-image-snapshot / reg-suit / Mermaid 的视觉回归策略
-- 块页面与图表截图统一关闭动画/过渡/光标，并等待内置字体加载，减少跨机器与跨次渲染差异
-- 新增 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 `licenses/`：列明 Pele / Mermaid / ELK / rough.js / svgo / puppeteer-core / Noto Sans SC 等来源与许可证，README 已链接
 - 日历热力改成办公卡：格子随周数放大、空天可见、中文日期与月标、有值格子写次数
-- `tech` 默认主题：形状分色改为可见填色 + 1.5px 描边，连线/饼图/色板加饱和；默认 accent `#2563EB`
-- `--preset slide` 字号 18、描边加粗；skill / AGENT_GUIDE 增加投屏/PPT 导出引导（触发词 → 命令 → 5 米自检）
+- `tech` 默认主题：形状分色改为可见填色 + 1.5px 描边，默认 accent `#2563EB`
+- `--preset slide` 字号 18、描边加粗；`--preset column` 对准 2560×1440 办公屏约 1/3 栏宽，`column-landscape` / `column-shrink` 写入 `--json.warnings`
+- 中文三字体家族：exe 内嵌 Noto Serif SC 与霞鹜文楷 GB2312 子集，与 Noto Sans SC 并列注入 HTML 页导出
+- `file.html` 输入的 figure lint：六类检查（越界、文字压形/压字、粘连、有效字号 <11px、缺 caption/aria），消息 LSP 式自定位并进 `--json.warnings`
+- 新增 `skill/explain/`（vendored visual-explainer 规格化改造版）与 `skill/editorial/`（diagram-design）
 
 ## [1.4.2] - 2026-10-25
 

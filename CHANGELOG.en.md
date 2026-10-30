@@ -4,56 +4,60 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioned per [Semantic Versioning](https://semver.org/).
 
-## [2.0.0] - 2026-10-23
+## [2.0.0] - 2026-10-30
 
-### Rendering engine
+### Rendering engine (Breaking)
 
-- **Default engine is now Pele 1.9.0** (`obsidianmd/pele`): Mermaid syntax straight to SVG, 1–50 ms per diagram; Mermaid 11 + ELK retained as `--engine mermaid` fallback, both bundles embedded in the binary
-- New `--engine pele|mermaid|auto`; `auto` tries Pele then falls back to Mermaid, reported as `fallbacks` in `--json`
-- New `--svg-themeable`: keeps `--pele-*` CSS variables; default bakes hex so Office/PPT can open the SVG
-- `--layout elk` is now Mermaid-only and selects `--engine mermaid`; explicit `--engine pele --layout elk` is a parameter conflict
-- PeleError maps to exit 1 with a `--engine mermaid` / `--engine auto` hint
+- **One engine only: Pele** (`pele@1.9.0`, obsidianmd/pele) renders Mermaid syntax straight to SVG, 1–50 ms per diagram. `--engine pele|mermaid|auto`, `--layout elk|dagre` and `--json.fallbacks` are gone, along with the `mermaid` / `@mermaid-js/layout-elk` dependencies and their bundled assets (mermaid.min.js ~3.5 MB, elk.bundle.mjs ~5.0 MB). Input stays Mermaid (fences / `.mmd` / stdin) and `--json.engine` is always `pele`; a diagram Pele cannot parse no longer has a fallback engine
+- New `--svg-themeable`: keeps `--pele-*` CSS variables; the default bakes hex so Office/PPT can open the SVG
+- PeleError maps to exit 1; `--json` reports `engine: "pele"`
+- Iconify `--icon` is injected through Pele's `icons` callback, scaled from a 24×24 viewBox
 
 ### Themes (Breaking)
 
-- Themes are a CSS-variable contract: all 7 presets emit `--pele-*` variables and `pele-shape-*` rules; PNG, SVG, and HTML blocks share one palette
+- Themes are a CSS-variable contract: every preset emits `--pele-*` variables and `pele-shape-*` rules, and PNG, SVG and HTML blocks share one palette. **Seven presets**: `tech` (default) / `openai` / `excalidraw` / `ios` / `acnh` / `glass` / `epaper`
 - **Breaking:** `--theme-js` uses the v2 signature `(theme) => theme`, receiving a `ThemeSpec` (`vars` / `shapes` / `css`); 1.x `config.themeVariables` scripts fail with a migration error
 - **Breaking:** `--config` is a Pele whitelist (`fontSize` / `padding` / `flowchart.nodeSpacing` / `rankSpacing` / `padding`); `themeVariables` and other keys emit `config-ignored`
-- **Breaking:** `sketch` keeps warm paper and the handwriting font, but shapes are clean rounded rectangles (no hand-drawn jitter)
-- `--brand` still changes only `theme.vars.accent`, with the contrast warning
-- `--title-pos bottom` applies to the Mermaid fallback only; Pele keeps a frontmatter title inside the diagram at the top — use `--title` chrome for a bottom caption
-- Iconify `--icon` is injected through Pele's `icons` callback and scaled from a 24×24 viewBox
+- **Breaking:** eleven old themes removed (`openai-dark`, `openai-editorial`, `vercel`, `linear`, `stripe`, `notion`, `ibm`, `minimal`, `latte`, `mocha`, `sketch`); those names now fail as `unknown theme`, see `--help` for what is available
+- New `excalidraw`: Pele plus a rough.js pass, pastel fills, Excalifont/LXGW stack, whiteboard block pages; `--style-fill solid|hachure` switches the fill (hatching costs roughly 1.5–2× the SVG size)
+- New `ios`: flat iOS system interface — grouped grey page `#F2F2F7`, white cards, hairline separators `#D1D1D6`, Apple's darker system colours (blue `#007AFF` / green `#248A3D` / orange `#C93400` / red `#D70015` / purple `#8944AB`); block pages follow the HIG grouped-list recipe and skip the accent side stripe
+- New `acnh`: Animal Crossing — cream paper `#FFF8E7`, dotted grid, 2.6px brown outlines, hard offset sticker shadows, rounded type and pill labels; block pages share the paper
+- New `glass`: Fluent acrylic — pale blue-grey canvas `#E9EEF6`, 28px ruling, one translucent white sheet (0.30) with 4% grain, panels at `rgba(255,255,255,.72)` with 8px radii and a light rim; block pages are HTML, where `backdrop-filter: blur(20px)` really renders
+- New `epaper`: e-ink — `#F5F1EB` stock with a 5% `feTurbulence` grain, `#1A1A1A` hairline strokes, square corners, no shadow, no accent colour; shape families differ by grey level and shape. Block pages use serif body text with uppercase monospace headers
+- New `ThemeSpec.backdrop` for styles that paint their own ground: the engine inserts an `mmdx-backdrop` layer (blobs with a gaussian blur, dot or line grids as `<pattern>`, a translucent sheet, grain, plus a 14px-inset radial fade mask). Those PNGs are captured full-bleed instead of cropped to their ink, `--background transparent` skips the backdrop, and flatten bakes CSS `filter` into the SVG
+- New `--tone paper|neutral|product` overrides block structure (radius, shadow, display type, table headers, chip radius); `paper` also repaints both the diagram and the block page onto editorial ruled stock (`#FAFAF8` sheet with a 24px fine / 96px bold grid, burnt-tangerine `#BF4520` accent). `neutral` and `product` leave the diagram palette alone
+- New `--style-fill solid|hachure`: only `excalidraw` honours it; other themes get a `config-ignored` warning
+
+### Accessibility (information never rides on colour alone)
+
+- Theme palettes now have hard bars, enforced by the test suite: body text ≥ 7:1 against its background (AAA), secondary text ≥ 4.5:1, accent/warning colours ≥ 3:1; every shape family's outline ≥ 3:1 against the page *and* against its own fill; families with different outline colours stay pairwise distinguishable under simulated protan / deutan / tritan vision (OKLab ΔE ≥ 0.02); the four families must be four different forms (rect / diamond / stadium / cylinder)
+- New `src/color.ts` (WCAG luminance and contrast, Machado 2009 CVD simulation, OKLab perceptual distance) and `scripts/lint-a11y.ts` (per-theme report)
+- The rendered-text contrast audit now uses WCAG tiers (4.5:1 for body text, 3:1 for large text, decided from computed font size and weight)
+- Palettes fixed to clear the bars: `openai` state/store fills lifted (the outline was 2.86:1 against its own fill), `excalidraw` muted `#6C757D`, `acnh` muted `#7A6350`, and the `--tone paper` store outline `#7A5AA8` (blue and purple were nearly identical under deuteranopia)
+
+### Added
+
+- New `mmdx card`: Markdown or a URL to info-card PNGs; default theme `openai`, with `--tone`, 480/600/900+ widths, automatic pagination by real pixel height, and `cards` / `files` / `pages` in `--json`. Ships with a standalone `skill/info-card-designer/`
+- New `scripts/lint-a11y.ts` (accessibility report), `scripts/lint-visuals.ts` (render screening across all seven themes) and `scripts/make-style-review.ts` (theme previews)
+- The gallery grew to **7 themes × 4 scenes** and gained the [scenario guide (statechart)](docs/gallery/scenario.md) (one statechart, two looks), the [two imported HTML scenarios](docs/gallery/html-skills.md), the [info-card tone comparison](docs/gallery/card-tones.md), `glass` / `epaper` style pages, and the original v1.4.2 `editorial` / `visual-explainer` hand-drawn HTML samples with their nearest-theme mapping; the README links all of it
+- The skill gained a "scenario → theme / tone / preset" table (glass covers, black-and-white print, incident retros) plus theme combinations for the HTML report card and info card, and drawing rules for the scenario guide (states are what the reader sees, arrows are the reader's actions)
 
 ### Pipeline and artifacts
 
-- Engine bundles load on demand: Pele ~700 KB; Mermaid (3.5 MB) and ELK (7 MB) parse only on fallback
-- Binary grows by ~0.7 MB because the Mermaid fallback stays embedded
-- New engine/theme contract tests: Mermaid fallback, auto fallback, flat/themeable SVG, theme-js v2, v1 migration error, config warnings
-- Docs and skill updated to v2: HUMAN_GUIDE / AGENT_GUIDE / README / SKILL.md cover engine semantics, migration, and troubleshooting
+- Engine bundles load on demand: Pele ~700 KB, with no Mermaid / ELK assets shipped
+- Block pages and diagram captures disable animation, transitions and caret, wait for the embedded font, and normalise the body box before capture (the browser's default 8px body margin used to offset a full-bleed capture)
+- Visual lint covers DOM geometry (root/text overflow, elements outside the page, caption overlap), SVG label overflow, rendered text contrast, PNG edge clipping, the bottom-blank rule (`max(90px, 5% × height)`) and an over-long list fixture; determinism is checked for every built-in theme
+- The test matrix is now **189 checks**: seven themes × four diagram types (flowchart / state / class / ER) plus three block-page audits, determinism, accessibility bars, and the CLI contract (presets, captions, brand, bad-block isolation, stdin, `--json`, info-card pagination, `.html` input and figure lint)
+- New [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) with `licenses/` (Pele, rough.js, svgo, puppeteer-core, Noto Sans SC) and a [quality-gate plan](docs/QUALITY.md)
 
-## [Unreleased]
+### Other
 
-- **Breaking:** the engine set is now Pele only: `--engine pele|mermaid|auto`, `--layout elk|dagre` and the `fallbacks` field in `--json` are gone, along with the `mermaid` and `@mermaid-js/layout-elk` dependencies and their shipped bundles (~3.5MB mermaid.min.js, 5.0MB elk.bundle.mjs). The input syntax is still Mermaid (fences / `.mmd` / stdin) and `--json` reports `engine: "pele"`; a diagram Pele cannot parse no longer has a fallback engine
-- **Breaking:** the preset set is now three themes: `tech` (default) / `openai` / `excalidraw`. Eleven presets are removed: `openai-dark`, `openai-editorial`, `vercel`, `linear`, `stripe`, `notion`, `ibm`, `minimal`, `latte`, `mocha`, `sketch`. Old theme names now fail with `unknown theme`; `--help` lists what remains
-- New `--tone paper|neutral|product`: structural block overrides only (radius/shadow/display type/table headers/chip radius); the palette stays with the theme. Applies only when passed, so existing output is unchanged
-- New `mmdx card`: Markdown or URL → info-card PNG; default theme `openai`, with `--tone`, 480/600/900+ widths, splits by actual pixel height, `--json` reports `cards`/`files`/`pages`
-- Gallery adds a [two-HTML-scenario page](docs/gallery/html-skills.en.md) and an [info-card tone page](docs/gallery/card-tones.en.md); `scripts/make-gallery.ts` renders the three themes, cross-style report/info cards and three tones
-- Skill gains a scenario → theme / tone / preset recommendation table plus theme pairings for the HTML report and info-card scenarios; new standalone `skill/info-card-designer/`
-- Gallery restores the v1.4.2 `editorial` / `visual-explainer` hand-drawn HTML samples with closest-current-preset mapping; skill adds their traits and scenarios
-- Visual lint adds SVG label overflow (screen rect vs shape rect), rendered-text contrast (`fill` vs actual background, 3:1), and PNG edge clipping; determinism covers every built-in theme, including the hand-drawn Excalidraw jitter
-- Tests cover info-card parsing/web extraction/width/splitting/tone differences, plus diagram and block audits for the three themes
-- New `excalidraw` theme: Pele + rough.js hand-drawn strokes, pastel fills, Excalifont/LXGW stack; whiteboard-style blocks; `--style-fill solid|hachure`
-- `ThemeSpec` gains `style` / `blockCss` / `fonts`; extension blocks can use theme-level layout CSS
-- `peleCss` fills rounded/stadium/fr-rect/hex/lean-r/odd, class/entity and state start/end coverage for themes with `shapeCoverage`; old themes keep their output
-- New `scripts/make-style-review.ts` generates diagram + block previews for the three themes under `review/styles/`
-- New [style gallery](docs/GALLERY.en.md): the same “gray release retrospective” case as flowchart, KPI, cards, and table in `tech` / `openai` / `excalidraw`; the overview keeps one flowchart and the four scenes live on per-style pages; reproduced by `scripts/make-gallery.ts` and linked from the README
-- Visual lint adds a bottom-blank rule (`max(90px, 5% × height)`) and a long-list fixture, so screenshots cannot bake viewport height into the PNG; new [quality-gate roadmap](docs/QUALITY.en.md)
-- New `src/lint.ts`: DOM geometry audit (root/text overflow, elements outside the page, caption overlap), `diffPng` two-run determinism check, and a theme contrast gate; based on Playwright / jest-image-snapshot / reg-suit / Mermaid visual-regression practice
-- Block and diagram screenshots now disable animations/transitions/caret and wait for the bundled font, reducing cross-run and cross-machine drift
-- New [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and `licenses/` inventory Pele / Mermaid / ELK / rough.js / svgo / puppeteer-core / Noto Sans SC with sources and licenses; linked from the README
-- Heatmap restyled as an office card: larger tiles, visible empty days, Chinese date/month labels, counts in cells
-- Default `tech` theme: shape-coding as tinted fills + 1.5px strokes, richer lines/pie/palette; default accent `#2563EB`
-- `--preset slide` now 18px type with heavier strokes; skill / AGENT_GUIDE add a projection/PPT export playbook (trigger words → command → 5-metre check)
+- Calendar heatmaps became office cards: cells scale with the week count, empty days stay visible, Chinese dates and month labels, counts inside populated cells
+- `tech` (default) now paints visible fills with 1.5px outlines; default accent `#2563EB`
+- `--preset slide` uses 18px type and heavier strokes; `--preset column` targets roughly a third of a 2560×1440 office display and reports `column-landscape` / `column-shrink` in `--json.warnings`
+- Three CJK font families: the binary embeds Noto Serif SC and an LXGW WenKai GB2312 subset alongside Noto Sans SC for HTML page export
+- Figure lint for `file.html` input: six checks (out of bounds, text over shape or text, adhesion, effective size below 11px, missing caption/aria) with LSP-style located messages in `--json.warnings`
+- New `skill/explain/` (a spec-only adaptation of visual-explainer) and `skill/editorial/` (diagram-design)
 
 ## [1.4.2] - 2026-10-25
 

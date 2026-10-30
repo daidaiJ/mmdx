@@ -2,30 +2,35 @@
 
 > 换主题 / 调 tone / 改配色 / 确认 Pele 支持哪些图型 / 查 `--config` 认哪些键时读本文。日常出图不需要——默认 `tech` + Pele 已经覆盖办公场景。Pele 是唯一引擎，输入仍是 Mermaid 语法，没有第二个引擎可切。
 
-## 一、三套主题
+## 一、七套主题
 
 | 主题 | `-t` | 视觉特点 | 适合 | 避免 |
 | --- | --- | --- | --- | --- |
 | `tech`（默认） | `tech` | 白底、蓝/琥珀/绿/紫形状分色、1.5px 描边、信息密度最高 | 方案评审、架构图、周报、投屏 | 对外品牌报告、需要编辑感的印刷品 |
 | `openai` | `openai` | 纯白/墨黑、薄荷绿点缀、发丝边框、近单色 | 对外报告、白皮书、工程师文档、`a4` 打印 | 高密度看板、白板脑暴 |
 | `excalidraw` | `excalidraw` | 白底、粉彩填色、rough.js 手绘抖动、墨线、12px 圆角 | 白板、脑暴、工作坊、非正式分享 | 对外正式报告、打印稿、高密度数据图 |
+| `ios` | `ios` | 分组浅灰底 + 白卡片 + 发丝分隔线 + 系统色、10px 圆角；**纯平面**，无底、无阴影 | 产品界面截图、iOS 应用说明、需要「系统感」的图 | 打印稿（浅灰底吃墨）、高密度数据图 |
+| `acnh` | `acnh` | 奶油纸 + 点阵网格 + 粗棕描边 2.6px + 硬偏移贴纸阴影 + 圆体字、16px 圆角、胶囊标签 | 周报贴纸、团队看板、轻松汇报 | 合规/审计、打印稿、高密度数据图 |
+| `glass` | `glass` | Fluent 亚克力：淡蓝灰画布 + 28px 网格 + 白色半透膜与细颗粒，面板 8px 圆角带白描边 | 玻璃质感封面、现代产品汇报 | 打印稿、高密度数据图 |
+| `epaper` | `epaper` | 电子纸：`#F5F1EB` 纸底 + 纸纹颗粒 + 发丝黑描边 + 直角无阴影，形状族用灰阶区分 | 黑白打印、墨水屏阅读、合规与审计文档 | 需要彩色区分度的高密度图、投屏 |
 
-其余主题名（`openai-dark`、`vercel`、`notion`、`mocha`、`sketch` …）已随预设收敛移除，传了按 `unknown theme` 报错。三套主题的对照样张见 `docs/GALLERY.md`。
+其余主题名（`openai-dark`、`vercel`、`notion`、`mocha`、`sketch` …）已随预设收敛移除，传了按 `unknown theme` 报错。七套主题的对照样张见 `docs/GALLERY.md`。
 
+- `acnh` / `glass` / `epaper` **自带底**：SVG 里插一层 `<g class="mmdx-backdrop">`（`acnh` 奶油纸 + 点阵网格，`glass` 色块 + 网格 + 白色半透膜 + 噪点，`epaper` 纸底 + 纸纹颗粒），PNG 整幅截取、不做裁边（裁边会跟着底的边缘走，左右留白就不对称）。`ios` 是纯平面风格，不画底、不加投影。传 `--background transparent` 时不画底。`acnh` 的硬偏移阴影与 `glass` 的轻投影走 CSS `filter`，flatten 会把 `filter` 一起烘焙进 SVG。
 - `excalidraw` 默认实心填色，`--style-fill hachure` 切斜线；其他主题传 `--style-fill` 会在 `--json.warnings` 里提示只对 `excalidraw` 生效。
 - 深色页面用 `--background '#1A1A1A'`，但**不要**投会议室（灯光一打全糊）。
 
-## 二、`--tone`：只改结构，不改配色
+## 二、`--tone`：块页改结构，`paper` 还给图换纸底
 
-`--tone paper|neutral|product` 作用在**块页**（`card` / `kpi` / `table` / `task` / `compare` / `vs` / `heatmap` …）和 `mmdx card` 信息卡上，改的是圆角、阴影、标题字体、表格头字重与页边距；图的形状、线条、填色一律不变。不传则不追加任何覆盖。
+`--tone paper|neutral|product` 作用在**块页**（`card` / `kpi` / `table` / `task` / `compare` / `vs` / `heatmap` …）和 `mmdx card` 信息卡上，改的是圆角、阴影、标题字体、表格头字重与页边距。`paper` 另把图的配色换成编辑风网格纸（`#FAFAF8` 纸底 + 24px 细格 / 96px 粗格，焦橙强调色 `#BF4520`），块页也铺同一张网格；字号、圆角、手绘抖动不变，`neutral` / `product` 不动图的配色。不传则不追加任何覆盖。
 
 | tone | 圆角 | 阴影 | 标题字体 | 适合 |
 | --- | --- | --- | --- | --- |
-| `paper` | 16px / 10px | 极轻 | 衬线（Source Serif 4 + Noto Serif SC） | 对外报告、打印、`--preset a4` |
+| `paper` | 10px / 6px | 极轻 | 衬线（Source Serif 4 + Noto Serif SC） | 对外报告、打印、`--preset a4`；图与块页都走网格纸底 |
 | `neutral` | 10px / 6px | 无 | 无衬线（Inter + Noto Sans SC） | 内部说明、工程文档（默认观感） |
 | `product` | 6px / 4px | 1px 2px | 无衬线、字号更小、间距更紧 | 产品界面、发布说明、投屏 |
 
-主题决定配色、tone 决定结构，两者正交：`-t openai --tone paper` 是「薄荷绿 + 纸感排版」，`-t tech --tone product` 是「形状分色 + 紧凑面板」。
+主题决定配色、tone 决定结构，两者正交：`-t openai --tone paper` 是「薄荷绿 + 纸感排版」，`-t tech --tone product` 是「形状分色 + 紧凑面板」。`paper` 是唯一会动配色的 tone；要纸底手绘就用 `-t excalidraw --tone paper`。
 
 ## 三、Pele 支持哪些图型
 

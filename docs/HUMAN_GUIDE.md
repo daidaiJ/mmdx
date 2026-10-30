@@ -94,8 +94,8 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 | --- | --- |
 | `-o, --out <path>` | 输出目录；单图输入时可为精确文件名（默认与输入同目录） |
 | `-f, --format <fmt>` | `svg` \| `png` \| `both`（默认 both；`--preset` 未显式 `-f` 时默认 png） |
-| `-t, --theme <name>` | `tech`（默认）· `openai` · `excalidraw` |
-| `--tone <name>` | `paper` \| `neutral` \| `product`；只改块版式结构（圆角/阴影/标题字体/表格头），配色仍由主题决定 |
+| `-t, --theme <name>` | `tech`（默认）· `openai` · `excalidraw` · `ios` · `acnh` · `glass` · `epaper` |
+| `--tone <name>` | `paper` \| `neutral` \| `product`；改块版式结构（圆角/阴影/标题字体/表格头），`paper` 另把图的配色换成灰白纸底 + 网格线 |
 | `--style-fill <mode>` | `solid`（默认）\| `hachure`；仅 `excalidraw` 生效 |
 | `--preset <name>` | `slide`（投屏/PPT：1600px@2，字号 18、描边加粗，底栏预留 ~80px）\| `a4`（900px@2）\| `square`（1080px@2）\| `column`（聊天/窄栏：800px@2，2K 屏约 1/3 栏宽，字号 18、标签换行 200px）。显式 `--width`/`--scale`/`-f` 优先 |
 | `--background <color>` | 页面背景，如 `white` \| `transparent` \| `#1A1A1A`（需要深色页面时显式传） |
@@ -194,10 +194,25 @@ mmdx page.html --background transparent   # 显式覆盖才有透明背景
 | --- | --- |
 | 技术方案/架构评审/投屏（默认） | `tech`（形状分色 + 可见填色） |
 | 工程师文档/README/架构图（干净） | `openai`（纯白、墨黑、薄荷绿点缀、发丝边框） |
-| 对外报告/打印/合规交付 | `openai` 配 `--tone paper`（衬线标题、16px 圆角，`--preset a4` 打印最佳） |
+| 对外报告/打印/合规交付 | `openai` 配 `--tone paper`（衬线标题、10px 圆角、网格纸底，`--preset a4` 打印最佳） |
 | 知识库/内部说明/长文 | `tech`（信息密度最高） |
 | 白板/头脑风暴/轻松分享 | `excalidraw`（手绘线条 + 粉彩填色；`--style-fill hachure` 切斜线） |
+| 产品界面截图 / iOS 应用说明 | `ios`（分组浅灰底 + 白卡片 + 发丝分隔线 + 系统色；图自带底） |
+| 周报贴纸 / 团队看板 / 轻松汇报 | `acnh`（奶油纸 + 粗棕描边 + 硬偏移阴影 + 圆体字；块页带点阵纸纹） |
+| 玻璃质感封面 / 现代产品汇报 | `glass`（Fluent 亚克力：淡蓝灰画布 + 网格 + 半透明白膜与细颗粒，面板 8px 圆角带白描边） |
+| 黑白打印 / 墨水屏阅读 / 合规文档 | `epaper`（电子纸：纸底 + 发丝黑描边 + 直角无阴影 + 灰阶区分形状） |
 | 需要深色页面 | `openai` 或 `tech` 配 `--background '#1A1A1A'`（深色页面不要投会议室） |
+
+### 无障碍底线（改色板前先看）
+
+主题色板有硬门槛，`tests/run.ts` 与 `scripts/lint-a11y.ts` 都会守：
+
+- 正文色对底 ≥ 7:1（WCAG AAA），次要文字 ≥ 4.5:1（AA），承载语义的强调色/警示色 ≥ 3:1；
+- 每个形状族的描边对底、对自己的填充都 ≥ 3:1（填充再浅也不能把描边吃掉）；
+- 红绿色盲（protan / deutan / tritan）模拟下，描边色不同的形状族仍两两可区分（OKLab ΔE ≥ 0.02）；
+- 信息不靠颜色单独承载：四个形状族本来就是四种形状（矩形 / 菱形 / 胶囊 / 圆柱），黑白打印与色盲读者都能读。
+
+自己改色板后跑 `node --experimental-transform-types --no-warnings scripts/lint-a11y.ts`，它会逐主题打印对比度与色觉模拟距离。
 
 ### 微调（--css 片段库，追加到主题之后）
 

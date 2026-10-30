@@ -10,19 +10,24 @@ import { blockPage, htmlKindToInner, type Caption } from '../src/blocks.ts';
 import { parseCardMarkdown, renderCardDoc } from '../src/card.ts';
 import { loadAssets } from '../src/embed.ts';
 import { Renderer } from '../src/render.ts';
-import { getTheme, PRESETS, type ThemeSpec } from '../src/themes.ts';
+import { getTheme, paperize, PRESETS, type ThemeSpec } from '../src/themes.ts';
+import { accentTint } from '../src/tokens.ts';
 import type { ToneName } from '../src/tone.ts';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const OUT = path.join(ROOT, 'docs', 'gallery');
 const CASE = path.join(ROOT, 'examples', 'gallery', 'release-review.md');
 
-const THEMES = ['tech', 'openai', 'excalidraw'] as const;
+const THEMES = ['tech', 'openai', 'excalidraw', 'ios', 'acnh', 'glass', 'epaper'] as const;
 
 const THEME_LABELS: Record<string, string> = {
   tech: '通用方案文档',
   openai: '近单色 / 薄荷点缀',
   excalidraw: '白板讨论',
+  ios: 'iOS 系统界面',
+  acnh: '动森',
+  glass: 'Fluent 玻璃（亚克力）',
+  epaper: '电子纸 / 墨水屏',
 };
 
 type SceneKind = 'mermaid' | 'kpi' | 'card' | 'table';
@@ -73,6 +78,12 @@ const code: Record<SceneKind, string> = {
 fs.mkdirSync(OUT, { recursive: true });
 const r = await Renderer.create(await loadAssets(), { scale: 2, width: 1200 });
 
+/** Block pages read the theme through tokens, exactly as the CLI does. */
+const tokensFor = (t: ThemeSpec) => ({
+  paper: t.vars.bg, ink: t.vars.fg, muted: t.vars.muted, rule: t.vars.border,
+  accent: t.vars.accent, accentTint: accentTint(t.vars.accent), paper2: t.vars.surfaceAlt,
+});
+
 const renderRaw = async (theme: ThemeSpec, diagram: string): Promise<Buffer> => {
   const { png } = await r.render({
     code: diagram, background: theme.background, needPng: true,
@@ -85,8 +96,7 @@ const renderRaw = async (theme: ThemeSpec, diagram: string): Promise<Buffer> => 
   return png;
 };
 
-const renderDiagram = async (theme: ThemeSpec, scene: Scene): Promise<Buffer> => {
-  const { svg } = await r.render({
+const renderDiagram = async (theme: ThemeSpec, scene: Scene): Promise<Buffer> => {  const { svg } = await r.render({
     code: code.mermaid, background: theme.background, needPng: false,
     scale: 2, width: 1200, theme,
     mermaidConfig: (PRESETS[theme.name]?.config ?? {}) as Record<string, unknown>,
@@ -94,7 +104,7 @@ const renderDiagram = async (theme: ThemeSpec, scene: Scene): Promise<Buffer> =>
     remap: PRESETS[theme.name]?.remap,
   });
   return r.renderHtml(
-    blockPage(`<div class="fig">${svg}</div>`, { blockCss: theme.blockCss, caption: scene.caption }),
+    blockPage(`<div class="fig">${svg}</div>`, { tokens: tokensFor(theme), blockCss: theme.blockCss, caption: scene.caption }),
     theme.background,
   );
 };
@@ -103,7 +113,7 @@ const renderBlock = async (theme: ThemeSpec, scene: Scene): Promise<Buffer> => {
   const kind = scene.kind as Exclude<SceneKind, 'mermaid'>;
   const inner = htmlKindToInner(kind, code[kind]);
   return r.renderHtml(
-    blockPage(inner, { blockCss: theme.blockCss, caption: scene.caption }),
+    blockPage(inner, { tokens: tokensFor(theme), blockCss: theme.blockCss, caption: scene.caption }),
     theme.background,
   );
 };
@@ -182,6 +192,25 @@ const reportInner =
   }
 }
 
+// The paper tone on a document page: the same blocks the theme pages use, on
+// the ruled stock the `--tone paper` diagram also draws.
+{
+  const paperTheme = paperize(getTheme('tech'));
+  const inner =
+    '<div style="display:flex;flex-direction:column;gap:20px;align-items:flex-start">' +
+    htmlKindToInner('kpi', code.kpi) +
+    htmlKindToInner('card', code.card) +
+    htmlKindToInner('table', code.table) +
+    '</div>';
+  const png = await r.renderHtml(
+    blockPage(inner, { tokens: tokensFor(paperTheme), tone: 'paper', caption: reportCaption }),
+    paperTheme.background,
+  );
+  const out = path.join(OUT, 'tone-paper-report.png');
+  fs.writeFileSync(out, png);
+  console.log('ok', path.relative(ROOT, out));
+}
+
 // The overview stays readable at README width: a compact top-down version of
 // the same release flow, rendered raw (no caption chrome) per style.
 const OVERVIEW_FLOW = `flowchart TD
@@ -191,7 +220,7 @@ const OVERVIEW_FLOW = `flowchart TD
   C -- 否 --> E[自动回滚]
 `;
 
-const overviewThemes = THEMES.slice(0, 3);
+const overviewThemes = THEMES;
 const overviewPng: Record<string, Buffer> = {};
 for (const name of overviewThemes) {
   overviewPng[name] = await renderRaw(getTheme(name), OVERVIEW_FLOW);
@@ -205,18 +234,18 @@ const strip = overviewThemes.map((name) =>
 
 const overview = `<!doctype html><html><head><meta charset="utf-8"><style>
 html,body{margin:0;background:#F6F7F9}
-.wrap{width:1080px;box-sizing:border-box;padding:24px 26px 26px;background:#F6F7F9;
+.wrap{width:1440px;box-sizing:border-box;padding:24px 26px 26px;background:#F6F7F9;
   font-family:"Inter","Segoe UI","Noto Sans SC",sans-serif;color:#1B1F26}
 h1{margin:0 0 4px;font-size:18px;font-weight:600}
 p{margin:0 0 18px;font-size:12px;color:#5B6470}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 figure{margin:0;background:#fff;border:1px solid #DCE1E7;border-radius:12px;padding:10px;overflow:hidden}
 figcaption{display:flex;justify-content:space-between;align-items:baseline;
   font-size:12px;padding:0 2px 8px;color:#1B1F26}
 figcaption span{color:#8A919C;font-size:10px;font-family:"Cascadia Code",Consolas,monospace}
 img{display:block;width:auto;max-width:100%;height:auto;margin:0 auto;border-radius:6px}
 </style></head><body><div class="wrap">
-<h1>一个案例，三种风格</h1>
+<h1>一个案例，七种风格</h1>
 <p>灰度发布复盘 · 流程图快速对比 — 完整四场景见各风格分页。</p>
 <div class="grid">${strip}</div>
 </div></body></html>`;
@@ -238,24 +267,44 @@ console.log('ok', path.relative(ROOT, heroFile));
   ).join('');
   const allOverview = `<!doctype html><html><head><meta charset="utf-8"><style>
 html,body{margin:0;background:#F6F7F9}
-.wrap{width:1440px;box-sizing:border-box;padding:28px 30px 30px;background:#F6F7F9;
+.wrap{width:1560px;box-sizing:border-box;padding:28px 30px 30px;background:#F6F7F9;
   font-family:"Inter","Segoe UI","Noto Sans SC",sans-serif;color:#1B1F26}
 h1{margin:0 0 4px;font-size:20px;font-weight:600}
 p{margin:0 0 20px;font-size:13px;color:#5B6470}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 figure{margin:0;background:#fff;border:1px solid #DCE1E7;border-radius:12px;padding:10px;overflow:hidden}
 figcaption{display:flex;flex-direction:column;gap:2px;font-size:13px;padding:0 2px 9px;color:#1B1F26}
 figcaption span{color:#8A919C;font-size:10px;line-height:1.3}
 img{display:block;width:auto;max-width:100%;height:auto;margin:0 auto;border-radius:6px}
 </style></head><body><div class="wrap">
-<h1>3 套内置主题总览</h1>
-<p>同一份灰度发布流程 · tech（默认）/ openai / excalidraw 各一张 · 分页中有更大的流程图与块版式样例。</p>
+<h1>7 套内置主题总览</h1>
+<p>同一份灰度发布流程 · tech（默认）/ openai / excalidraw / ios / acnh / glass / epaper 各一张 · 分页中有更大的流程图与块版式样例。</p>
 <div class="grid">${strip}</div>
 </div></body></html>`;
   const png = await r.renderHtml(allOverview, '#F6F7F9');
   const f = path.join(OUT, 'all-themes-overview.png');
   fs.writeFileSync(f, png);
   console.log('ok', path.relative(ROOT, f));
+}
+
+// The scenario guide: one statechart, the two looks it ships with.
+{
+  const scenarioMd = fs.readFileSync(path.join(ROOT, 'examples', 'gallery', 'scenario.md'), 'utf8');
+  const scenario = scenarioMd.match(/```mermaid\r?\n([\s\S]*?)```/)?.[1];
+  if (!scenario) throw new Error('examples/gallery/scenario.md has no mermaid fence');
+  for (const [key, theme] of [['paper', paperize(getTheme('tech'))], ['ios', getTheme('ios')]] as const) {
+    const { png } = await r.render({
+      code: scenario, background: theme.background, needPng: true,
+      scale: 2, width: 1200, theme,
+      mermaidConfig: (PRESETS[theme.name]?.config ?? {}) as Record<string, unknown>,
+      fontSize: 15, padding: 0, svgThemeable: false, titlePos: 'top', titleText: '',
+      remap: PRESETS[theme.name]?.remap,
+    });
+    if (!png) throw new Error(`no PNG for scenario/${key}`);
+    const f = path.join(OUT, `scenario-${key}.png`);
+    fs.writeFileSync(f, png);
+    console.log('ok', path.relative(ROOT, f));
+  }
 }
 
 await r.close();

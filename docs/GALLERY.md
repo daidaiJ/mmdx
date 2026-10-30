@@ -4,13 +4,23 @@
 
 同一个案例，按风格拆成独立页。主页只留一张流程图做快速对比；新增主题按同样结构追加一页，不会把总览撑爆。
 
-[![同一案例在三种风格下的流程图](gallery/overview.png)](gallery/overview.png)
+[![同一案例在四种风格下的流程图](gallery/overview.png)](gallery/overview.png)
 
-## 3 套主题总览
+## 7 套主题总览
 
-3 套内置主题各出一张同一流程，先看整体差异，再进分页看块版式：
+7 套内置主题各出一张同一流程，先看整体差异，再进分页看块版式：
 
-[![3 套内置主题总览](gallery/all-themes-overview.png)](gallery/all-themes-overview.png)
+[![7 套内置主题总览](gallery/all-themes-overview.png)](gallery/all-themes-overview.png)
+
+## 场景引导（状态图）
+
+把一次故障 / 一次审批的「处境怎么变」画成状态图，风险状态打标记。同一张图两档观感：网格纸报告（`--tone paper`）与 iOS 系统界面（`-t ios`）。
+
+| 网格纸报告 | iOS 系统界面 |
+| --- | --- |
+| [![场景引导 · 网格纸报告](gallery/scenario-paper.png)](gallery/scenario.md) | [![场景引导 · iOS 系统界面](gallery/scenario-ios.png)](gallery/scenario.md) |
+
+规则与复现命令见 [场景引导（状态图）](gallery/scenario.md)，源码在 [examples/gallery/scenario.md](../examples/gallery/scenario.md)。
 
 ## HTML 场景模板
 
@@ -45,14 +55,19 @@
 | `tech`（默认） | 方案文档、周报、通用交付 | 蓝 / 琥珀 / 绿形状分色，1.5px 描边，信息密度最高 | [tech](gallery/tech.md) |
 | `openai` | 对外报告、工程文档、极简 README | 纯白、墨黑、薄荷绿点缀，发丝边框，形状只靠细边框区分 | [openai](gallery/openai.md) |
 | `excalidraw` | 白板讨论、脑暴、非正式分享 | 粉彩填色 + 墨线抖动，白板卡片，中文用楷体回退 | [excalidraw](gallery/excalidraw.md) |
+| `ios` | 产品界面、iOS 应用说明、需要「系统感」的截图 | 纯平面分组浅灰底 + 白卡片 + 发丝分隔线 + 系统色；卡片不加强调色边条 | [ios](gallery/ios.md) |
+| `acnh` | 周报贴纸、团队看板、轻松汇报 | 奶油纸 + 粗棕描边 + 硬偏移贴纸阴影 + 圆体字，块页带点阵纸纹 | [acnh](gallery/acnh.md) |
+| `glass` | 玻璃质感封面、现代产品汇报、需要「材质感」的图 | Fluent 亚克力：淡蓝灰画布 + 28px 网格 + 半透明白膜与细颗粒，面板 8px 圆角带白描边 | [glass](gallery/glass.md) |
+| `epaper` | 黑白打印、墨水屏阅读、合规与审计文档 | `#F5F1EB` 纸底 + 纸纹颗粒 + 发丝黑描边 + 直角无阴影，形状族靠灰阶与形状区分 | [epaper](gallery/epaper.md) |
+| 场景引导（状态图） | 故障复盘、审批、发布的「处境怎么变」 | 状态 = 读者能看见的处境，风险状态打标记；纸底或玻璃底 | [scenario](gallery/scenario.md) |
 | HTML 报告卡 / 信息卡 | 把两个引入的 HTML 场景套到不同主题 | 同一份内容，主题和 `--tone` 分别控制配色与结构 | [html-skills](gallery/html-skills.md) |
 | 手绘 HTML（v1.4.2） | editorial 封面/插图；visual-explainer 解释页/复盘 | 手写 HTML + SVG，paper/ink/蓝；不属主题预设 | [vendored-html](gallery/vendored-html.md) |
 
-三套主题共用同一套 Markdown：图还是那张图，`kpi` / `card` / `table` 围栏也不变，只换 `-t`。`--brand` 只覆盖强调色，形状分色由主题保留。
+七套主题共用同一套 Markdown：图还是那张图，`kpi` / `card` / `table` 围栏也不变，只换 `-t`。`--brand` 只覆盖强调色，形状分色由主题保留。
 
 两个 HTML 场景的跨风格对照见 [html-skills](gallery/html-skills.md)；信息卡的 `paper` / `neutral` / `product` 三种结构见 [信息卡 tone 对照](gallery/card-tones.md)。
 
-总览固定展示这三套内置主题；后续新增主题只加分页和索引行，不再往总览里塞图。
+总览（`all-themes-overview.png`）展示当前全部内置主题；后续新增主题按同样结构加分页、索引行与总览格。
 
 ## 复现
 
@@ -60,7 +75,7 @@
 node --experimental-transform-types --no-warnings scripts/make-gallery.ts
 ```
 
-脚本会读取案例源码，写入三套主题的分场景图、报告卡与信息卡、3 张信息卡 tone 图，以及两张总览图。`vendored-*.png` 是 v1.4.2 的手绘 HTML 原始样张，可用 `mmdx tests/editorial-showcase/layer-stack.html --scale 3` 一类命令从 `tests/` 源码重出。
+脚本会读取案例源码，写入七套主题的分场景图、报告卡与信息卡、3 张信息卡 tone 图、`--tone paper` 的块页报告（`tone-paper-report.png`）、场景引导两张（网格纸 / iOS 系统界面），以及两张总览图。`vendored-*.png` 是 v1.4.2 的手绘 HTML 原始样张，可用 `mmdx tests/editorial-showcase/layer-stack.html --scale 3` 一类命令从 `tests/` 源码重出。
 
 单独渲染其中一张：
 

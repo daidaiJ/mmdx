@@ -23,7 +23,7 @@ export const peleEngine: Engine = {
     }
 
     const res = (await mark('pele-render', () => page.evaluate(
-      async ([code, themeCss, elId, fontSize, fontFamily, maxWidth, flowchart, iconPacksJson, flatten, background, rough, roughStyle]) => {
+      async ([code, themeCss, elId, fontSize, fontFamily, maxWidth, flowchart, iconPacksJson, flatten, background, rough, roughStyle, backdropJson]) => {
         const w = window as unknown as {
           pele?: { render: (s: string, o: Record<string, unknown>) => { svg: string; width: number; height: number } };
         };
@@ -95,6 +95,183 @@ export const peleEngine: Engine = {
         el.style.overflow = 'hidden';
         el.style.backgroundColor = background === 'transparent' ? 'transparent' : background;
         document.body.appendChild(el);
+
+        // Backdrop styles (ios / acnh) paint their own paper, so the panels have
+        // something to sit on in a standalone SVG as well as in the PNG.
+        if (backdropJson && background !== 'transparent') {
+          const spec = JSON.parse(backdropJson as string) as {
+            base: string;
+            blur?: number;
+            blobs?: Array<{ cx: number; cy: number; r: number; color: string; opacity: number }>;
+            dots?: { color: string; size: number; gap: number };
+            grid?: {
+              color: string; gap: number; width?: number;
+              major?: { color: string; gap: number; width?: number };
+            };
+            fade?: number;
+            pane?: { color: string; opacity?: number; noise?: number };
+          };
+          const ns = 'http://www.w3.org/2000/svg';
+          const boxX = x0 - 20;
+          const boxY = y0 - 12;
+          const boxW = bw + 40;
+          const boxH = bh + 24;
+          const base = document.createElementNS(ns, 'rect');
+          base.setAttribute('x', String(boxX));
+          base.setAttribute('y', String(boxY));
+          base.setAttribute('width', String(boxW));
+          base.setAttribute('height', String(boxH));
+          base.setAttribute('fill', spec.base);
+          const group = document.createElementNS(ns, 'g');
+          group.setAttribute('class', 'mmdx-backdrop');
+          const defs = document.createElementNS(ns, 'defs');
+          const cover = () => {
+            const r = document.createElementNS(ns, 'rect');
+            r.setAttribute('x', String(boxX));
+            r.setAttribute('y', String(boxY));
+            r.setAttribute('width', String(boxW));
+            r.setAttribute('height', String(boxH));
+            return r;
+          };
+          // Only the tint is blurred: the ruling, the sheet and the grain sit
+          // above the soft focus, so they stay crisp.
+          const tint = document.createElementNS(ns, 'g');
+          if (spec.blur) {
+            const filter = document.createElementNS(ns, 'filter');
+            filter.setAttribute('id', `${elId}-backdrop`);
+            filter.setAttribute('x', '-20%');
+            filter.setAttribute('y', '-20%');
+            filter.setAttribute('width', '140%');
+            filter.setAttribute('height', '140%');
+            const blur = document.createElementNS(ns, 'feGaussianBlur');
+            // Cap the blur on short canvases, or a banner washes out to one flat tint.
+            blur.setAttribute('stdDeviation', String(Math.min(spec.blur, Math.min(boxW, boxH) * 0.25)));
+            filter.appendChild(blur);
+            defs.appendChild(filter);
+            tint.setAttribute('filter', `url(#${elId}-backdrop)`);
+          }
+          group.appendChild(tint);
+          // Fade the blobs out at the frame edge. The capture cannot pad a
+          // full-bleed backdrop (the padding can only be the base colour), and
+          // the diagram needs a margin the visual gate can measure.
+          const fade = document.createElementNS(ns, 'radialGradient');
+          fade.setAttribute('id', `${elId}-backdrop-fade`);
+          fade.setAttribute('cx', '50%');
+          fade.setAttribute('cy', '50%');
+          fade.setAttribute('r', '50%');
+          for (const [offset, opacity] of [[`${spec.fade ?? 92}%`, '1'], ['100%', '0']] as const) {
+            const stop = document.createElementNS(ns, 'stop');
+            stop.setAttribute('offset', offset);
+            stop.setAttribute('stop-color', '#FFFFFF');
+            stop.setAttribute('stop-opacity', opacity);
+            fade.appendChild(stop);
+          }
+          const mask = document.createElementNS(ns, 'mask');
+          mask.setAttribute('id', `${elId}-backdrop-mask`);
+          // Inset past the viewBox padding: the tint has to stay inside the
+          // diagram's own margin, or it becomes the outermost ink and the
+          // capture's margin checks follow the gradient instead of the diagram.
+          const inset = 14;
+          const maskRect = document.createElementNS(ns, 'rect');
+          maskRect.setAttribute('x', String(boxX + inset));
+          maskRect.setAttribute('y', String(boxY + inset));
+          maskRect.setAttribute('width', String(Math.max(0, boxW - inset * 2)));
+          maskRect.setAttribute('height', String(Math.max(0, boxH - inset * 2)));
+          maskRect.setAttribute('rx', '18');
+          maskRect.setAttribute('fill', `url(#${elId}-backdrop-fade)`);
+          mask.appendChild(maskRect);
+          defs.appendChild(fade);
+          defs.appendChild(mask);
+          group.setAttribute('mask', `url(#${elId}-backdrop-mask)`);
+          // Half the diagonal, so blobs stay distinct on wide and tall canvases alike.
+          const scale = Math.hypot(boxW, boxH) / 2;
+          if (spec.dots) {
+            // Paper texture: one dot per cell, tiled in user space.
+            const pattern = document.createElementNS(ns, 'pattern');
+            pattern.setAttribute('id', `${elId}-backdrop-dots`);
+            pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+            pattern.setAttribute('width', String(spec.dots.gap));
+            pattern.setAttribute('height', String(spec.dots.gap));
+            const dot = document.createElementNS(ns, 'circle');
+            dot.setAttribute('cx', String(spec.dots.gap / 2));
+            dot.setAttribute('cy', String(spec.dots.gap / 2));
+            dot.setAttribute('r', String(spec.dots.size));
+            dot.setAttribute('fill', spec.dots.color);
+            pattern.appendChild(dot);
+            defs.appendChild(pattern);
+            const tile = cover();
+            tile.setAttribute('fill', `url(#${elId}-backdrop-dots)`);
+            group.appendChild(tile);
+          }
+          for (const blob of spec.blobs ?? []) {
+            const c = document.createElementNS(ns, 'circle');
+            c.setAttribute('cx', String(boxX + blob.cx * boxW));
+            c.setAttribute('cy', String(boxY + blob.cy * boxH));
+            c.setAttribute('r', String(blob.r * scale));
+            c.setAttribute('fill', blob.color);
+            c.setAttribute('opacity', String(blob.opacity));
+            tint.appendChild(c);
+          }
+          if (spec.grid) {
+            // Ruled sheet: one hairline cell per pattern tile, plus the heavier
+            // every-N line. Drawn after the blobs so the ruling stays crisp.
+            const rule = (
+              key: string,
+              g: { color: string; gap: number; width?: number },
+            ) => {
+              const pattern = document.createElementNS(ns, 'pattern');
+              pattern.setAttribute('id', `${elId}-backdrop-${key}`);
+              pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+              pattern.setAttribute('width', String(g.gap));
+              pattern.setAttribute('height', String(g.gap));
+              const p = document.createElementNS(ns, 'path');
+              p.setAttribute('d', `M0 0H${g.gap}M0 0V${g.gap}`);
+              p.setAttribute('fill', 'none');
+              p.setAttribute('stroke', g.color);
+              p.setAttribute('stroke-width', String(g.width ?? 1));
+              pattern.appendChild(p);
+              defs.appendChild(pattern);
+              const tile = cover();
+              tile.setAttribute('fill', `url(#${elId}-backdrop-${key})`);
+              group.appendChild(tile);
+            };
+            rule('grid', spec.grid);
+            if (spec.grid.major) rule('grid-major', spec.grid.major);
+          }
+          if (spec.pane) {
+            // Acrylic sheet: a translucent film over the tint, then the grain on
+            // its surface. `feTurbulence` is seeded so two runs match pixel for pixel.
+            if (spec.pane.opacity) {
+              const pane = cover();
+              pane.setAttribute('fill', spec.pane.color);
+              pane.setAttribute('opacity', String(spec.pane.opacity));
+              group.appendChild(pane);
+            }
+            if (spec.pane.noise) {
+              const filter = document.createElementNS(ns, 'filter');
+              filter.setAttribute('id', `${elId}-backdrop-noise`);
+              const turb = document.createElementNS(ns, 'feTurbulence');
+              turb.setAttribute('type', 'fractalNoise');
+              turb.setAttribute('baseFrequency', '0.85');
+              turb.setAttribute('numOctaves', '3');
+              turb.setAttribute('seed', '7');
+              turb.setAttribute('stitchTiles', 'stitch');
+              const desat = document.createElementNS(ns, 'feColorMatrix');
+              desat.setAttribute('type', 'saturate');
+              desat.setAttribute('values', '0');
+              filter.appendChild(turb);
+              filter.appendChild(desat);
+              defs.appendChild(filter);
+              const grain = cover();
+              grain.setAttribute('filter', `url(#${elId}-backdrop-noise)`);
+              grain.setAttribute('opacity', String(spec.pane.noise));
+              group.appendChild(grain);
+            }
+          }
+          el.insertBefore(defs, el.firstChild);
+          el.insertBefore(base, defs);
+          el.insertBefore(group, base.nextSibling);
+        }
 
         if (rough) {
           const r = (window as unknown as {
@@ -228,6 +405,10 @@ export const peleEngine: Engine = {
                 if (value) node.setAttribute(prop, value);
               }
             }
+            // Filters are how the ios and acnh panels get their depth; `none` is the
+            // computed value for every other theme, so only real filters bake.
+            const filter = cs.getPropertyValue('filter');
+            if (filter && filter !== 'none') (node as SVGElement).style.setProperty('filter', filter);
           }
           el.querySelector('#' + elId + '-theme')?.remove();
         }
@@ -244,15 +425,16 @@ export const peleEngine: Engine = {
         opts.background,
         !!opts.theme.style?.rough,
         opts.theme.style ?? {},
+        opts.theme.backdrop ? JSON.stringify(opts.theme.backdrop) : null,
       ] as [
         string, string, string, number, string, number,
         Record<string, number> | null, string, boolean, string,
-        boolean, Record<string, unknown>,
+        boolean, Record<string, unknown>, string | null,
       ],
     ))) as { svg: string; width: number; height: number };
 
     const png = opts.needPng
-      ? await mark('screenshot', () => captureElement(page, id, opts.background, opts.scale))
+      ? await mark('screenshot', () => captureElement(page, id, opts.background, opts.scale, !!opts.theme.backdrop))
       : undefined;
 
     await page.evaluate((elId) => document.getElementById(elId)?.remove(), id);
