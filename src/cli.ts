@@ -23,7 +23,7 @@ import {
 import { isToneName, type ToneName } from './tone.ts';
 import type { IconPack } from './engine/types.ts';
 
-let VERSION = '3.0.0';
+let VERSION = '2.1.0';
 
 type Optimize = (svg: string, opts: unknown) => { data: string };
 let svgoOptimize: Optimize | null = null;

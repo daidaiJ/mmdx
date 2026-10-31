@@ -5,7 +5,7 @@ status: active
 
 > 本文件按用户要求随仓库提交，供跨会话/跨机器交接。评审图和原型脚本仍在本地 gitignored 的 `review/`、`.handoff/` 目录，不随仓库分发。
 >
-> 本地 `main` 领先 `origin/main` 一个提交：2026-10-31 的本轮改动（字体随包、砍掉 `glass`、门槛与画廊重出）已提交为 `445e7a4`，**未推送**——先等用户目测 `review/styles/` 与 `docs/gallery/`。
+> 2026-10-31 的本轮改动（字体随包、砍掉 `glass`、门槛与画廊重出）已随 **v2.1.0** 发布：`origin/main` 与本地同点，tag `v2.1.0` 触发的 Release 工作流产出三个压缩包。
 
 ## 1. 目标
 
@@ -16,7 +16,7 @@ status: active
 - **当前阶段：** 八套主题落地（`excalidraw` 走 Pele + rough.js 与 `--style-fill solid|hachure`；`ios` 纯平面系统界面，2026-10-30 加强系统感；`acnh` 奶油纸 + 点阵；`epaper` 电子纸 + 纸纹；`zed` / `zed-light` 取 Zed 的 One Dark / One Light，是第一套暗色预设，节点按 Zed 的 `node_counter % 8` 轮转 8 个 player 色、描边取 accent 原色、填充 accent 15% 混页面底色）。`--tone`（`paper` 另换网格纸）与 `mmdx card`（默认 `openai`）已落地。无障碍契约已由测试守住，2026-10-30 又加三条承载语义的门槛（连线对底、8 色系列两两色觉、系列色对底）。画廊案例改用满四个形状族的流程图并新增饼图场景。OpenAI 编辑风与 5 套办公/工程主题的移植已放弃并移除。2026-10-31 按用户判断砍掉 `glass`（亚克力依赖 `backdrop-filter`，Chromium 不渲染 SVG 形状上的该属性，与 `openai` / `ios` 区分不足），并把八套主题命名的字体全部随包（`src/fonts.ts` 注册表 + `assets/fonts/` 8 个家族约 7.3MB，`theme.fonts` 接入渲染，块页字体栈进 `blockCss` 的 `--font`），新增 `lint/theme-fonts` 门槛。用户已目测通过上一轮；正式评审仍待做。
 - **状态：** in-progress
 - **进度：** 调研 100% / 原型 100% / 生产实现 95% / 正式评审 0%
-- **工作区：** 干净。`28e98f6`（Zed 样式）已推送；`445e7a4`（字体随包 + 砍 glass）已提交未推送。开工前先 `git log -1` / `git status` 确认起点。
+- **工作区：** 干净，`origin/main` 已同步。`28e98f6`（Zed 样式）随 2.0.0 之后的那一轮推送；`445e7a4`（字体随包 + 砍 glass）随 **v2.1.0** 发布。开工前先 `git log -1` / `git status` 确认起点。
 
 ## 3. 关键证据
 

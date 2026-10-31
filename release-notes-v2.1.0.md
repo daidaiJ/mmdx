@@ -1,4 +1,4 @@
-mmdx 3.0.0：八套主题命名的字体全部随包（跨机器渲染一致），并砍掉 `glass` 预设。
+mmdx 2.1.0：八套主题命名的字体全部随包（跨机器渲染一致），并砍掉 `glass` 预设。
 
 ## 亮点
 
@@ -21,8 +21,8 @@ mmdx 3.0.0：八套主题命名的字体全部随包（跨机器渲染一致）�
 ## 产物
 
 - mmdx-windows-x64.exe — 单文件二进制（免 Node；需系统 Edge/Chrome）
-- mmdx-dynamic-v3.0.0.zip — 动态运行时（需 bun）
-- mmdx-skill-v3.0.0.zip — skill 目录 + 内嵌 CLI（`bin/mmdx.exe`）
+- mmdx-dynamic-v2.1.0.zip — 动态运行时（需 bun）
+- mmdx-skill-v2.1.0.zip — skill 目录 + 内嵌 CLI（`bin/mmdx.exe`）
 
 三个包都随附 `THIRD_PARTY_NOTICES.md` 与 `licenses/`（含 8 个字体家族的 OFL 全文）。
 

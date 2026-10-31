@@ -6,7 +6,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
-## [3.0.0] - 2026-10-31
+## [2.1.0] - 2026-10-31
 
 ### Themes (added)
 
@@ -209,7 +209,7 @@ First stable release.
 
 - `mmdx-windows-x64.exe` — windows x64 single file (no Node; needs system Edge/Chrome)
 
-[3.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v3.0.0
+[2.1.0]: https://github.com/daidaiJ/mmdx/releases/tag/v2.1.0
 [2.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v2.0.0
 [1.1.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.1.0
 [1.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.0.0
