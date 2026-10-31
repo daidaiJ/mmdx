@@ -40,11 +40,13 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          mkdir -p dist/mmdx-dynamic/assets
+          mkdir -p dist/mmdx-dynamic/assets/fonts
           cp -r src dist/mmdx-dynamic/src
-          # every bundled face, not just the *-Subset ones (Excalifont ships as
-          # per-script chunks) plus the license texts that travel with them
-          cp -r assets/fonts dist/mmdx-dynamic/assets/fonts
+          # Every bundled face (Excalifont ships as per-script chunks, so a
+          # *-Subset.woff2 glob would miss it) plus the license texts that
+          # travel with them. The tracked subsetting sources stay behind:
+          # NotoSansSC-VF.ttf alone is 17MB and is never read at runtime.
+          cp assets/fonts/*.woff2 assets/fonts/OFL-*.txt dist/mmdx-dynamic/assets/fonts/
           cp -r skill dist/mmdx-dynamic/skill
           cp -r licenses dist/mmdx-dynamic/licenses
           cp package.json tsconfig.json README.md LICENSE THIRD_PARTY_NOTICES.md dist/mmdx-dynamic/
