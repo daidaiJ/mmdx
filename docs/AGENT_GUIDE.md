@@ -157,7 +157,7 @@ stdout 单份 JSON：`theme/engine/format/background/preset?/brand?/caption?/blo
 
 ## 主题速记
 
-`-t`：`tech`（默认，形状分色 + 可见填色，适合文档和投屏）· `openai`（干净工程师文档：纯白、墨黑、薄荷绿点缀、发丝边框）· `excalidraw`（手绘线条 + 粉彩填色）· `ios`（iOS 系统界面：分组浅灰底 + 白卡片 + 发丝分隔线 + 系统色）· `acnh`（动森：奶油纸 + 粗棕描边 + 硬偏移阴影 + 圆体字）· `glass`（Fluent 亚克力：淡蓝灰画布 + 网格 + 半透明白膜与细颗粒）· `epaper`（电子纸：纸底 + 发丝黑描边 + 直角无阴影 + 灰阶形状分色）· `zed`（Zed One Dark：暗画布 + 发丝线 + 语法色形状族，填充为同色 15% 混页面底色）· `zed-light`（One Light）。`acnh` / `glass` / `epaper` 图都自带底（`mmdx-backdrop`），PNG 不裁边；`ios` 是纯平面，不画底、不加投影。
+`-t`：`tech`（默认，形状分色 + 可见填色，适合文档和投屏）· `openai`（干净工程师文档：纯白、墨黑、薄荷绿点缀、发丝边框）· `excalidraw`（手绘线条 + 粉彩填色）· `ios`（iOS 系统界面：分组浅灰底 + 白卡片 + 发丝分隔线 + 系统色）· `acnh`（动森：奶油纸 + 粗棕描边 + 硬偏移阴影 + 圆体字）· `epaper`（电子纸：纸底 + 发丝黑描边 + 直角无阴影 + 灰阶形状分色）· `zed`（Zed One Dark：暗画布 + 发丝线 + 语法色形状族，填充为同色 15% 混页面底色）· `zed-light`（One Light）。`acnh` / `epaper` 图都自带底（`mmdx-backdrop`），PNG 不裁边；`ios` 是纯平面，不画底、不加投影。八套主题命名的字体全部随包（黑体 / 宋体 / 楷体 + 各主题展示字体，共约 7.3MB），字体栈只列随包家族，装没装系统字体不影响出图。
 `excalidraw` 默认实心填色；`--style-fill hachure` 切斜线。块页和信息卡用 `--tone paper|neutral|product` 控制结构；`paper` 另把图的配色换成灰白网格纸（`#FAFAF8` + 24px 细格 / 96px 粗格，焦橙强调色；`neutral` / `product` 不动配色）。叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。`--brand` 不重涂 flowchart 判定菱形。
 
 | 场景 | 首选 | 备选 | tone |
@@ -174,7 +174,6 @@ stdout 单份 JSON：`theme/engine/format/background/preset?/brand?/caption?/blo
 | 轻松分享 | `excalidraw` | `tech` | `paper` |
 | 产品界面 / iOS 说明 | `ios` | `tech` | `neutral` |
 | 周报贴纸 / 团队看板 | `acnh` | `excalidraw` | `neutral` |
-| 玻璃封面 / 现代产品汇报 | `glass` | `tech` | `neutral` |
 | 黑白打印 / 墨水屏 / 合规 | `epaper` | `openai` | `neutral` |
 | 暗色文档站 / 技术分享 | `zed` | `zed` | `neutral` |
 

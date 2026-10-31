@@ -15,13 +15,20 @@ depends on the components below. Full license texts are kept in [`licenses/`](li
 | svgo | 4.1.0 | MIT | https://github.com/svg/svgo | Browser build; SVG minification |
 | Noto Sans SC (subset) | — | OFL-1.1 | https://github.com/notofonts/noto-cjk | `assets/fonts/NotoSansSC-Subset.woff2`; bundled CJK font |
 | Noto Serif SC (subset) | — | OFL-1.1 | https://github.com/notofonts/noto-cjk | `assets/fonts/NotoSerifSC-Subset.woff2`; serif-stack CJK for authored HTML |
-| LXGW WenKai (subset) | — | OFL-1.1 | https://github.com/lxgw/LxgwWenKai | `assets/fonts/LXGWWenKai-Subset.woff2`; kai CJK for authored HTML |
+| LXGW WenKai (subset) | — | OFL-1.1 | https://github.com/lxgw/LxgwWenKai | `assets/fonts/LXGWWenKai-Subset.woff2`; kai CJK for `excalidraw` and authored HTML |
+| Excalifont (subset) | — | OFL-1.1 | https://github.com/excalidraw/excalidraw (`packages/excalidraw/fonts/Excalifont`) | `assets/fonts/Excalifont-0.woff2`, `-1.woff2`; hand-drawn latin for `excalidraw`. Upstream ships per-script chunks; the two latin chunks ship here with their `unicode-range` |
+| ZCOOL KuaiLe (subset) | — | OFL-1.1 | https://github.com/googlefonts/zcool-kuaile | `assets/fonts/ZCOOLKuaiLe-Subset.woff2`; rounded CJK for `acnh` |
+| Baloo 2 (subset) | — | OFL-1.1 | https://github.com/EkType/Baloo2 | `assets/fonts/Baloo2-Subset.woff2`; rounded latin for `acnh` |
+| Newsreader (subset) | — | OFL-1.1 | https://github.com/productiontype/Newsreader | `assets/fonts/Newsreader-Subset.woff2`; serif for `epaper` block pages |
+| JetBrains Mono (subset) | — | OFL-1.1 | https://github.com/JetBrains/JetBrainsMono | `assets/fonts/JetBrainsMono-Subset.woff2`; monospace for code, kickers and footers on block pages |
 
-The three font files are subsets of the upstream families, redistributed under the SIL
-Open Font License 1.1; license texts ship next to them as
-`assets/fonts/OFL-notoserifsc.txt` and `assets/fonts/OFL-lxgwwenkai.txt`, and the sans
-subset under [`licenses/NotoSansSC-OFL.txt`](licenses/NotoSansSC-OFL.txt). Copyright
-remains with the upstream projects as stated in the font metadata.
+All eight font files are subsets of the upstream families (or, for Excalifont, upstream
+chunks), redistributed under the SIL Open Font License 1.1; `scripts/subset-font.py`
+records the coverage contract and the download URLs. License texts ship next to them:
+`assets/fonts/OFL-notoserifsc.txt`, `OFL-lxgwwenkai.txt`, `OFL-excalifont.txt`,
+`OFL-zcoolkuaile.txt`, `OFL-baloo2.txt`, `OFL-newsreader.txt`, `OFL-jetbrainsmono.txt`,
+and the sans subset under [`licenses/NotoSansSC-OFL.txt`](licenses/NotoSansSC-OFL.txt).
+Copyright remains with the upstream projects as stated in the font metadata.
 
 ## Runtime dependencies
 

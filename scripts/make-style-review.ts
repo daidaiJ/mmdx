@@ -7,6 +7,7 @@ import { blockPage, htmlKindToInner, type BlockKind } from '../src/blocks.ts';
 import { parseCardMarkdown, renderCardDoc } from '../src/card.ts';
 import { chartToMermaid, parseChart } from '../src/chart.ts';
 import { loadAssets } from '../src/embed.ts';
+import { allFamilies } from '../src/fonts.ts';
 import { Renderer } from '../src/render.ts';
 import { getTheme, type ThemeSpec } from '../src/themes.ts';
 import { accentTint, type Tokens } from '../src/tokens.ts';
@@ -15,8 +16,8 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const OUT = path.join(ROOT, 'review', 'styles');
 fs.mkdirSync(OUT, { recursive: true });
 
-const r = await Renderer.create(await loadAssets(), { scale: 2, width: 1200 });
-const themes = ['tech', 'openai', 'excalidraw', 'ios', 'acnh', 'glass', 'epaper', 'zed', 'zed-light'] as const;
+const r = await Renderer.create(await loadAssets(), { scale: 2, width: 1200, fonts: allFamilies() });
+const themes = ['tech', 'openai', 'excalidraw', 'ios', 'acnh', 'epaper', 'zed', 'zed-light'] as const;
 const diagrams = ['flowchart', 'state', 'class', 'er'] as const;
 const blocks: Array<[BlockKind, string]> = [['card', 'card.md'], ['kpi', 'kpi.md'], ['table', 'table.md']];
 const galleryCase = fs.readFileSync(path.join(ROOT, 'examples', 'gallery', 'release-review.md'), 'utf8');
@@ -133,12 +134,13 @@ for (const name of themes) {
   await writeSheet('zed vs tech', items, dir, 3);
 }
 
-// The five light presets side by side: these are the ones that can read as each
-// other at thumbnail size, so they get their own sheet.
+// The light presets that can read as each other at thumbnail size get their own
+// sheet: the four flat light greys/whites, plus the cream and e-paper stocks
+// that share their low-contrast, paper-like feel.
 {
   const dir = path.join(OUT, 'light-compare');
   fs.mkdirSync(dir, { recursive: true });
-  const names = ['tech', 'openai', 'ios', 'glass', 'zed-light'] as const;
+  const names = ['tech', 'openai', 'ios', 'acnh', 'zed-light'] as const;
   const items: Array<{ file: string; caption: string }> = [];
   const row = async (label: string, render: (t: ThemeSpec, file: string) => Promise<void>): Promise<void> => {
     for (const name of names) {

@@ -16,7 +16,7 @@
 | 🤖 AI Agent | [docs/AGENT_GUIDE.en.md](docs/AGENT_GUIDE.en.md) | Token-lean: env self-check, diagram picking, flag cheatsheet, JSON contract, error triage |
 | 👤 Human user | [docs/HUMAN_GUIDE.en.md](docs/HUMAN_GUIDE.en.md) | Readable: install & deploy, full CLI reference, theming, performance tuning, troubleshooting |
 | 🖼 Extension blocks | [docs/EXTENSIONS.en.md](docs/EXTENSIONS.en.md) | One tool-rendered PNG + syntax per fence |
-| 🎭 Style gallery | [docs/GALLERY.en.md](docs/GALLERY.en.md) | One case across nine themes: flowchart / KPI / cards / table |
+| 🎭 Style gallery | [docs/GALLERY.en.md](docs/GALLERY.en.md) | One case across eight themes: flowchart / KPI / cards / table |
 | 🧪 Quality gates | [docs/QUALITY.en.md](docs/QUALITY.en.md) | Pixel-lint coverage, known blind spots, pre-release license checklist |
 | 🖋 Hand-drawn editorial specs | [skill/editorial/](skill/editorial/README.md) | Vendored diagram-design specs (MIT): hand-draw covers / proposal art per its specs and export with `mmdx file.html --scale 3` |
 | 📃 Narrative explainer specs | [skill/explain/](skill/explain/README.md) | Vendored spec-only adaptation of visual-explainer (MIT): explainers / review pages / recaps / slide decks assembled from a starter, exported with the same command |
@@ -28,8 +28,8 @@ Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 ## ✨ Highlights
 
 - **Pele as the only engine**: Obsidian's Mermaid→SVG renderer, 1–50 ms per diagram; the input is still Mermaid syntax (fences / `.mmd` / stdin), but there is a single render path and no second layout engine
-- **CSS-variable themes**: Pele exposes every color/font/radius as `--pele-*`; `-f svg` bakes hex by default, `--svg-themeable` keeps a re-themeable SVG; three presets share shape coding (blue = process, amber = decision, green = state, purple = storage)
-- **Bundled CJK fonts (three families)**: GB2312 subsets of Noto Sans SC (universal), Noto Serif SC (serif stacks), and LXGW WenKai (kai labels) — ~6.2 MB total, identical rendering on any machine, correct wrapping for Chinese labels; the serif/kai faces and the `sans-serif` / `serif` CJK fallback aliases are injected for authored HTML documents only — fences and mermaid keep the sans face alone
+- **CSS-variable themes**: Pele exposes every color/font/radius as `--pele-*`; `-f svg` bakes hex by default, `--svg-themeable` keeps a re-themeable SVG; most of the eight presets share shape coding (blue = process, amber = decision, green = state, purple = storage, while `zed` / `zed-light` cycle the eight player colours by reading order)
+- **Every font ships with the package**: GB2312 subsets of Noto Sans SC (general), Noto Serif SC (serif stacks) and LXGW WenKai (kai annotations), plus the per-theme display faces — Excalifont (hand-drawn), ZCOOL KuaiLe + Baloo 2 (rounded), Newsreader (e-paper serif) and JetBrains Mono (monospace) — about 7.3MB in total. Theme stacks name bundled families only, so installed system fonts cannot change a render; `lint/theme-fonts` keeps it that way and `scripts/subset-font.py` records the subsetting contract and sources
 - **Pixel-level even padding**: every image is re-cropped to its ink bounding box; symmetric margins are a construction guarantee, not the engine's unreliable viewBox
 - **Extension blocks**: ```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane straight to PNG
 - **Office delivery**: `--preset slide|a4|square|column`, title/source/unit chrome, `--brand` accent; agent-friendly `--json` (including `warnings`)
@@ -97,14 +97,13 @@ Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` /
 | `excalidraw` | Hand-drawn: pastel fills + rough ink strokes, Excalifont/LXGW; whiteboard-style blocks |
 | `ios` | iOS system interface: **flat** grouped grey page, white cards, hairline separators, system colours (blue `#007AFF` / green / orange / purple), 12px radii; cards follow the iOS grouped-list recipe, with no backdrop and no shadows |
 | `acnh` | Animal Crossing: cream paper, thick brown outlines, hard offset sticker shadows, rounded type and pill labels; block pages carry a dotted paper grid |
-| `glass` | Fluent acrylic glass: pale blue-grey canvas, 24px ruling, a white translucent sheet with fine grain over it, panels at `rgba(255,255,255,.45)` with 8px radii and a light rim, with the ruling showing through; Fluent blue `#0F6CBD` accent |
 | `epaper` | E-ink: `#F5F1EB` stock with a paper grain, `#1A1A1A` hairline strokes, square corners, no shadow, no accent colour; shape families differ by grey level and shape. Block pages share the stock, with ink-bordered cards and monospace uppercase headers |
 | `zed` | Zed editor dark (One Dark): `#282C33` canvas, hairlines, no shadow and no texture; flowchart / class / state nodes cycle the eight player colours by reading order (Zed's `node_counter % 8`), outline in the colour and filled with it at 15% over the page, so the diagram is multi-hue rather than shape-coded |
 | `zed-light` | The same rotation rules on One Light (`#FAFAFA` canvas with `#EBEBEC` editor panels) |
 
 `excalidraw` uses solid fills by default; add `--style-fill hachure` for hatched fills (about 1.5–2× larger SVG; keep solid for projectors).
 
-`acnh`, `glass` and `epaper` paint their own backdrop: the SVG gets an `mmdx-backdrop` layer (cream paper with a dotted grid for `acnh`, tint plus ruling plus a translucent white sheet and grain for `glass`, paper stock with a turbulence grain for `epaper`), and the PNG is captured full-bleed, so the SVG and the PNG look the same. `ios` is flat: no backdrop and no shadows. With `--background transparent` no backdrop is drawn and translucent panels show the host page through them.
+`acnh` and `epaper` paint their own backdrop: the SVG gets an `mmdx-backdrop` layer (cream paper with a dotted grid for `acnh`, paper stock with a turbulence grain for `epaper`), and the PNG is captured full-bleed, so the SVG and the PNG look the same. `ios` is flat: no backdrop and no shadows. With `--background transparent` no backdrop is drawn.
 
 `--tone paper|neutral|product` changes block structure (radius, shadow, display type, table headers); `paper` also repaints the diagram onto editorial stock (`#FAFAF8` sheet with a 24px fine / 96px bold grid, burnt-tangerine `#BF4520` accent) and gives block pages the same ruled sheet. `neutral` and `product` leave the diagram palette alone. Info cards are a standalone skill, [`info-card-designer`](skill/info-card-designer/SKILL.md), applying the same theme and tone to Markdown or a web article:
 
@@ -132,7 +131,7 @@ Starters already inline the kit design system and that register's Latin fonts, s
 
 The same “gray release retrospective” case in every built-in theme; the Markdown stays identical and only `-t` changes. The overview keeps one flowchart for a quick comparison:
 
-[![The same case as a flowchart in nine themes](docs/gallery/overview.png)](docs/GALLERY.en.md)
+[![The same case as a flowchart in eight themes](docs/gallery/overview.png)](docs/GALLERY.en.md)
 
 Also see [two HTML scenario templates](docs/gallery/html-skills.en.md) (report cards and info cards across styles), [hand-drawn HTML templates](docs/gallery/vendored-html.en.md) (v1.4.2 editorial / visual-explainer), and the [info-card tone comparison](docs/gallery/card-tones.en.md) (paper / neutral / product).
 

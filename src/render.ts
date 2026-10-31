@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import puppeteer, { type Browser, type Page } from 'puppeteer-core';
 import { screenshotGate } from './capture.ts';
 import type { Assets } from './embed.ts';
+import { BASE_FAMILY, DOC_FAMILIES, MONO_FAMILY, faceCss } from './fonts.ts';
 import { peleEngine } from './engine/pele.ts';
 import type { EngineRenderOptions, MarkFn } from './engine/types.ts';
 import { auditContrast, auditLayout, auditSvgText, type LayoutIssue } from './lint.ts';
@@ -14,6 +15,8 @@ export interface RendererOptions {
   browserPath?: string;
   scale: number;
   width: number;
+  /** bundled font families this run needs, beyond the base sans (theme display faces) */
+  fonts?: string[];
   /** iconify packs preloaded for `@{icon: pack:icon}` node syntax */
   iconPacks?: Array<{ name: string; json: string }>;
   /** record per-stage timings into renderer.profile */
@@ -110,35 +113,33 @@ export class Renderer {
       deviceScaleFactor: this.opts.scale,
     });
     await page.setContent(PAGE_HTML);
-    if (!this.assets.fontB64) return;
     await this.mark('init-font', () => this.injectFont(page));
   }
 
+  /** families this run injects: the base sans, the theme's faces, and the mono */
+  private fontFamilies(): string[] {
+    return [BASE_FAMILY, ...(this.opts.fonts ?? []), MONO_FAMILY];
+  }
+
   private async injectFont(page: Page): Promise<void> {
-    if (!this.assets.fontB64) return;
-    await page.evaluate((css) => {
+    const families = this.fontFamilies();
+    const css = faceCss(families, this.assets.fonts);
+    if (!css) return;
+    await page.evaluate((styles) => {
       if (document.querySelector('style[data-mmdx-font]')) return;
       const s = document.createElement('style');
       s.setAttribute('data-mmdx-font', '1');
-      s.textContent = css;
+      s.textContent = styles;
       document.head.appendChild(s);
-    }, this.fontCss());
+    }, css);
     // Mermaid and Pele both measure labels before drawing; a web font that
     // is not loaded yet yields fallback metrics and clipped labels.
-    await page.evaluate(async () => {
+    await page.evaluate(async (names) => {
       try {
-        await document.fonts.load('500 15px "Noto Sans SC"', '中文English');
+        await Promise.all(names.map((f) => document.fonts.load(`500 15px "${f}"`, '中文English 0123')));
         await document.fonts.ready;
       } catch { /* built-in measurer */ }
-    });
-  }
-
-  private fontCss(): string {
-    return (
-      `@font-face{font-family:'Noto Sans SC';` +
-      `src:url(data:font/woff2;base64,${this.assets.fontB64}) format('woff2');` +
-      `font-weight:100 900;font-style:normal;font-display:block;}`
-    );
+    }, families);
   }
 
   private async resetBody(page: Page): Promise<void> {
@@ -157,7 +158,7 @@ export class Renderer {
       font: !!document.querySelector('style[data-mmdx-font]'),
     }));
 
-    if (this.assets.fontB64 && !state.font) await this.injectFont(page);
+    if (!state.font) await this.injectFont(page);
     if (state.ready) return;
 
     if (!this.assets.peleJs) throw new Error('pele asset missing — run the build or vendor/pele.global.js');
@@ -200,28 +201,15 @@ export class Renderer {
   }
 
   /**
-   * Authored-HTML scope (renderDocument): the block font plus the serif and
-   * kai families, so pages can say `font-family:'Noto Serif SC'` (serif
-   * registers, editorial covers) or `'LXGW WenKai'` (hand-drawn figure
+   * Authored-HTML scope (renderDocument): the base sans, the theme faces, and
+   * the serif and kai families, so pages can say `font-family:'Noto Serif SC'`
+   * (serif registers, editorial covers) or `'LXGW WenKai'` (hand-drawn figure
    * labels) and get offline-identical Chinese. Blocks and the mermaid shell
-   * stay on fontCss() alone — injecting 4+ MB of unused faces per table
-   * would tax batch renders for nothing.
+   * inject the base sans, the theme's own faces and the mono only — the whole
+   * registry would put megabytes of unused faces into every table.
    */
   private docFontCss(): string {
-    let css = this.fontCss();
-    if (this.assets.fontSerifB64) {
-      css +=
-        `@font-face{font-family:'Noto Serif SC';` +
-        `src:url(data:font/woff2;base64,${this.assets.fontSerifB64}) format('woff2');` +
-        `font-weight:200 900;font-style:normal;font-display:block;}`;
-    }
-    if (this.assets.fontKaiB64) {
-      css +=
-        `@font-face{font-family:'LXGW WenKai';` +
-        `src:url(data:font/woff2;base64,${this.assets.fontKaiB64}) format('woff2');` +
-        `font-weight:400;font-style:normal;font-display:block;}`;
-    }
-    return css;
+    return faceCss([...this.fontFamilies(), ...DOC_FAMILIES], this.assets.fonts);
   }
 
   /**
@@ -234,14 +222,13 @@ export class Renderer {
    * webfonts still win (their glyphs exist).
    */
   private cjkFallbackCss(): string {
-    if (!this.assets.fontB64) return '';
     const range = 'unicode-range:U+3000-303F,U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+FF00-FFEF;';
-    const face = (family: string, b64: string): string =>
-      `@font-face{font-family:'${family}';src:url(data:font/woff2;base64,${b64}) format('woff2');font-weight:100 900;font-style:normal;font-display:block;${range}}`;
-    return (
-      face('sans-serif', this.assets.fontB64) +
-      face('serif', this.assets.fontSerifB64 ?? this.assets.fontB64)
-    );
+    const face = (family: string, b64: string | undefined): string => b64
+      ? `@font-face{font-family:'${family}';src:url(data:font/woff2;base64,${b64}) format('woff2');font-weight:100 900;font-style:normal;font-display:block;${range}}`
+      : '';
+    const sans = this.assets.fonts['NotoSansSC-Subset.woff2'];
+    const serif = this.assets.fonts['NotoSerifSC-Subset.woff2'] ?? sans;
+    return face('sans-serif', sans) + face('serif', serif);
   }
 
   /**
@@ -440,9 +427,7 @@ export class Renderer {
         deviceScaleFactor: this.opts.scale,
       });
       await page.setContent(html);
-      if (this.assets.fontB64) {
-        await page.addStyleTag({ content: this.docFontCss() + this.cjkFallbackCss() });
-      }
+      await page.addStyleTag({ content: this.docFontCss() + this.cjkFallbackCss() });
       await page.evaluate(async () => {
         await document.fonts.ready;
         // half-loaded remote images would screenshot as blank boxes

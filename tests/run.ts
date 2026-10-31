@@ -20,6 +20,7 @@ import { chartToMermaid, parseChart } from '../src/chart.ts';
 import { loadAssets } from '../src/embed.ts';
 import { scanColumnHints, scanLimits } from '../src/limits.ts';
 import { blendOver, CVD_KINDS, perceptualDelta, simulateCvd } from '../src/color.ts';
+import { BASE_FAMILY, BUNDLED_FONTS, DOC_FAMILIES, isBundledFamily, MONO_FAMILY } from '../src/fonts.ts';
 import { bottomBlankLimit, diffPng } from '../src/lint.ts';
 import { Renderer } from '../src/render.ts';
 import { applyColumnDensity, applySlideDensity, DEFAULT_THEME, getTheme, peleCss, PRESETS, type ThemeSpec } from '../src/themes.ts';
@@ -788,6 +789,72 @@ for (const name of Object.keys(PRESETS)) {
 }
 
 {
+  // Type consistency: a theme may only name families that ship with the package.
+  // A system family placed ahead of a bundled one would render that theme
+  // differently on a machine that happens to have it installed, which is the
+  // whole point of bundling the display faces.
+  const GENERIC = new Set([
+    'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui',
+    'ui-serif', 'ui-sans-serif', 'ui-monospace', 'ui-rounded',
+    '-apple-system', 'blinkmacsystemfont', 'emoji', 'math', 'fangsong',
+  ]);
+  const isSystem = (f: string): boolean =>
+    GENERIC.has(f) || /emoji/i.test(f) || /^[A-Za-z ]*(system|ui)/i.test(f);
+  const stackTokens = (css: string): string[] => {
+    const out: string[] = [];
+    for (const m of css.matchAll(/font-family\s*:\s*([^;}]+)/g)) {
+      out.push(m[1]);
+    }
+    return out;
+  };
+  const familiesOf = (stack: string): string[] =>
+    stack.split(',').map((t) => t.trim().replace(/^['"]|['"]$/g, '').toLowerCase()).filter(Boolean);
+
+  const named = new Set<string>([BASE_FAMILY.toLowerCase(), MONO_FAMILY.toLowerCase()]);
+  const bad: string[] = [];
+  for (const name of Object.keys(PRESETS)) {
+    const t = getTheme(name);
+    // the base sans and the mono are injected for every run, so a theme may
+    // name them without declaring them
+    const declared = new Set([
+      BASE_FAMILY.toLowerCase(), MONO_FAMILY.toLowerCase(),
+      ...(t.fonts ?? []).map((f) => f.toLowerCase()),
+    ]);
+    for (const f of declared) {
+      if (!isBundledFamily(f)) bad.push(`${name} declares unbundled ${f}`);
+      named.add(f);
+    }
+    const config = (PRESETS[name].config.themeVariables ?? {}) as { fontFamily?: string };
+    const stacks = [
+      t.fontFamily ?? '', t.vars.font, t.blockCss ?? '', t.css,
+      config.fontFamily ?? '',
+    ].flatMap((v) => (v ? stackTokens(String(v)) : []));
+    for (const stack of stacks) {
+      const fams = familiesOf(stack);
+      const lastBundled = fams.reduce((acc, f, i) => (isBundledFamily(f) ? i : acc), -1);
+      fams.forEach((f, i) => {
+        if (isSystem(f)) return;
+        if (!isBundledFamily(f)) {
+          if (i < lastBundled) bad.push(`${name}: ${f} precedes a bundled family`);
+          return;
+        }
+        named.add(f);
+        if (!declared.has(f)) bad.push(`${name}: names ${f} but does not declare it in fonts[]`);
+      });
+    }
+  }
+  // A face nobody names is dead weight in every render.
+  for (const font of BUNDLED_FONTS) {
+    const f = font.family.toLowerCase();
+    if (!named.has(f) && !DOC_FAMILIES.some((d) => d.toLowerCase() === f)) {
+      bad.push(`${font.family} is bundled but no theme names it`);
+    }
+  }
+  record('lint/theme-fonts', bad.length === 0,
+    bad.join('; ') || `${BUNDLED_FONTS.length} bundled families, all named by a theme or the document path`);
+}
+
+{
   // The redundant channel for a monochrome palette: the four families must be
   // drawn as four different SVG element kinds, not four colours of one shape.
   const { svg } = await renderer.render({
@@ -1141,20 +1208,6 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
     /#F0DFC2/i.test(acnhSvg) && /filter:drop-shadow\([^)]*0 5px 0/.test(acnhSvg) &&
     /font-weight:700/.test(acnhSvg),
     `exit=${acnhRun.code} bg=${aj.background} pattern=${dots}`);
-
-  const glassRun = runCli([flow, '-t', 'glass', '-f', 'svg', '--json', '--quiet', '-o', path.join(outDir, 'glass')]);
-  const glassSvg = fs.readFileSync(path.join(outDir, 'glass', 'flowchart.svg'), 'utf8');
-  const gj = JSON.parse(glassRun.stdout || '{}') as { background?: string };
-  const glassBackdrop = glassSvg.indexOf('mmdx-backdrop');
-  // svgo rewrites the defs ids, so assert on what survives: the acrylic layers.
-  const glassLayers = (glassSvg.match(/<rect[^>]*width="9\d\d"/g) ?? []).length;
-  record('cli/theme-glass',
-    glassRun.code === 0 && gj.background === '#E9EEF6' &&
-    glassBackdrop > 0 && glassBackdrop < glassSvg.indexOf('pele-edges') &&
-    /<pattern/.test(glassSvg) && /rgba\(15,35,66/.test(glassSvg) &&
-    /feTurbulence/.test(glassSvg) && /feGaussianBlur/.test(glassSvg) &&
-    /fill="#fff" opacity="\.16"/.test(glassSvg) && glassLayers >= 3 && /#0F6CBD/i.test(glassSvg),
-    `exit=${glassRun.code} bg=${gj.background} backdrop=${glassBackdrop} layers=${glassLayers}`);
 
   const epaperRun = runCli([flow, '-t', 'epaper', '-f', 'svg', '--json', '--quiet', '-o', path.join(outDir, 'epaper')]);
   const epaperSvg = fs.readFileSync(path.join(outDir, 'epaper', 'flowchart.svg'), 'utf8');

@@ -12,6 +12,7 @@ import {
 } from './blocks.ts';
 import { chartToMermaid, parseChart } from './chart.ts';
 import { getBuildVersion, loadAssets } from './embed.ts';
+import { MONO_FAMILY } from './fonts.ts';
 import { scanColumnHints, scanLimits, type LimitHit } from './limits.ts';
 import { Renderer } from './render.ts';
 import { accentTint, applyBrand, type Tokens } from './tokens.ts';
@@ -60,7 +61,7 @@ Options:
                           input renders exactly one diagram (default: next to input)
   -f, --format <fmt>      svg | png | both                     (default: both;
                           --preset defaults to png)
-  -t, --theme <name>      tech (default) | openai | excalidraw | ios | acnh | glass | epaper | zed | zed-light
+  -t, --theme <name>      tech (default) | openai | excalidraw | ios | acnh | epaper | zed | zed-light
   --tone <name>           paper | neutral | product — structural overrides for
                           block pages and info cards (radius/shadow/display type);
                           paper also repaints the diagram onto paper stock
@@ -587,6 +588,7 @@ async function main(): Promise<void> {
     browserPath: o.browser || undefined,
     scale: o.scale,
     width: o.width,
+    fonts: [...(theme.fonts ?? []), MONO_FAMILY],
     iconPacks,
     profile: o.profile,
   });

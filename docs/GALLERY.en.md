@@ -4,13 +4,13 @@
 
 One case, split into one page per style. The overview keeps a single flowchart for a quick comparison; each new theme adds a page with the same structure instead of growing this page.
 
-[![The same case as a flowchart in nine themes](gallery/overview.png)](gallery/overview.png)
+[![The same case as a flowchart in eight themes](gallery/overview.png)](gallery/overview.png)
 
-## All 9 themes
+## All 8 themes
 
 One flow per built-in theme; use this for the overall comparison, then open the style pages for block layouts:
 
-[![All 9 built-in themes](gallery/all-themes-overview.png)](gallery/all-themes-overview.png)
+[![All 8 built-in themes](gallery/all-themes-overview.png)](gallery/all-themes-overview.png)
 
 ## Scenario guide (statechart)
 
@@ -57,7 +57,6 @@ Pick the scenario from the “Use it for” column, then check the look. `tone` 
 | `excalidraw` | Whiteboard sessions, brainstorming, informal sharing | Pastel fills with rough ink strokes, whiteboard cards, Kai fallback for Chinese | [excalidraw](gallery/excalidraw.en.md) |
 | `ios` | Product UI, iOS app docs, anything that should read as a system screenshot | Flat grouped grey page, white cards, hairline separators, system colours; no accent side stripe on cards | [ios](gallery/ios.en.md) |
 | `acnh` | Sticker-style weekly updates, team boards, casual reports | Cream paper, thick brown outlines, hard offset sticker shadows, rounded type; block pages carry a dotted grid | [acnh](gallery/acnh.en.md) |
-| `glass` | Glass covers, modern product reviews, anything that wants material depth | Fluent acrylic: pale blue-grey canvas, 24px ruling, a translucent white sheet with grain, 8px panels with a light rim; the ruling shows through the panels | [glass](gallery/glass.en.md) |
 | `epaper` | Black-and-white print, e-reader reading, compliance and audit docs | `#F5F1EB` stock with paper grain, hairline black strokes, square corners, no shadow; families differ by grey level and shape | [epaper](gallery/epaper.en.md) |
 | `zed` | Dark docs sites, tech talks, terminal-adjacent deliverables | Zed One Dark: `#282C33` canvas, hairlines, no shadow and no texture; families outlined in the syntax colours and filled with the same colour at 15% over the page | [zed](gallery/zed.en.md) |
 | `zed-light` | The light half of the Zed pair | One Light: `#FAFAFA` canvas with `#EBEBEC` editor panels and the same rotation rules | [zed-light](gallery/zed-light.en.md) |
@@ -65,7 +64,7 @@ Pick the scenario from the “Use it for” column, then check the look. `tone` 
 | HTML report card / info card | The two imported HTML scenarios across themes | Same content; theme and `--tone` control palette and structure | [html-skills](gallery/html-skills.en.md) |
 | Hand-drawn HTML (v1.4.2) | editorial covers/illustrations; visual-explainer explainers/recaps | Hand-written HTML + SVG, paper/ink/blue; not a theme preset | [vendored-html](gallery/vendored-html.en.md) |
 
-All nine themes consume the same Markdown: same diagram, same `kpi` / `card` / `table` / `chart` fences, only `-t` changes. `--brand` overrides the accent; the theme keeps its shape coding.
+All eight themes consume the same Markdown: same diagram, same `kpi` / `card` / `table` / `chart` fences, only `-t` changes. `--brand` overrides the accent; the theme keeps its shape coding.
 
 The two HTML scenarios are compared in [html-skills](gallery/html-skills.en.md); the three info-card tones are in [card tones](gallery/card-tones.en.md).
 

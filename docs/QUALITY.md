@@ -19,10 +19,10 @@
 - **主题色板门槛**：正文 `fg` ≥ 7:1（AAA）、`muted` ≥ 4.5:1、`accent` / `critical` ≥ 3:1；每个形状族的描边对底、对自己的填充各 ≥ 3:1（`lint/theme-shape-marks`）；四个形状族必须是四种形态（`lint/shape-form-redundant`）。
 - **承载语义的颜色**：形状族描边色不同的两两之间、8 色图表系列的任意两色之间，在 protan / deutan / tritan（Machado 2009）模拟下 OKLab ΔE ≥ 0.02（`lint/theme-cvd` / `lint/theme-series-cvd`）；连线色对底 ≥ 3:1（`lint/theme-connectors`）；饼图切片对底 ≥ 3:1，因为 Pele 的切片数值用页面底色「抠」在切片上（`lint/theme-series-contrast`）。
 - **稳定性**：渲染前等待内置字体加载；CSS 关闭动画/过渡/光标；Chromium 使用 `--font-render-hinting=none`。
-- **可读报告**：`scripts/lint-visuals.ts` 渲染全部九套主题的流程图与卡片块，逐行输出实测边距、阈值和问题；`scripts/lint-a11y.ts` 逐主题输出文本对比度、形状族描边、色觉模拟、连线对比度与系列色报告。
+- **可读报告**：`scripts/lint-visuals.ts` 渲染全部八套主题的流程图与卡片块，逐行输出实测边距、阈值和问题；`scripts/lint-a11y.ts` 逐主题输出文本对比度、形状族描边、色觉模拟、连线对比度、系列色与（开轮转的主题）描边对自己填充的报告。
 - **契约**：`ThemeSpec` 必需字段、`shapeCoverage`、`--style-fill`、块版式 CSS、CLI 退出码/命名/JSON/并发。
 
-当前基线：`209/209 passed`（`mmdx card` 在 bun 下的 `buf.readUInt32BE` 问题已修：`src/card.ts` 的 `pngSize()` 先 `Buffer.from()`）；`scripts/lint-visuals.ts` 18/18、`scripts/lint-a11y.ts` 全部通过。已用 2x 渲染验证过长页面：44,548px 高的列表底部留白 51px，56,952px 高的流程图底部留白 22px；Excalidraw 流程图连续两次渲染像素差为 0。
+当前基线：`201/201 passed`（`mmdx card` 在 bun 下的 `buf.readUInt32BE` 问题已修：`src/card.ts` 的 `pngSize()` 先 `Buffer.from()`）；`scripts/lint-visuals.ts` 16/16、`scripts/lint-a11y.ts` 全部通过。已用 2x 渲染验证过长页面：44,548px 高的列表底部留白 51px，56,952px 高的流程图底部留白 22px；Excalidraw 流程图连续两次渲染像素差为 0。
 
 色板门槛的实测极值：`fg` 最低 8.35:1（`acnh`）、`muted` 最低 4.54:1（`ios`）、形状描边对底最低 3.06:1（`zed-light` state）、连线对底最低 3.11:1（`--tone paper`）、8 色系列色觉最低 ΔE 0.040、系列色对底最低 3.01:1（`zed`）。
 

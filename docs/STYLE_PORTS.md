@@ -1,6 +1,6 @@
 # 风格移植方案：Excalidraw 手绘
 
-> 状态：**`excalidraw` / `ios` / `acnh` / `glass` / `epaper` / `zed` / `zed-light` 已实现；OpenAI 编辑风与办公/工程批次已放弃；主题集合为 `tech` / `openai` / `excalidraw` / `ios` / `acnh` / `glass` / `epaper` / `zed` / `zed-light` 九套** · 更新：2026-10-30 · 范围：mmdx 2.x 主题与渲染管线
+> 状态：**`excalidraw` / `ios` / `acnh` / `epaper` / `zed` / `zed-light` 已实现；`glass` 已砍掉；OpenAI 编辑风与办公/工程批次已放弃；主题集合为 `tech` / `openai` / `excalidraw` / `ios` / `acnh` / `epaper` / `zed` / `zed-light` 八套，字体全部随包** · 更新：2026-10-31 · 范围：mmdx 2.x 主题与渲染管线
 >
 > 本文是风格移植的决策与交接文档。色板与 rough 参数见第 3 节，Pele 集成见第 5 节，放弃的移植见第 6 节，未决问题见第 7 节。
 
@@ -13,7 +13,7 @@
 | 填色 | **实心填色为默认**；`--style-fill hachure` 作为可选项，不单独拆主题 |
 | Pele 引擎 | Excalidraw 走 **Pele + rough.js 后处理**（2.x 起 Pele 是唯一引擎） |
 | 第二引擎 | Mermaid + ELK 回退已随 2.x 移除；`excalidraw` 只有 Pele + rough.js 一条实现路径 |
-| 字体 | 目标为随包的 Excalifont + LXGW WenKai 子集；**当前实际字体栈回退到系统字体**（见第 7 节） |
+| 字体 | 八套主题命名的字体全部随包（Noto Sans SC / Noto Serif SC / 霞鹜文楷 / Excalifont / 站酷快乐体 / Baloo 2 / Newsreader / JetBrains Mono，合计 7.3MB），`lint/theme-fonts` 守住「主题不得命名未随包的字体」，见第 5.6 节 |
 | `--brand` | 仍只改强调色，不覆盖形状分色 |
 | 推送 | 出正式 `review/` 图，用户二次目测通过后才提交、推送 |
 
@@ -55,27 +55,27 @@
 | 强调 | `#1971C2` |
 | 警示 | `#E03131` |
 | 系列色 | `#1971C2, #2F9E44, #F08C00, #E03131, #7950F2, #0C8599, #E8590C, #868E96` |
-| 字体栈 | `"Excalifont", "LXGW WenKai", "Noto Sans SC", sans-serif`（源码里另带系统手写体回退） |
+| 字体栈 | `"Excalifont", "LXGW WenKai", "Noto Sans SC", cursive, sans-serif`（前两者随包；系统手写体回退已删除，装没装 Segoe Print 都会改变出图） |
 | 圆角 | 12–14px（rect）；stadium 按高度取半 |
 | 描边 | 1.5px；slide 预设 2px |
 
-### 3.1b 后续四套风格（2026-10）
+### 3.1b 后续三套风格（2026-10）
 
-`ios` / `acnh` / `glass` / `epaper` 与 `--tone paper` 的色板。前两套自带底，`epaper` 不画底，`paper` 是 tone 不是主题。
+`ios` / `acnh` / `epaper` 与 `--tone paper` 的色板。`acnh` 自带底，`epaper` 的底是纸纹，`paper` 是 tone 不是主题。
 
-| 角色 | `ios` | `acnh` | `glass` | `epaper` | `--tone paper` |
-| --- | --- | --- | --- | --- | --- |
-| 画布 | `#F2F2F7` | `#FFF8E7` | `#E9EEF6` | `#F5F1EB` | `#FAFAF8` |
-| 主文字 | `#1C1C1E` | `#5B4636` | `#1B1B1F` | `#1A1A1A` | `#1F2024` |
-| 次要文字 | `#6E6E73` | `#8A735C` | `#4C4F57` | `#5C5C5C` | `#5D6167` |
-| 面板 | `#FFFFFF` | `#FFFDF5` | `rgba(255,255,255,.45)` | `#F5F1EB` | `#FFFFFF` |
-| 描边 / 分隔 | `#D1D1D6` | `#D9C3A5`（线用 `#7A5C3E`） | `#6E7480`（面板边 `rgba(255,255,255,.85)`） | `#1A1A1A` | `#E1E1DC` |
-| 强调 | `#007AFF` | `#3E8C4A` | `#0F6CBD` | `#1A1A1A` | `#BF4520` |
-| 警示 | `#FF3B30` | `#A33B2A` | `#C42B1C` | `#1A1A1A` | `#A01D48` |
-| 圆角 | 14px | 16px | 8px | 0 | 10px |
-| 描边宽 | 1.6px | 2.6px | 1.4px | 1.1px | 沿用原主题 |
+| 角色 | `ios` | `acnh` | `epaper` | `--tone paper` |
+| --- | --- | --- | --- |
+| 画布 | `#F2F2F7` | `#FFF8E7` | `#F5F1EB` | `#FAFAF8` |
+| 主文字 | `#1C1C1E` | `#5B4636` | `#1A1A1A` | `#1F2024` |
+| 次要文字 | `#6E6E73` | `#8A735C` | `#5C5C5C` | `#5D6167` |
+| 面板 | `#FFFFFF` | `#FFFDF5` | `#F5F1EB` | `#FFFFFF` |
+| 描边 / 分隔 | `#D1D1D6` | `#D9C3A5`（线用 `#7A5C3E`） | `#1A1A1A` | `#E1E1DC` |
+| 强调 | `#007AFF` | `#3E8C4A` | `#1A1A1A` | `#BF4520` |
+| 警示 | `#FF3B30` | `#A33B2A` | `#1A1A1A` | `#A01D48` |
+| 圆角 | 14px | 16px | 0 | 10px |
+| 描边宽 | 1.6px | 2.6px | 1.1px | 沿用原主题 |
 
-形状族：`ios` 用系统色描边（蓝 / 橙 / 绿 / 紫）+ 白填充（**纯平面**：不画底、不加投影）；`acnh` 奶油白填充 + 棕描边 + 硬偏移贴纸阴影；`glass` 四个形状族共用半透明白填充、只换描边色（蓝 / 琥珀 / 青绿 / 紫）；`epaper` 全部黑描边，用灰阶填充（`#FFFFFF` / `#EFEEE9` / `#E4E3DE` / 纸底）区分；`--tone paper` 换成冷蓝 / 沙 / 鼠尾草 / 紫灰填充 + 墨色描边。2026-10-30 的复查把 `ios` 的系统感坐实：圆角 10 → 14px、描边 1.25 → 1.6px、判定/状态/存储填充换成系统色更实的浅调（`#FFE9CF` / `#E3F6E7` / `#F1E9FB`），块页补齐 HIG 分组列表的 `›` 折角、分隔线提到 iOS 的 0.29 alpha、标题 20px/700。
+形状族：`ios` 用系统色描边（蓝 / 橙 / 绿 / 紫）+ 白填充（**纯平面**：不画底、不加投影）；`acnh` 奶油白填充 + 棕描边 + 硬偏移贴纸阴影；`epaper` 全部黑描边，用灰阶填充（`#FFFFFF` / `#EFEEE9` / `#E4E3DE` / 纸底）区分；`--tone paper` 换成冷蓝 / 沙 / 鼠尾草 / 紫灰填充 + 墨色描边。2026-10-30 的复查把 `ios` 的系统感坐实：圆角 10 → 14px、描边 1.25 → 1.6px、判定/状态/存储填充换成系统色更实的浅调（`#FFE9CF` / `#E3F6E7` / `#F1E9FB`），块页补齐 HIG 分组列表的 `›` 折角、分隔线提到 iOS 的 0.29 alpha、标题 20px/700。
 
 `epaper` 取自 [E-Ink / Paper（ui-ux-pro-max #56）](https://jacky0328.github.io/ui-ux-pro-max-web/styles/56-eink-paper.html)：`#f5f1eb` 纸底 + `opacity-5` 的 `feTurbulence` 纸纹（SVG 里是同一条滤镜，块页用同一张 data-URI 贴图）、1px 墨线、直角、衬线标题 + 等宽小字标签。
 
@@ -104,7 +104,7 @@
 
 - **accent 填充 = accent 按 15% 混页面底色**，而不是混白。`src/color.ts` 的 `blendOver(fg, bg, opacity)` 按通道混合，对齐 Zed 的 `ACCENT_FILL_OPACITY = 0.15`。Zed 把它用在 flowchart 节点上（按节点序号轮转 8 个 player 色），mmdx 用在四个形状族上，保留形状分色语义。
 - **文字色由底色推导**：`src/color.ts` 的 `textColorFor(bg)` 在 OKLab 里保留底色 15% 的彩度、亮度取 0.18（浅底）/ 0.96（深底），二分搜索保 ≥4.5:1，兜底纯黑/纯白。`zed` 的块页状态 chip 用它生成，所以浅底深底共用一条规则。
-- **tint 跟着页面走**：`accentTint(accent, bg)` 现在接受底色，CLI / `mmdx card` / 门禁脚本都传 `theme.vars.bg`；`PAGE_CSS` 里 6 处 `color-mix(..., white)` 改成 `color-mix(..., var(--paper))`（进度条、对比条、热力图 lv1–3）。白底主题逐字节不变，非白底主题（`ios` / `glass` / `epaper` / `acnh` / `--tone paper`）的条与热力格向自己的纸色靠 1–3%。
+- **tint 跟着页面走**：`accentTint(accent, bg)` 现在接受底色，CLI / `mmdx card` / 门禁脚本都传 `theme.vars.bg`；`PAGE_CSS` 里 6 处 `color-mix(..., white)` 改成 `color-mix(..., var(--paper))`（进度条、对比条、热力图 lv1–3）。白底主题逐字节不变，非白底主题（`ios` / `epaper` / `acnh` / `--tone paper`）的条与热力格向自己的纸色靠 1–3%。
 - **暗色块页**：`ZED_DARK_BLOCK_CSS` 覆写 `color-scheme`、面板底、发丝线、状态 chip、热力图最高档与泳道底；其余仍走 `var(--paper)` / `var(--ink)`，所以暗色块页不需要重写 `PAGE_CSS`。
 
 **节点轮转**：Zed 对 flowchart / class / state 的节点按 `node_counter % 8` 依次取 8 个 player 色，描边取该色、填充是该色按 15% 混页面底色——一张图因此是**多色轮转**而不是按形状分色。Pele 把一张图的节点按文档顺序写进一个 `<g>`，所以实现是一组 `:nth-child(8n+k)` 规则（`ThemeStyle.nodeRotation`，选择器只覆盖 `.pele-flowchart` / `.pele-class` / `.pele-state` 的 `.pele-nodes > .pele-node`，并用 `:not()` 排除状态起止标记与复合状态框）。形状族规则保留给其余槽位（ER 实体、注释、类图分隔线、状态起止、簇）。ER 的奇偶行覆盖、sequence actor 的轮转没有做：前者 Pele 走 `.pele-er-stripes`，后者 Pele 把上下两组 actor 放在同一个 `<g>` 里，纯 CSS 无法让同一 actor 的上下两个盒子取同色。
@@ -186,7 +186,7 @@ export interface ThemeSpec {
 - `getTheme()` 返回深拷贝；`PRESETS[name]` 同时提供 Mermaid `config` 和 Pele `ThemeSpec`，缺 `pele` 会抛错。
 - `peleCss()` 读取 `theme.style.strokeWidth`；`shapeCoverage` 打开时补齐 rounded/stadium/fr-rect/hex/lean-r/odd、class/entity/annotation、state 起止与 ER 分隔线。
 - `PageOpts.blockCss` 让 `blockPage()` 在 `PAGE_CSS` 之后追加主题版式；`cli.ts` 透传 `theme.blockCss`。
-- `theme.fonts` 字段已保留，但当前渲染只注入随包的 Noto Sans SC（见第 7 节）。
+- `theme.fonts` 已接入：`Renderer` 按「随包黑体 + 主题 `fonts` + 等宽」注入 `@font-face` 并等 `document.fonts.load`（见第 5.6 节）。
 
 ### 5.2 rough 后处理
 
@@ -210,14 +210,14 @@ export interface ThemeSpec {
 
 ### 5.3 CLI 与兼容性
 
-- `--theme` 为 `tech` / `openai` / `excalidraw` / `ios` / `acnh` / `glass` / `epaper` / `zed` / `zed-light`；未知主题报错并列出可用值。
+- `--theme` 为 `tech` / `openai` / `excalidraw` / `ios` / `acnh` / `epaper` / `zed` / `zed-light`；未知主题（含已砍掉的 `glass`）报错并列出可用值。
 - `--style-fill solid|hachure`：只对 `excalidraw` 有效；其他主题传了给 `config-ignored` 类 warning，不报错；非法值 exit 2。
 - `--engine` / `--layout` 已不存在：`excalidraw` 的手绘后处理只在 Pele 输出上执行，没有第二引擎的观感分叉。
 - `--brand` 只改 `vars.accent`，不改 shape fills。
 
 ### 5.4 底与材质层
 
-自带底的风格（`ios` / `acnh` / `glass`，以及 `--tone paper`）走同一条管线，参数在 `ThemeSpec.backdrop`（`ThemeBackdrop`，纯数据，可 JSON 序列化）：
+自带底的风格（`acnh` / `epaper`，以及 `--tone paper`）走同一条管线，参数在 `ThemeSpec.backdrop`（`ThemeBackdrop`，纯数据，可 JSON 序列化）：
 
 ```ts
 export interface ThemeBackdrop {
@@ -235,9 +235,9 @@ export interface ThemeBackdrop {
 
 三条必须记住的约束：
 
-- **Chromium 不渲染 SVG 形状上的 `backdrop-filter`**（实测：有/无该属性时边缘过渡都是 0px）。毛玻璃只能靠「底下没有锐利细节 + 面板半透明」伪造；块页是 HTML，`backdrop-filter` 在那里是真生效的。`glass` 的模糊刻意压到 5px：24px 的格线一旦重度模糊就摊成一片平色，「材质」反而看不出来。
+- **Chromium 不渲染 SVG 形状上的 `backdrop-filter`**（实测：有/无该属性时边缘过渡都是 0px）。毛玻璃只能靠「底下没有锐利细节 + 面板半透明」伪造；块页是 HTML，`backdrop-filter` 在那里是真生效的。亚克力风格已按此结论砍掉（见第 6 节）。
 - **PNG 整幅截取**：`captureElement(..., fullBleed = !!theme.backdrop)` 跳过墨迹裁边。按墨迹裁边会跟着底的边缘走，四边留白不对称；代价是底的留白由 `viewBox` 的 20/12px 决定。
-- **底的对比度必须压在墨迹阈值之下或做成纹理**：`tests/run.ts` 的 `analyze()` 以左上角像素为背景、差值 >40 记为墨迹。整片实色底会被记成墨迹、`ink` 直接超过 0.85 上限；所以 `glass` 的色差控制在每通道 ~12、`paper`/`glass` 的网格是线条（面积占比 <10%）。
+- **底的对比度必须压在墨迹阈值之下或做成纹理**：`tests/run.ts` 的 `analyze()` 以左上角像素为背景、差值 >40 记为墨迹。整片实色底会被记成墨迹、`ink` 直接超过 0.85 上限；所以 `paper` 的色差控制在每通道 ~12、`paper` 的网格是线条（面积占比 <10%）。
 - **flatten 烘焙 `filter`**：否则 `ios` 的卡片投影与 `acnh` 的贴纸硬阴影进不了 SVG。
 - **截取前归一化 body 盒**：`captureElement` 会写 `margin:0;padding:0;overflow:hidden`。浏览器默认的 8px body margin 会让整幅截取错位 8px（自带底的风格尤其明显，其它主题被墨迹裁边掩盖）。
 
@@ -251,19 +251,41 @@ export interface ThemeBackdrop {
 | 次要文字（`muted`） | ≥ 4.5:1（AA） | 最低 4.54（`ios`） |
 | 承载语义的色（`accent` / `critical`） | ≥ 3:1（非文本图形） | 最低 3.20（`openai` accent） |
 | 形状描边 vs 底、vs 自己的填充 | 各 ≥ 3:1 | 最低 3.06（`zed-light` state 描边对填充） |
-| 色觉模拟（protan / deutan / tritan） | 描边色不同的形状族两两 ΔE(OKLab) ≥ 0.02 | 最低 0.026（`glass` tritan） |
+| 色觉模拟（protan / deutan / tritan） | 描边色不同的形状族两两 ΔE(OKLab) ≥ 0.02 | 最低 0.025（`tech` tritan） |
 | 形态冗余 | 四个形状族必须是四种不同形状（rect / diam / stadium / cyl） | 4/4 |
 | 连线色 vs 底（`lint/theme-connectors`） | ≥ 3:1 | 最低 3.11（`--tone paper`） |
-| 8 色系列两两色觉（`lint/theme-series-cvd`） | 任意两色 ΔE ≥ 0.02 | 最低 0.040（九套全部） |
-| 系列色 vs 底（`lint/theme-series-contrast`） | ≥ 3:1，因为饼图数值用页面底色「抠」在切片上 | 最低 3.01（`zed`） |
+| 8 色系列两两色觉（`lint/theme-series-cvd`） | 任意两色 ΔE ≥ 0.02 | 最低 0.040（八套全部） |
+| 系列色 vs 底（`lint/theme-series-contrast`） | ≥ 3:1，因为饼图数值用页面底色「抠」在切片上 | 最低 3.00（`tech` / `openai` / `excalidraw` / `acnh`） |
+| 主题字体（`lint/theme-fonts`） | 主题不得命名未随包的家族，也不得把系统字体排在随包字体之前 | 8 个随包家族，全部有主题或文档路径使用 |
 
-配套实现：`src/color.ts`（WCAG 亮度/对比、Machado 2009 色觉模拟、OKLab 感知距离）、`scripts/lint-a11y.ts`（可读报告 + 退出码）、`src/lint.ts` 的渲染态文本审计改为 WCAG 分档（小字 4.5:1 / 大字 3:1，按 computed font-size 与字重判断）。
+主题字体门槛（`lint/theme-fonts`）：每个主题的字体栈里，排在随包家族之前的非通用家族必须自己随包，主题 `fonts[]` 声明的家族必须在注册表里，注册表里每个家族至少被一个主题或文档路径使用。配套实现：`src/color.ts`（WCAG 亮度/对比、Machado 2009 色觉模拟、OKLab 感知距离）、`scripts/lint-a11y.ts`（可读报告 + 退出码）、`src/lint.ts` 的渲染态文本审计改为 WCAG 分档（小字 4.5:1 / 大字 3:1，按 computed font-size 与字重判断）。
 
 改动过的色板：`openai` state 填充 `#E9F5F1 → #F2FAF7`、store 填充 `#F7F7F8 → #FFFFFF`（描边对填充只有 2.86:1）；`excalidraw` muted `#868E96 → #6C757D`（3.32 → 4.69）；`acnh` muted `#8A735C → #7A6350`（4.23 → 5.32）；`--tone paper` 的 store 描边 `#5B4F7A → #7A5AA8`（蓝/紫在红绿色盲下几乎重合，ΔE 0.009 → 0.089）。
 
-2026-10-30 第二批（连线与系列色门槛）：连线色 `zed` `#636D83 → #7A8598`（2.70 → 3.76）、`ios` `#8E8E93 → #7C7C82`（2.92 → 3.72）；8 色系列按「最小位移」重挑——修前最差 `openai` protan 0.005、`zed-light` deutan 0.009、`zed` tritan 0.013、`ios` tritan 0.017、`paper` protan 0.019，重挑后九套全部 ≥ 0.040（`tech` 0.043 与 `epaper` 0.041 未动）。重挑的做法：在 OKLab 里以「色相 ±18°、亮度 ±0.18、彩度 0.6–1.45×」为界做爬山，代价 = 色觉缺口 ×1000 + 页面底对比缺口 ×1000 + 与原色的感知距离之和——先保门槛、再最小化位移，所以多数主题只挪 0–2 个色。系列色另加「对页面底 ≥ 3:1」的软约束：Pele 的饼图数值是**页面底色**抠在切片上的，切片太浅数值就消失。
+2026-10-30 第二批（连线与系列色门槛）：连线色 `zed` `#636D83 → #7A8598`（2.70 → 3.76）、`ios` `#8E8E93 → #7C7C82`（2.92 → 3.72）；8 色系列按「最小位移」重挑——修前最差 `openai` protan 0.005、`zed-light` deutan 0.009、`zed` tritan 0.013、`ios` tritan 0.017、`paper` protan 0.019，重挑后八套全部 ≥ 0.040（`tech` 0.043 与 `epaper` 0.041 未动）。重挑的做法：在 OKLab 里以「色相 ±18°、亮度 ±0.18、彩度 0.6–1.45×」为界做爬山，代价 = 色觉缺口 ×1000 + 页面底对比缺口 ×1000 + 与原色的感知距离之和——先保门槛、再最小化位移，所以多数主题只挪 0–2 个色。系列色另加「对页面底 ≥ 3:1」的软约束：Pele 的饼图数值是**页面底色**抠在切片上的，切片太浅数值就消失。
 
 `ios` 的系统色同时换成 Apple 的深色变体（绿 `#248A3D`、橙 `#C23A17`、红 `#D70015`、紫 `#8A48AC`），描边对底从 2.9–3.4 提到 3.6–5.4。
+
+### 5.6 随包字体
+
+`src/fonts.ts` 是唯一注册表：家族 → 若干 `@font-face` 描述（文件、`font-weight`、可选的 `unicode-range`）。
+
+| 家族 | 文件 | 用途 |
+| --- | --- | --- |
+| Noto Sans SC | `NotoSansSC-Subset.woff2`（1.9MB） | 基础黑体，每一页都注入 |
+| Noto Serif SC | `NotoSerifSC-Subset.woff2`（2.6MB） | `epaper` 块页 + 手写 HTML 的 `serif` 兜底 |
+| 霞鹜文楷 LXGW WenKai | `LXGWWenKai-Subset.woff2`（1.6MB） | `excalidraw` 中文标注 + 手写 HTML 的楷体栈 |
+| Excalifont | `Excalifont-0.woff2` / `-1.woff2`（37KB） | `excalidraw` 拉丁手写体；上游按脚本切片，只取拉丁两片，用 `unicode-range` 限定 |
+| 站酷快乐体 ZCOOL KuaiLe | `ZCOOLKuaiLe-Subset.woff2`（0.9MB） | `acnh` 圆体（图与块页都走它） |
+| Baloo 2 | `Baloo2-Subset.woff2`（40KB） | `acnh` 拉丁圆体（`wght 400 800`） |
+| Newsreader | `Newsreader-Subset.woff2`（154KB） | `epaper` 衬线（`wght 200 800`，保留 `opsz` 轴） |
+| JetBrains Mono | `JetBrainsMono-Subset.woff2`（45KB） | 块页 `code` / kicker / footer 的等宽小字 |
+
+- **子集口径**（`scripts/subset-font.py`）：CJK 家族取 GB2312 全量汉字 + 拉丁 + CJK 标点（与既有三套一致，7628 字形），拉丁家族取 latin-1 + latin-ext + 标点 + 箭头/符号。字体源不随仓库分发，脚本头部记下载地址；跑一次 `python scripts/subset-font.py` 即可重出（缺源的条目跳过并提示）。
+- **注入策略**：`Renderer.fontFamilies()` = 基础黑体 + 主题 `fonts[]` + 等宽；`faceCss()` 只生成这些家族的 `@font-face`（base64 内联），随后 `document.fonts.load()` 逐家族等待——Pele 与 Mermaid 都先量标签再画，字体没就绪就会量出回退宽度、标签被裁。手写 HTML 文档路径额外注入衬线与楷体（`DOC_FAMILIES`）。
+- **块页取主题字体栈**：`mkTheme()` 把 `:root{--font:<主题栈>}` 拼进 `blockCss` 开头，`PAGE_CSS` 的 `.wrap` 读 `var(--font, ...)`——只要调用方传了 `theme.blockCss` 就自动拿到主题字体，不需要额外选项（`cli.ts` / `make-gallery.ts` / `tests/run.ts` 都只传 `blockCss`）。
+- **字体栈只列随包家族**：`ios` 从 `-apple-system, "SF Pro Text", …` 改成 `"Noto Sans SC", -apple-system, …`（同一台 Windows 上本来也落到 Noto，改后 macOS 不再走 SF Pro）；`acnh` 去掉 `YouYuan` / `幼圆` / `Segoe Print`；`excalidraw` 去掉 `Segoe Print` / `Comic Sans MS` / `KaiTi` / `STKaiti`；`epaper` 去掉 `Georgia` / `Songti SC` / `SimSun`。系统家族只允许出现在所有随包家族之后（缺字兜底），这一条由 `lint/theme-fonts` 守着。
+- **构建**：`scripts/build.ts` 按注册表内联全部字体到 `FONT_FILES`，缺文件直接报错（不再是静默 `null`）。
 
 ## 6. 已放弃的移植
 
@@ -275,7 +297,8 @@ export interface ThemeBackdrop {
 | 办公/工程批次 `vercel` / `linear` / `stripe` / `notion` / `ibm` | 各带独立 token、`shapeCoverage` 与 `blockCss` 的五套风格 | 移除；token 与版式不再维护 |
 | 动森（ACNH） | 奶油底、粗棕描边、硬偏移阴影、圆体字 | 当时取消；2026-10 重新落地（`-t acnh`），色板取自 `.handoff/style-ports-prototypes/` 的原型 CSS，见 `docs/gallery/acnh.md` |
 | `ios` 第一版（色块底 + 投影） | 分组浅灰底上再叠一层模糊色块，节点带 `drop-shadow`，做「立体感」 | 移除；用户判定立体感是败笔，2026-10-30 改为纯平面：不画底、不加投影，只留发丝分隔线与系统色描边 |
-| 玻璃 `glass`（第一版） | 只做「彩色色块 + 高斯模糊」的玻璃底，色块半径按 `max(boxW,boxH)` 缩放 | 移除；2026-10 按 Fluent 亚克力重做（色块 + 网格 + 半透膜 + 颗粒，色差压在墨迹阈值之下），见 `docs/gallery/glass.md` |
+| 玻璃 `glass`（第一版） | 只做「彩色色块 + 高斯模糊」的玻璃底，色块半径按 `max(boxW,boxH)` 缩放 | 移除；2026-10 按 Fluent 亚克力重做（色块 + 网格 + 半透膜 + 颗粒，色差压在墨迹阈值之下） |
+| 玻璃 `glass`（第二版，Fluent 亚克力） | 重做后的亚克力：24px 网格 + 白色半透膜 + 颗粒，面板 `rgba(255,255,255,.45)` 带 `blur(5px)` | 2026-10-31 整预设砍掉：Chromium 不渲染 SVG 形状上的 `backdrop-filter`，材质感只能靠半透明伪造，与 `openai` / `ios` 的浅色平面观感区分不足。`-t glass` 现在报 unknown theme，`docs/gallery/glass*.png` 与分页一并删除 |
 
 随之移除的还有：`openai-dark`、`minimal`、`latte`、`mocha`、`sketch`。这些主题名现在会报 `unknown theme`；`docs/gallery/` 里保留的对应 PNG 只作历史对照，不再有对应页面。
 
@@ -285,7 +308,7 @@ export interface ThemeBackdrop {
 
 | 风险 / 未决 | 现状 | 处理 |
 | --- | --- | --- |
-| 生产字体 | 只随包 Noto Sans SC；Excalifont 与 LXGW WenKai 子集未生成，`theme.fonts` 尚未接入渲染 | 子集化（`fonttools`）后同步 `src/embed.ts`、`scripts/build.ts`、release workflow；文件名、family 名、字体栈三者一致 |
+| 生产字体 | 已解决：8 个家族随包，`theme.fonts` 接入渲染，字体栈只列随包家族（见第 5.6 节） | 新增家族时同步 `src/fonts.ts`、`scripts/subset-font.py`、`THIRD_PARTY_NOTICES.md` 与 `assets/fonts/OFL-*.txt` |
 | rough 外扩裁切 | Pele `viewBox` padding 20/12px 未改动 | 出现裁切再加到 24/16，必要时按包围盒再留 2px |
 | hachure 体积 | 流程图 SVG 55,009 → 79,973 B | 默认实心；hachure 仅在明确需要时开启，文档标注体积代价 |
 | 箭头仍是实心三角 | v1 接受 | v2 再换 rough 开口 V |
@@ -313,11 +336,11 @@ export interface ThemeBackdrop {
 - `--tone paper|neutral|product`（`src/tone.ts`）：覆盖块页结构与信息卡；`paper` 另把图与块页都换成编辑风网格纸（`#FAFAF8` + 24px 细格 / 96px 粗格，`src/themes.ts` 的 `paperize()`）。
 - `mmdx card`（`src/card.ts`）：Markdown 或 URL → 信息卡 PNG，默认 `openai`，`--tone`、480/600/900+ 宽度、按实际像素高度拆页。
 - `scripts/make-style-review.ts` 生成 `review/styles/` 三套主题的 4 类图 + card/kpi/table，Excalidraw 另加 hachure 版。
-- `scripts/make-gallery.ts` 与 [docs/GALLERY.md](GALLERY.md)：同一「灰度发布复盘」案例在九套主题下的五个分场景对照（流程图 / 饼图 / KPI / 卡片 / 表格），另出 `--tone paper` 的块页报告（`tone-paper-report.png`）。案例流程图用满四个形状族，饼图用满系列色。
-- `tests/run.ts` 覆盖样式契约、rough 形状、`--style-fill`、九套主题的渲染筛查（流程图 / 状态图 / 类图 / ER + 块页）、双跑确定性与无障碍门槛（文本分档、形状描边、形状色觉、形态冗余、连线对比度、系列色觉、系列对底对比度、节点轮转）；当前 **209/209 通过**。
+- `scripts/make-gallery.ts` 与 [docs/GALLERY.md](GALLERY.md)：同一「灰度发布复盘」案例在八套主题下的五个分场景对照（流程图 / 饼图 / KPI / 卡片 / 表格），另出 `--tone paper` 的块页报告（`tone-paper-report.png`）。案例流程图用满四个形状族，饼图用满系列色。
+- `tests/run.ts` 覆盖样式契约、rough 形状、`--style-fill`、八套主题的渲染筛查（流程图 / 状态图 / 类图 / ER + 块页）、双跑确定性与无障碍门槛（文本分档、形状描边、形状色觉、形态冗余、连线对比度、系列色觉、系列对底对比度、节点轮转、主题字体）；当前 **201/201 通过**。
 - `scripts/lint-a11y.ts`：逐主题打印正文/次要文字/形状描边对比度、色觉模拟距离、连线对比度与系列色报告，作为色板改动的前置检查。
 
 待做：
 
-- 生产字体子集（Excalifont / LXGW WenKai）尚未加入；当前用系统字体回退。
-- 未做用户正式目测；`docs/gallery/*.png` 为待审图。`review/styles/` 与 `review/scenario/` 下已放好本轮待目测的样张。
+- 生产字体已随包（8 个家族）；`scripts/subset-font.py` 与 `assets/fonts/OFL-*.txt` 记录了子集口径与来源。
+- 未做用户正式目测；`docs/gallery/*.png` 为待审图。`review/styles/` 下已放好本轮待目测的样张。

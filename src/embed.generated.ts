@@ -2,5 +2,5 @@
 // Committed as an empty stub; a real build replaces it with inlined assets.
 export const PELE_JS = '';
 export const ROUGH_JS = '';
-export const FONT_B64: string | null = null;
+export const FONT_FILES: Record<string, string> = {};
 export const BUILD_VERSION: string | null = null;

@@ -14,33 +14,45 @@
 - 状态 chip 改用 Zed 的 chip 配方：先按 `adjust_lightness` 缩放强调色的亮度（暗色 ×0.7、亮色 ×1.3，新增 `src/color.ts` 的 `scaleLightness()`，缩放落在 OKLab 的 L 上），再由该底色推导文字色；原来用的是「强调色 15% 混页面」的节点填充配方
 - `zed-light` 的块页从文档卡片改成**编辑器面板**：`#EBEBEC` 面板 + `#C9C9CA` 发丝线 + 6px 圆角，卡片去掉强调色边条，表头与热力格用 `#E4E4E5`——此前它基本沿用共享 `PAGE_CSS`，卡片观感和 `tech` 一样
 - 新增 `textColorFor(bg)`（OKLab 保留底色 15% 彩度 + 二分保 ≥4.5:1）：`zed` 的块页状态 chip 文字由 chip 底色推导，浅底深底共用一条规则
-- `accentTint(accent, bg)` 改为按主题页面底色混合（原先固定混白）；`PAGE_CSS` 里 6 处 `color-mix(..., white)` 改成 `color-mix(..., var(--paper))`（进度条、对比条、热力图 lv1–3）。白底主题输出逐字节不变，非白底主题（`ios` / `glass` / `epaper` / `acnh` / `--tone paper`）的条与热力格向自己的纸色靠 1–3%
+- `accentTint(accent, bg)` 改为按主题页面底色混合（原先固定混白）；`PAGE_CSS` 里 6 处 `color-mix(..., white)` 改成 `color-mix(..., var(--paper))`（进度条、对比条、热力图 lv1–3）。白底主题输出逐字节不变，非白底主题（`ios` / `epaper` / `acnh` / `--tone paper`）的条与热力格向自己的纸色靠 1–3%
 - 新增暗色块页样式：`color-scheme: dark`、`#2F343E` 面板、`#464B57` 发丝线，其余仍走 `var(--paper)` / `var(--ink)`
 - `src/tokens.ts` 的 `contrastRatio` / `relativeLuminance` 收敛为从 `src/color.ts` 再导出
-- `glass` 的材质层重做：网格 24px、透明度 0.22（原 28px / 0.10，1x 下几乎看不见），白色半透膜 0.30 → 0.16、颗粒 4% → 10%，面板 `rgba(255,255,255,.72)` → `.45`、`backdrop-filter` 20px → 5px——面板后面能看见格线，亚克力才有材质感（模糊压轻是刻意的：24px 格线重度模糊就摊成一片平色）；去掉偏紫的色块（`#E7E3F4`，在冷底上读作一块脏晕），改为一块白色高光；判定描边 `#B07514` → `#B45309`（原色偏橄榄，压在冷底上发浑）
 - `ios` 的系统感加强：圆角 10 → 14px、描边 1.25 → 1.6px，判定/状态/存储填充换成系统色更实的浅色调；块页按 HIG 分组列表补齐每张卡片右侧的 `›` 折角、分隔线提到 iOS 的 0.29 alpha、标题改 20px/700
+
+### 字体（新增）
+
+- **展示字体随包**：新增 `src/fonts.ts` 注册表（家族 → `@font-face` 描述），随包家族从 3 个增到 8 个：Excalifont（`excalidraw` 拉丁手写体，取上游按脚本切片里的两片拉丁 chunk，用 `unicode-range` 限定）、站酷快乐体 ZCOOL KuaiLe + Baloo 2（`acnh` 圆体）、Newsreader（`epaper` 衬线，保留 `opsz` / `wght` 轴）、JetBrains Mono（块页 `code` / kicker / footer）。子集口径与来源记在 `scripts/subset-font.py`（CJK 走 GB2312 全量，拉丁走 latin-1 + latin-ext + 标点 + 箭头），全部 OFL-1.1，许可证随字体放在 `assets/fonts/OFL-*.txt`，合计约 7.3MB
+- `theme.fonts` 正式接入渲染（此前只有声明、没人读）：`Renderer` 按「随包黑体 + 主题 `fonts[]` + 等宽」注入 `@font-face`，并逐家族 `document.fonts.load()` 等待——Pele 与 Mermaid 都先量标签再画，字体没就绪会量出回退宽度、标签被裁
+- **块页取主题字体栈**：`mkTheme()` 把 `:root{--font:<主题栈>}` 拼进 `blockCss`，`PAGE_CSS` 的 `.wrap` 读 `var(--font, …)`。此前块页固定用黑体，只有 `excalidraw` / `epaper` 在各自 `blockCss` 里硬写字体；现在 `acnh` 的卡片 / KPI / 表格也真的用上快乐体
+- **字体栈只列随包家族**：`ios` 改为 `"Noto Sans SC", -apple-system, …`（原先 `-apple-system` 打头，macOS 上会走 SF Pro，与画廊不一致）、`acnh` 去掉 `YouYuan` / `幼圆` / `Segoe Print`、`excalidraw` 去掉 `Segoe Print` / `Comic Sans MS` / `KaiTi` / `STKaiti`、`epaper` 去掉 `Georgia` / `Songti SC` / `SimSun`；系统家族只允许排在所有随包家族之后做缺字兜底
+- 新增 `lint/theme-fonts` 门槛：主题字体栈里排在随包家族之前的非通用家族必须自己随包、`fonts[]` 声明的家族必须在注册表里、注册表里每个家族至少被一个主题或文档路径使用
+- `scripts/build.ts` 按注册表内联全部字体（`FONT_FILES`），缺文件直接报错（原先静默 `null`）
 
 ### 修复
 
-- `mmdx card` 在 bun 下报 `buf.readUInt32BE is not a function`：`src/card.ts` 的 `pngSize()` 假定拿到的是 Node `Buffer`，而 bun 的截图路径给的是 `Uint8Array`。现在先 `Buffer.from()`（与 `src/capture.ts` / `src/lint.ts` 一致），`bun run test` 从 205/209 变为 **209/209**
+- `mmdx card` 在 bun 下报 `buf.readUInt32BE is not a function`：`src/card.ts` 的 `pngSize()` 假定拿到的是 Node `Buffer`，而 bun 的截图路径给的是 `Uint8Array`。现在先 `Buffer.from()`（与 `src/capture.ts` / `src/lint.ts` 一致），`bun run test` 当时从 205/209 变为 **209/209**（2026-10-31 砍掉 `glass` 后为 **201/201**）
+
+### 移除（Breaking）
+
+- **砍掉 `glass` 预设**（2.0.0 曾包含）：亚克力的材质感依赖 `backdrop-filter`，而 Chromium 不渲染 SVG 形状上的该属性，只能靠「半透明面板 + 底下没有锐利细节」伪造，与 `openai` / `ios` 的浅色平面观感区分不足。`-t glass` 现在报 `unknown theme` 并列出可用值；`docs/gallery/glass.md` / `glass.en.md` 与 5 张分场景图一并删除，主题集合回到八套
 
 ### 无障碍（新增门槛）
 
 - 新增 `lint/theme-connectors`：连线色对页面 ≥ 3:1（连线承载语义，与形状描边同一条非文本门槛）。实测最小 3.11（`paper` tone）；`zed` `#636D83` 2.70 与 `ios` `#8E8E93` 2.92 未过，改为 `#7A8598`（3.76）与 `#7C7C82`（3.72）
-- 新增 `lint/theme-series-cvd`：8 色图表的**任意两色**在 protan / deutan / tritan 模拟下 OKLab ΔE ≥ 0.02（原先只有形状族受检）。修前最差 `openai` protan 0.005、`zed-light` deutan 0.009、`zed` tritan 0.013、`ios` tritan 0.017、`paper` protan 0.019；按「只挪必要的色、保持原色相与彩度」重挑后，九套主题全部 ≥ 0.040（多数主题只挪 0–2 个色；`epaper` 的灰阶系列原本已达标，未动）
+- 新增 `lint/theme-series-cvd`：8 色图表的**任意两色**在 protan / deutan / tritan 模拟下 OKLab ΔE ≥ 0.02（原先只有形状族受检）。修前最差 `openai` protan 0.005、`zed-light` deutan 0.009、`zed` tritan 0.013、`ios` tritan 0.017、`paper` protan 0.019；按「只挪必要的色、保持原色相与彩度」重挑后，八套主题全部 ≥ 0.040（多数主题只挪 0–2 个色；`epaper` 的灰阶系列原本已达标，未动）
 - 新增 `lint/theme-node-rotation`：开轮转的主题（`zed` / `zed-light`）里，8 个 player 色对自己的 15% 底色各 ≥ 3:1（实测 3.00）——轮转让每个色都成了描边，不能只查形状族那 4 个
-- 新增 `lint/theme-series-contrast`：8 色系列每色对页面底 ≥ 3:1。Pele 的饼图数值是用**页面底色**「抠」在切片上的，切片太浅数值就消失（修前 `acnh` 最浅一片只有 2.04:1）；重挑后九套全部 ≥ 3.00
+- 新增 `lint/theme-series-contrast`：8 色系列每色对页面底 ≥ 3:1。Pele 的饼图数值是用**页面底色**「抠」在切片上的，切片太浅数值就消失（修前 `acnh` 最浅一片只有 2.04:1）；重挑后八套全部 ≥ 3.00
 - `scripts/lint-a11y.ts` 增加连线对比度、系列色色觉、系列色对底三行逐主题报告
 
 ### 画廊
 
 - 案例的流程图改用四种形状族：`([需求冻结])` 胶囊起点、`[灰度 5%]` 矩形、`{错误率 < 1%?}` 菱形、`[(发布台账)]` 圆柱——此前样张只有矩形与菱形，四个形状族在画廊里看不见
-- 新增第 5 个场景 `chart`：` ```chart ` pie 六片，形状族与 8 色系列色都进样张；九套主题 × 5 场景
+- 新增第 5 个场景 `chart`：` ```chart ` pie 六片，形状族与 8 色系列色都进样张；八套主题 × 5 场景
 - 画廊全量重出（本机一次渲染，图标 emoji 字形与其余分页一致）；`tests/contact-sheet.png`（README 的图型拼图）按当前产物重出
 
 ### 文档
 
-- `docs/gallery/zed.md` / `zed-light.md`（含英文页）、`docs/STYLE_PORTS.md` 第 3.1c 节记录色板、机制与门槛实测；画廊总览改为九套主题 3×3
+- `docs/gallery/zed.md` / `zed-light.md`（含英文页）、`docs/STYLE_PORTS.md` 第 3.1c 节记录色板、机制与门槛实测；画廊总览改为八套主题
 - 分风格页、`docs/GALLERY.md`、`docs/QUALITY.md`、skill 与 README 的主题描述同步到新的网格 / 材质 / 门槛数字
 
 ## [2.0.0] - 2026-10-30

@@ -16,7 +16,7 @@
 | 🤖 AI Agent | [docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md) | 省 token 版：环境自检、选型表、参数速查、JSON 契约、错误速诊 |
 | 👤 人类用户 | [docs/HUMAN_GUIDE.md](docs/HUMAN_GUIDE.md) | 易读版：安装部署、CLI 全参数、主题定制、性能调优、排障 |
 | 🖼 扩展块 | [docs/EXTENSIONS.md](docs/EXTENSIONS.md) | 每种围栏一张工具渲染的 PNG + 语法 |
-| 🎭 风格画廊 | [docs/GALLERY.md](docs/GALLERY.md) | 同一案例在九套主题下的流程图 / 饼图 / KPI / 卡片 / 表格对照 |
+| 🎭 风格画廊 | [docs/GALLERY.md](docs/GALLERY.md) | 同一案例在八套主题下的流程图 / 饼图 / KPI / 卡片 / 表格对照 |
 | 🧪 质量门禁 | [docs/QUALITY.md](docs/QUALITY.md) | 像素 lint 覆盖、已知盲区、发布前许可证清单 |
 | 🖋 手绘 editorial 规格 | [skill/editorial/](skill/editorial/README.md) | vendored diagram-design 规格（MIT）：偶发封面 / 方案插图按其规格手绘 HTML，`mmdx file.html --scale 3` 导出 |
 | 📃 叙事解释页规格 | [skill/explain/](skill/explain/README.md) | vendored visual-explainer 规格化改造版（MIT）：解释页 / 评审页 / recap / 幻灯片页用 starter 装配 HTML，同命令导出 |
@@ -28,8 +28,8 @@
 ## ✨ 核心特性
 
 - **Pele 唯一引擎**：Obsidian 开源的 Mermaid→SVG 渲染器，单图 SVG 生成 1–50ms；输入仍是 Mermaid 语法（围栏 / `.mmd` / stdin），但只有这一条渲染路径，没有第二套布局引擎
-- **CSS 变量主题**：Pele 把颜色/字体/圆角全部外置为 `--pele-*` 变量，`-f svg` 默认烘焙成 hex，`--svg-themeable` 保留可换肤 SVG；三套预设共用形状分色（蓝=流程、琥珀=判定、绿=状态、紫=存储）
-- **内置中文字体（三家族）**：Noto Sans SC（通用）/ Noto Serif SC（衬线栈）/ 霞鹜文楷（楷体标注）的 GB2312 全量子集，合计约 6.2MB，任意机器渲染一致，中文标签换行正确；后两者与 `sans-serif`/`serif` 的 CJK 兜底 alias 只为手写 HTML 文档注入，围栏与 mermaid 仍只用黑体
+- **CSS 变量主题**：Pele 把颜色/字体/圆角全部外置为 `--pele-*` 变量，`-f svg` 默认烘焙成 hex，`--svg-themeable` 保留可换肤 SVG；八套预设多数共用形状分色（蓝=流程、琥珀=判定、绿=状态、紫=存储；`zed` / `zed-light` 改为按读取顺序轮转 8 个 player 色）
+- **字体全部随包**：通用黑体 Noto Sans SC、衬线 Noto Serif SC、楷体霞鹜文楷的 GB2312 子集，加上各主题的展示字体——Excalifont（手绘）、站酷快乐体 + Baloo 2（动森圆体）、Newsreader（电子纸衬线）、JetBrains Mono（等宽小字），合计约 7.3MB。主题字体栈只列随包家族，装没装系统字体不影响出图；`lint/theme-fonts` 守住「主题不得命名未随包的字体」，`scripts/subset-font.py` 记录子集口径与来源
 - **像素级均匀留白**：每张图二次裁切到墨迹包围盒，四边留白对称是构造保证，不靠引擎不可靠的 viewBox
 - **扩展块**：```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane 直出 PNG
 - **办公交付**：`--preset slide|a4|square|column`、图题/来源/单位 chrome、`--brand` 强调色；agent 友好的 `--json`（含 `warnings`）
@@ -83,7 +83,7 @@ Markdown 围栏：`mermaid`（图表）以及 `table` / `list` / `card` / `chart
 
 ```card
 🚀 | 渲染管线 | 单浏览器页池复用，PNG 2x 无损导出
-🎨 | 主题系统 | 九套预设，支持 theme-js、tone 与 css 自定义
+🎨 | 主题系统 | 八套预设，支持 theme-js、tone 与 css 自定义
 ```
 
 ![卡片渲染示例](docs/ext-card.png)
@@ -97,14 +97,13 @@ Markdown 围栏：`mermaid`（图表）以及 `table` / `list` / `card` / `chart
 | `excalidraw` | 手绘：粉彩填色 + 墨线抖动（rough.js），Excalifont/LXGW；块版式为白板卡片 |
 | `ios` | iOS 系统界面：**纯平面**分组浅灰底 + 白卡片 + 发丝分隔线 + 系统色（蓝 `#007AFF` / 绿 / 橙 / 紫）、12px 圆角；卡片按 iOS 分组列表做法不加强调色边条，不画底、不加投影 |
 | `acnh` | 动森：奶油纸 + 粗棕描边 + 硬偏移贴纸阴影 + 圆体字、胶囊标签；块页带点阵纸纹 |
-| `glass` | Fluent 亚克力玻璃：淡蓝灰画布 + 24px 网格 + 一层白色半透膜与细颗粒，面板 `rgba(255,255,255,.45)`、8px 圆角、白描边，格线透过面板可见；强调色 Fluent 蓝 `#0F6CBD` |
 | `epaper` | 电子纸 / 墨水屏：`#F5F1EB` 纸底 + 纸纹颗粒 + `#1A1A1A` 发丝黑描边、直角、无阴影、无强调色，形状族用灰阶与形状区分；块页同纸底 + 墨线卡片 + 等宽大写表头 |
 | `zed` | Zed 编辑器暗色（One Dark）：`#282C33` 画布、发丝线、无投影无底纹；flowchart / class / state 节点按 Zed 的 `node_counter % 8` 轮转 8 个 player 色（描边取色、填充同色 15% 混页面底色），所以是多色轮转而非形状分色 |
 | `zed-light` | 同上取 One Light（`#FAFAFA` 画布 + `#EBEBEC` 编辑器面板）；两套是主题集合里唯一的暗色 / 亮色编辑风一对 |
 
 `excalidraw` 默认实心填色；需要斜线填色时加 `--style-fill hachure`（体积约 1.5–2×，PPT 可读性优先时保持默认）。
 
-`acnh` / `glass` / `epaper` 都自带底：SVG 里插一层 `mmdx-backdrop`（`acnh` 是奶油纸 + 点阵网格，`glass` 是色块 + 网格 + 白色半透膜 + 噪点，`epaper` 是纸底 + 纸纹颗粒），PNG 整幅截取不裁边，所以 SVG 和 PNG 观感一致。`ios` 是纯平面风格，不画底也不加投影。传 `--background transparent` 时不画底，半透明面板会透出宿主页面的内容。
+`acnh` / `epaper` 都自带底：SVG 里插一层 `mmdx-backdrop`（`acnh` 是奶油纸 + 点阵网格，`epaper` 是纸底 + 纸纹颗粒），PNG 整幅截取不裁边，所以 SVG 和 PNG 观感一致。`ios` 是纯平面风格，不画底也不加投影。传 `--background transparent` 时不画底。
 
 `--tone paper|neutral|product` 改块版式的结构（圆角、阴影、标题字体、表格头）；`paper` 另把图的配色换成编辑风纸底墨线（`#FAFAF8` 灰白纸 + 24px 细格线 / 96px 粗格线 + 焦橙强调色 `#BF4520`），块页用同一张网格纸，`neutral` / `product` 不动图的配色。信息卡是独立 skill [`info-card-designer`](skill/info-card-designer/SKILL.md)，把同一套主题和 tone 用到 Markdown/网页正文：
 
@@ -132,7 +131,7 @@ starter 已内联 kit 设计系统与该 register 的拉丁字体，head 不用�
 
 同一个「灰度发布复盘」案例，只换 `-t` 就能切换 `tech`、`openai`、`excalidraw`。主页留一张流程图做简单对比：
 
-[![同一案例在九套主题下的流程图](docs/gallery/overview.png)](docs/GALLERY.md)
+[![同一案例在八套主题下的流程图](docs/gallery/overview.png)](docs/GALLERY.md)
 
 另见 [两个 HTML 场景模板](docs/gallery/html-skills.md)（报告卡与信息卡跨风格对照）、[手绘 HTML 模板](docs/gallery/vendored-html.md)（v1.4.2 的 editorial / visual-explainer）与 [信息卡 tone 对照](docs/gallery/card-tones.md)（paper / neutral / product）。
 

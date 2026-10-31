@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fontFiles } from './fonts.ts';
 
 const PKG_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -14,12 +15,8 @@ export interface Assets {
   peleJs: string;
   /** rough.js UMD bundle, loaded only by hand-drawn themes */
   roughJs: string;
-  /** base64 woff2 of the bundled CJK font, or null when not bundled */
-  fontB64: string | null;
-  /** base64 woff2 of the serif CJK subset (authored HTML documents only) */
-  fontSerifB64: string | null;
-  /** base64 woff2 of the kai CJK subset (hand-drawn figure labels) */
-  fontKaiB64: string | null;
+  /** bundled font files as base64 woff2, keyed by file name under assets/fonts/ */
+  fonts: Record<string, string>;
 }
 
 async function fromGenerated(): Promise<Assets | null> {
@@ -29,9 +26,7 @@ async function fromGenerated(): Promise<Assets | null> {
     const g = (await import('./embed.generated.js')) as {
       PELE_JS?: string;
       ROUGH_JS?: string;
-      FONT_B64: string | null;
-      FONT_SERIF_B64?: string | null;
-      FONT_KAI_B64?: string | null;
+      FONT_FILES?: Record<string, string>;
       BUILD_VERSION?: string | null;
     };
     // the committed stub is empty — that means "not built", fall back to files
@@ -39,9 +34,7 @@ async function fromGenerated(): Promise<Assets | null> {
       return {
         peleJs: g.PELE_JS,
         roughJs: g.ROUGH_JS ?? '',
-        fontB64: g.FONT_B64,
-        fontSerifB64: g.FONT_SERIF_B64 ?? null,
-        fontKaiB64: g.FONT_KAI_B64 ?? null,
+        fonts: g.FONT_FILES ?? {},
       };
     }
     return null;
@@ -70,13 +63,11 @@ function read(rel: string): string {
 export async function loadAssets(): Promise<Assets> {
   const generated = await fromGenerated();
   if (generated) return generated;
-  let fontB64: string | null = null;
-  const fontPath = path.join(PKG_DIR, 'assets', 'fonts', 'NotoSansSC-Subset.woff2');
-  if (fs.existsSync(fontPath)) fontB64 = fs.readFileSync(fontPath).toString('base64');
-  const optionalFont = (file: string): string | null => {
+  const fonts: Record<string, string> = {};
+  for (const file of fontFiles()) {
     const p = path.join(PKG_DIR, 'assets', 'fonts', file);
-    return fs.existsSync(p) ? fs.readFileSync(p).toString('base64') : null;
-  };
+    if (fs.existsSync(p)) fonts[file] = fs.readFileSync(p).toString('base64');
+  }
   return {
     peleJs: fs.existsSync(path.join(PKG_DIR, 'vendor/pele.global.js'))
       ? read('vendor/pele.global.js')
@@ -84,8 +75,6 @@ export async function loadAssets(): Promise<Assets> {
     roughJs: fs.existsSync(path.join(PKG_DIR, 'vendor/rough.js'))
       ? read('vendor/rough.js')
       : '',
-    fontB64,
-    fontSerifB64: optionalFont('NotoSerifSC-Subset.woff2'),
-    fontKaiB64: optionalFont('LXGWWenKai-Subset.woff2'),
+    fonts,
   };
 }

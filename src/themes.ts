@@ -4,6 +4,7 @@
 // cylinder=store) instead of the single-hue Mermaid default.
 
 import { blendOver, scaleLightness, textColorFor } from './color.ts';
+import { MONO_FAMILY } from './fonts.ts';
 
 export interface ThemePreset {
   config: Record<string, unknown>;
@@ -504,7 +505,7 @@ const excalidraw: ThemePreset = {
     look: 'handDrawn',
     theme: 'base',
     themeVariables: {
-      fontFamily: `"Excalifont", "LXGW WenKai", "Segoe Print", "Comic Sans MS", "KaiTi", "STKaiti", "Noto Sans SC", cursive, sans-serif`,
+      fontFamily: `"Excalifont", "LXGW WenKai", "Noto Sans SC", cursive, sans-serif`,
       fontSize: '15px',
       primaryColor: '#A5D8FF',
       primaryTextColor: '#1E1E1E',
@@ -540,7 +541,7 @@ const excalidraw: ThemePreset = {
 };
 
 const EXCALIDRAW_BLOCK_CSS = `
-.wrap { padding: 24px 36px 32px 28px; background: #FFFFFF; color: #1E1E1E; font-family: "Excalifont", "LXGW WenKai", "Segoe Print", "Comic Sans MS", "KaiTi", "STKaiti", "Noto Sans SC", cursive, sans-serif; }
+.wrap { padding: 24px 36px 32px 28px; background: #FFFFFF; color: #1E1E1E; font-family: "Excalifont", "LXGW WenKai", "Noto Sans SC", cursive, sans-serif; }
 .caption-title { font-size: 22px; font-weight: 600; }
 .caption-sub, .caption-foot { color: #6C757D; }
 .cards { grid-template-columns: repeat(2, 280px); gap: 18px; }
@@ -608,55 +609,6 @@ li::before { color: #007AFF; }
 `;
 
 // ---------------------------------------------------------------------------
-// glass — Fluent 2 acrylic: a flat tinted canvas, a faint grid, and one
-// translucent sheet over both, so the ruling shows through the panels the way
-// it does through frosted glass. Tint opacity, blur and grain follow the
-// acrylic recipe (hue layer at 80%, soft focus, noise).
-// ---------------------------------------------------------------------------
-const GLASS_BLOCK_CSS = `
-:root { color-scheme: light; }
-body {
-  background-color: #E9EEF6;
-  background-image:
-    linear-gradient(rgba(15,35,66,0.22) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15,35,66,0.22) 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-.wrap { font-size: 15px; color: #1B1B1F; background: transparent; }
-.caption-title { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
-.caption-sub, .caption-foot { color: #4C4F57; }
-.card, .kpi, table, .task, .cmp, .vs, .hm {
-  background: rgba(255,255,255,0.45);
-  border: 1px solid rgba(255,255,255,0.85);
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(15,23,42,0.08);
-  /* A light blur: the ruling has to stay recognisable behind the sheet, and a
-     heavy blur turns a 24px grid into one flat tone. */
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-}
-.card { padding: 16px 18px; }
-.card::before { display: none; }
-.card-title { font-size: 15px; font-weight: 600; }
-.card-desc { font-size: 13px; color: #4C4F57; }
-.kpi-row { border-bottom: 1px solid rgba(15,23,42,0.08); }
-.kpi-value { font-weight: 600; }
-.kpi-value.is-focus { color: #0F6CBD; }
-.kpi-up { color: #C42B1C; }
-.kpi-down { color: #0E7A6B; }
-.task-row { border-bottom: 1px solid rgba(15,23,42,0.08); }
-.task-chip, .task-badge { border-radius: 9999px; background: rgba(255,255,255,0.4); }
-.fn-track { background: rgba(255,255,255,0.4); border-radius: 9999px; }
-.fn-bar { background: #0F6CBD; border-radius: 9999px; }
-table { overflow: hidden; }
-thead th { background: rgba(255,255,255,0.36); color: #4C4F57; font-weight: 500; }
-th, td { border-bottom: 1px solid rgba(15,23,42,0.08); }
-th + th, td + td { border-left: none; }
-tbody tr:nth-child(even) td { background: rgba(255,255,255,0.24); }
-li::before { color: #0F6CBD; }
-`;
-
-// ---------------------------------------------------------------------------
 // epaper — e-ink: black hairlines, square corners, no shadow, no accent colour.
 // Shape families are told apart by grey level instead of hue, which is what a
 // monochrome panel (or a black-and-white print) can actually show.
@@ -670,11 +622,11 @@ body {
 }
 .wrap {
   color: #1A1A1A; background: transparent;
-  font-family: "Newsreader", "Noto Serif SC", Georgia, "Songti SC", SimSun, serif;
+  font-family: "Newsreader", "Noto Serif SC", serif;
 }
 .caption-title { font-size: 20px; font-weight: 500; letter-spacing: -0.01em; }
 .caption-sub { color: #444444; }
-.caption-foot { color: #666666; font-family: "Cascadia Code", Consolas, ui-monospace, monospace; letter-spacing: 0.06em; }
+.caption-foot { color: #666666; font-family: "${MONO_FAMILY}", "Cascadia Code", Consolas, ui-monospace, monospace; letter-spacing: 0.06em; }
 .cards { grid-template-columns: repeat(2, 300px); gap: 18px; }
 .card { background: transparent; border: 1px solid #1A1A1A; border-radius: 0; box-shadow: none; padding: 20px 22px; }
 .card::before { display: none; }
@@ -694,7 +646,7 @@ table { background: transparent; border: 1px solid #1A1A1A; border-radius: 0; }
 thead th {
   background: transparent; color: #1A1A1A; font-size: 11px; font-weight: 500;
   text-transform: uppercase; letter-spacing: 0.12em;
-  font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
+  font-family: "${MONO_FAMILY}", "Cascadia Code", Consolas, ui-monospace, monospace;
   border-bottom: 1px solid #1A1A1A;
 }
 th, td { border-bottom: 1px solid #DDDDDD; }
@@ -888,14 +840,6 @@ const ios: ThemePreset = {
 };
 
 // ---------------------------------------------------------------------------
-// glass — Fluent 2 acrylic surfaces over a tinted, ruled canvas.
-// ---------------------------------------------------------------------------
-const glass: ThemePreset = {
-  config: baseConfig('#E9EEF6'),
-  background: '#E9EEF6',
-};
-
-// ---------------------------------------------------------------------------
 // epaper — monochrome e-ink: black hairlines on off-white, no colour, no depth.
 // ---------------------------------------------------------------------------
 const epaper: ThemePreset = {
@@ -925,7 +869,6 @@ export const PRESETS: Record<string, ThemePreset> = {
   excalidraw,
   ios,
   acnh,
-  glass,
   epaper,
   zed,
   'zed-light': zedLight,
@@ -1063,7 +1006,11 @@ function mkTheme(s: PeleSeed): ThemeSpec {
     css: s.css ?? '',
     ...(s.style ? { style: s.style } : {}),
     ...(s.backdrop ? { backdrop: s.backdrop } : {}),
-    ...(s.blockCss ? { blockCss: s.blockCss } : {}),
+    // The page stack rides in the theme's own block CSS: PAGE_CSS reads
+    // var(--font), so every caller that passes blockCss gets the theme's
+    // bundled type stack without having to remember an extra option.
+    blockCss: `:root{--font:${s.font ?? FONT_STACK};}
+` + (s.blockCss ?? ''),
     ...(s.fonts ? { fonts: s.fonts } : {}),
   };
 }
@@ -1099,7 +1046,8 @@ const PELE_THEMES: Record<string, ThemeSpec> = {
     name: 'excalidraw', dark: false, bg: '#FFFFFF', fg: '#1E1E1E', muted: '#6C757D',
     line: '#1E1E1E', surface: '#A5D8FF', surfaceAlt: '#F8F9FA', border: '#ADB5BD',
     accent: '#1971C2', critical: '#E03131', radius: '12px',
-    font: `"Excalifont", "LXGW WenKai", "Segoe Print", "Comic Sans MS", "KaiTi", "STKaiti", "Noto Sans SC", cursive, sans-serif`,
+    font: `"Excalifont", "LXGW WenKai", "Noto Sans SC", cursive, sans-serif`,
+    fonts: ['Excalifont', 'LXGW WenKai'],
     series: ['#1971C2', '#23A048', '#DB7E00', '#D43031', '#7950F2', '#0F8599', '#E75D1C', '#868E96'],
     style: {
       rough: true, roughness: 1.0, bowing: 1.2, fillStyle: 'solid',
@@ -1119,7 +1067,9 @@ const PELE_THEMES: Record<string, ThemeSpec> = {
     name: 'ios', dark: false, bg: '#F2F2F7', fg: '#1C1C1E', muted: '#6E6E73',
     line: '#7C7C82', surface: '#FFFFFF', surfaceAlt: '#FFFFFF',
     border: '#D1D1D6', accent: '#007AFF', critical: '#D70015', radius: '14px',
-    font: `-apple-system, "SF Pro Text", "SF Pro Display", "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif`,
+    // The bundled sans leads: on a Mac the Apple faces would otherwise render
+    // this theme with different metrics than the committed gallery.
+    font: `"Noto Sans SC", -apple-system, "SF Pro Text", "SF Pro Display", "PingFang SC", sans-serif`,
     series: ['#007AFF', '#248A3D', '#C23A17', '#D70015', '#8944AB', '#006C9F', '#B15109', '#6C6C70'],
     style: { strokeWidth: 1.6, shapeCoverage: true },
     // Flat grouped page: no wallpaper tint and no filter depth, so the sheet
@@ -1134,44 +1084,6 @@ const PELE_THEMES: Record<string, ThemeSpec> = {
       cluster: ['#FFFFFF', '#D1D1D6'],
     },
   }),
-  glass: mkTheme({
-    name: 'glass', dark: false, bg: '#E9EEF6', fg: '#1B1B1F', muted: '#4C4F57',
-    line: '#6E7480', surface: 'rgba(255,255,255,0.55)', surfaceAlt: 'rgba(255,255,255,0.38)',
-    border: 'rgba(255,255,255,0.85)', accent: '#0F6CBD', critical: '#C42B1C', radius: '8px',
-    font: `"Segoe UI Variable Text", "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif`,
-    series: ['#005DBB', '#037667', '#8A6116', '#C42B1C', '#6B4EA2', '#267C9D', '#B04087', '#62707F'],
-    style: { strokeWidth: 1.4, shapeCoverage: true },
-    // Acrylic: a flat hue layer, one sheet of white over it, grain on top. The
-    // tint stays inside a 12/255 step of the base, so the backdrop reads as
-    // material instead of as a colour field the margin gate would follow. The
-    // ruling is what proves the panels are translucent, so it carries real
-    // contrast and the white sheet over it stays thin.
-    backdrop: {
-      base: '#E9EEF6',
-      blur: 70,
-      blobs: [
-        { cx: 0.2, cy: 0.16, r: 0.58, color: '#D8E3F4', opacity: 0.95 },
-        { cx: 0.84, cy: 0.88, r: 0.55, color: '#D3DFF1', opacity: 0.9 },
-        // Light source: a white sheen, not a warm or violet wash (a coloured
-        // blob reads as a dirty patch on a cool canvas).
-        { cx: 0.24, cy: 0.2, r: 0.4, color: '#FFFFFF', opacity: 0.6 },
-      ],
-      grid: { color: 'rgba(15,35,66,0.22)', gap: 24, width: 1 },
-      pane: { color: '#FFFFFF', opacity: 0.16, noise: 0.1 },
-    },
-    css: [
-      '.pele-node rect,.pele-node circle,.pele-node ellipse,.pele-node polygon,.pele-node path{filter:drop-shadow(0 1px 2px rgba(15,23,42,0.10))}',
-      '.pele-cluster rect{fill:rgba(255,255,255,0.3);filter:drop-shadow(0 1px 1.5px rgba(15,23,42,0.06))}',
-    ].join('\n'),
-    blockCss: GLASS_BLOCK_CSS,
-    shapes: {
-      process: ['rgba(255,255,255,0.55)', '#0F6CBD'],
-      decision: ['rgba(255,255,255,0.55)', '#B45309'],
-      state: ['rgba(255,255,255,0.55)', '#0E7A6B'],
-      store: ['rgba(255,255,255,0.55)', '#6B4FA8'],
-      cluster: ['rgba(255,255,255,0.3)', '#B8C0CC'],
-    },
-  }),
   epaper: mkTheme({
     name: 'epaper', dark: false, bg: '#F5F1EB', fg: '#1A1A1A', muted: '#666666',
     line: '#1A1A1A', surface: '#F5F1EB', surfaceAlt: '#EDE9E2', border: '#1A1A1A',
@@ -1184,6 +1096,9 @@ const PELE_THEMES: Record<string, ThemeSpec> = {
     // Paper grain, not a tint: the sheet is the page colour and only the
     // turbulence shows, which is what makes it read as stock instead of a fill.
     backdrop: { base: '#F5F1EB', pane: { color: '#F5F1EB', noise: 0.05 } },
+    // Blocks print in the editorial serif; both families are bundled, so the
+    // page does not fall back to Georgia or SimSun depending on the machine.
+    fonts: ['Newsreader', 'Noto Serif SC'],
     blockCss: EPAPER_BLOCK_CSS,
     shapes: {
       process: ['#FFFFFF', '#1A1A1A'],
@@ -1197,7 +1112,7 @@ const PELE_THEMES: Record<string, ThemeSpec> = {
     name: 'acnh', dark: false, bg: '#FFF8E7', fg: '#5B4636', muted: '#7A6350',
     line: '#7A5C3E', surface: '#FFFDF5', surfaceAlt: '#FDF1D6', border: '#D9C3A5',
     accent: '#3E8C4A', critical: '#A33B2A', radius: '16px',
-    font: `"ZCOOL KuaiLe", "Baloo 2", "YouYuan", "幼圆", "Segoe Print", "LXGW WenKai", "Noto Sans SC", sans-serif`,
+    font: `"ZCOOL KuaiLe", "Baloo 2", "Noto Sans SC", sans-serif`,
     fonts: ['ZCOOL KuaiLe', 'Baloo 2'],
     series: ['#3E8C4A', '#CE7E00', '#7A5C3E', '#A33B2A', '#5B86C7', '#78675B', '#CB788D', '#619E6A'],
     style: { strokeWidth: 2.6, shapeCoverage: true },

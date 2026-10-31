@@ -2,7 +2,7 @@
 
 > 换主题 / 调 tone / 改配色 / 确认 Pele 支持哪些图型 / 查 `--config` 认哪些键时读本文。日常出图不需要——默认 `tech` + Pele 已经覆盖办公场景。Pele 是唯一引擎，输入仍是 Mermaid 语法，没有第二个引擎可切。
 
-## 一、九套主题
+## 一、八套主题
 
 | 主题 | `-t` | 视觉特点 | 适合 | 避免 |
 | --- | --- | --- | --- | --- |
@@ -11,14 +11,13 @@
 | `excalidraw` | `excalidraw` | 白底、粉彩填色、rough.js 手绘抖动、墨线、12px 圆角 | 白板、脑暴、工作坊、非正式分享 | 对外正式报告、打印稿、高密度数据图 |
 | `ios` | `ios` | 分组浅灰底 + 白卡片 + 发丝分隔线 + 系统色、10px 圆角；**纯平面**，无底、无阴影 | 产品界面截图、iOS 应用说明、需要「系统感」的图 | 打印稿（浅灰底吃墨）、高密度数据图 |
 | `acnh` | `acnh` | 奶油纸 + 点阵网格 + 粗棕描边 2.6px + 硬偏移贴纸阴影 + 圆体字、16px 圆角、胶囊标签 | 周报贴纸、团队看板、轻松汇报 | 合规/审计、打印稿、高密度数据图 |
-| `glass` | `glass` | Fluent 亚克力：淡蓝灰画布 + 24px 网格 + 白色半透膜与细颗粒，面板 8px 圆角带白描边、格线透过面板可见 | 玻璃质感封面、现代产品汇报 | 打印稿、高密度数据图 |
 | `epaper` | `epaper` | 电子纸：`#F5F1EB` 纸底 + 纸纹颗粒 + 发丝黑描边 + 直角无阴影，形状族用灰阶区分 | 黑白打印、墨水屏阅读、合规与审计文档 | 需要彩色区分度的高密度图、投屏 |
 | `zed` | `zed` | Zed One Dark：`#282C33` 画布 + 发丝线 + 无投影无底纹，节点按读取顺序轮转 8 个 player 色（描边取色、填充为同色 15% 混页面底色） | 暗色文档站、技术分享、终端风格交付 | 打印稿、白底文档内嵌 |
 | `zed-light` | `zed-light` | Zed One Light：`#FAFAFA` 画布 + `#EBEBEC` 编辑器面板，同一套轮转规则 | 白底文档里的编辑风、与 `zed` 配对 | 需要强品牌色的对外报告 |
 
-其余主题名（`openai-dark`、`vercel`、`notion`、`mocha`、`sketch` …）已随预设收敛移除，传了按 `unknown theme` 报错。九套主题的对照样张见 `docs/GALLERY.md`。
+其余主题名（`openai-dark`、`vercel`、`notion`、`mocha`、`sketch` …）已随预设收敛移除，传了按 `unknown theme` 报错。八套主题的对照样张见 `docs/GALLERY.md`。
 
-- `acnh` / `glass` / `epaper` **自带底**：SVG 里插一层 `<g class="mmdx-backdrop">`（`acnh` 奶油纸 + 点阵网格，`glass` 色块 + 网格 + 白色半透膜 + 噪点，`epaper` 纸底 + 纸纹颗粒），PNG 整幅截取、不做裁边（裁边会跟着底的边缘走，左右留白就不对称）。`ios` 是纯平面风格，不画底、不加投影。传 `--background transparent` 时不画底。`acnh` 的硬偏移阴影与 `glass` 的轻投影走 CSS `filter`，flatten 会把 `filter` 一起烘焙进 SVG。
+- `acnh` / `epaper` **自带底**：SVG 里插一层 `<g class="mmdx-backdrop">`（`acnh` 奶油纸 + 点阵网格，`epaper` 纸底 + 纸纹颗粒），PNG 整幅截取、不做裁边（裁边会跟着底的边缘走，左右留白就不对称）。`ios` 是纯平面风格，不画底、不加投影。传 `--background transparent` 时不画底。`acnh` 的硬偏移阴影走 CSS `filter`，flatten 会把 `filter` 一起烘焙进 SVG。
 - `excalidraw` 默认实心填色，`--style-fill hachure` 切斜线；其他主题传 `--style-fill` 会在 `--json.warnings` 里提示只对 `excalidraw` 生效。
 - 深色底用 `-t zed`（整幅暗色画布 + 暗色块页）；只换底不换主题才用 `--background '#1A1A1A'`。两者都**不要**投会议室（灯光一打全糊）。
 

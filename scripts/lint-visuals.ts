@@ -8,6 +8,7 @@ import { PNG } from 'pngjs';
 import { blockPage, htmlKindToInner } from '../src/blocks.ts';
 import { loadAssets } from '../src/embed.ts';
 import { bottomBlankLimit } from '../src/lint.ts';
+import { allFamilies } from '../src/fonts.ts';
 import { Renderer } from '../src/render.ts';
 import { getTheme, PRESETS, type ThemeSpec } from '../src/themes.ts';
 import { accentTint } from '../src/tokens.ts';
@@ -46,7 +47,7 @@ function margins(png: Buffer) {
   return { width, height, l: minX, r: width - 1 - maxX, t: minY, b: height - 1 - maxY };
 }
 
-const r = await Renderer.create(await loadAssets(), { scale: 2, width: 1200 });
+const r = await Renderer.create(await loadAssets(), { scale: 2, width: 1200, fonts: allFamilies() });
 let failed = 0;
 const report: string[] = [];
 

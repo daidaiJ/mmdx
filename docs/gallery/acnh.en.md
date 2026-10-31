@@ -6,7 +6,7 @@ Animal Crossing: cream paper (`#FFF8E7` with a dotted grid), thick brown outline
 
 This is the ACNH prototype from `docs/STYLE_PORTS.md` — cancelled during research — rebuilt for real: the palette and block layout come from the prototype CSS in `.handoff/style-ports-prototypes/`, and the diagram side gained the dotted paper and the sticker shadow. Both prototype blockers are gone: the flatten pass now bakes CSS `filter` (so the sticker shadow reaches the SVG), and block pages get panels, radii, thick borders, dashed separators and pills through `theme.blockCss`.
 
-The font stack starts with `ZCOOL KuaiLe` (Chinese) and `Baloo 2` (Latin) and falls back to system rounded faces (YouYuan / Segoe Print) when they are not bundled; font subsetting is still open.
+The font stack starts with `ZCOOL KuaiLe` (Chinese) and `Baloo 2` (Latin), both bundled under OFL-1.1 (see `assets/fonts/OFL-zcoolkuaile.txt` / `OFL-baloo2.txt`); `scripts/subset-font.py` records the subsetting contract. The system rounded fallbacks are gone, so an installed YouYuan cannot change the render.
 
 ## Flowchart
 

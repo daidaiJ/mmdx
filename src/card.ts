@@ -10,12 +10,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { blockPage, inlineMd, tableToHtml } from './blocks.ts';
 import { loadAssets } from './embed.ts';
+import { MONO_FAMILY } from './fonts.ts';
 import { Renderer } from './render.ts';
 import { accentTint, applyBrand, type Tokens } from './tokens.ts';
 import { isToneName, type ToneName } from './tone.ts';
 import { getTheme, PRESETS } from './themes.ts';
 
-const MONO = `"Cascadia Code", "SF Mono", Consolas, monospace`;
+const MONO = `"${MONO_FAMILY}", "Cascadia Code", "SF Mono", Consolas, monospace`;
 const SYNC_LIMIT = 2 * 1024 * 1024;
 
 export type CardBlock =
@@ -566,6 +567,7 @@ export async function runCardCommand(argv: string[], version: string): Promise<n
     const renderer = await Renderer.create(assets, {
       browserPath: o.browser || undefined,
       scale: o.scale, width: o.width,
+      fonts: [...(getTheme(o.theme).fonts ?? []), MONO_FAMILY],
     });
     const pages = await renderCardDoc(renderer, doc, {
       themeName: o.theme, tone: o.tone, width: o.width,

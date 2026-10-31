@@ -94,7 +94,7 @@ mmdx doc.md --list                          # 只列出找到的围栏块，不�
 | --- | --- |
 | `-o, --out <path>` | 输出目录；单图输入时可为精确文件名（默认与输入同目录） |
 | `-f, --format <fmt>` | `svg` \| `png` \| `both`（默认 both；`--preset` 未显式 `-f` 时默认 png） |
-| `-t, --theme <name>` | `tech`（默认）· `openai` · `excalidraw` · `ios` · `acnh` · `glass` · `epaper` · `zed` · `zed-light` |
+| `-t, --theme <name>` | `tech`（默认）· `openai` · `excalidraw` · `ios` · `acnh` · `epaper` · `zed` · `zed-light` |
 | `--tone <name>` | `paper` \| `neutral` \| `product`；改块版式结构（圆角/阴影/标题字体/表格头），`paper` 另把图的配色换成灰白纸底 + 网格线 |
 | `--style-fill <mode>` | `solid`（默认）\| `hachure`；仅 `excalidraw` 生效 |
 | `--preset <name>` | `slide`（投屏/PPT：1600px@2，字号 18、描边加粗，底栏预留 ~80px）\| `a4`（900px@2）\| `square`（1080px@2）\| `column`（聊天/窄栏：800px@2，2K 屏约 1/3 栏宽，字号 18、标签换行 200px）。显式 `--width`/`--scale`/`-f` 优先 |
@@ -199,7 +199,6 @@ mmdx page.html --background transparent   # 显式覆盖才有透明背景
 | 白板/头脑风暴/轻松分享 | `excalidraw`（手绘线条 + 粉彩填色；`--style-fill hachure` 切斜线） |
 | 产品界面截图 / iOS 应用说明 | `ios`（分组浅灰底 + 白卡片 + 发丝分隔线 + 系统色；图自带底） |
 | 周报贴纸 / 团队看板 / 轻松汇报 | `acnh`（奶油纸 + 粗棕描边 + 硬偏移阴影 + 圆体字；块页带点阵纸纹） |
-| 玻璃质感封面 / 现代产品汇报 | `glass`（Fluent 亚克力：淡蓝灰画布 + 网格 + 半透明白膜与细颗粒，面板 8px 圆角带白描边） |
 | 黑白打印 / 墨水屏阅读 / 合规文档 | `epaper`（电子纸：纸底 + 发丝黑描边 + 直角无阴影 + 灰阶区分形状） |
 | 暗色文档站 / 技术分享 / 终端风格的图 | `zed`（Zed One Dark：暗画布 + 发丝线 + 语法色形状族）；配套亮色用 `zed-light` |
 | 需要深色页面 | `openai` 或 `tech` 配 `--background '#1A1A1A'`（深色页面不要投会议室） |

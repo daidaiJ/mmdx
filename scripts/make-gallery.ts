@@ -12,6 +12,7 @@ import { chartToMermaid, parseChart } from '../src/chart.ts';
 import { loadAssets } from '../src/embed.ts';
 import { Renderer } from '../src/render.ts';
 import { getTheme, paperize, PRESETS, type ThemeSpec } from '../src/themes.ts';
+import { allFamilies } from '../src/fonts.ts';
 import { accentTint } from '../src/tokens.ts';
 import type { ToneName } from '../src/tone.ts';
 
@@ -19,7 +20,7 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const OUT = path.join(ROOT, 'docs', 'gallery');
 const CASE = path.join(ROOT, 'examples', 'gallery', 'release-review.md');
 
-const THEMES = ['tech', 'openai', 'excalidraw', 'ios', 'acnh', 'glass', 'epaper', 'zed', 'zed-light'] as const;
+const THEMES = ['tech', 'openai', 'excalidraw', 'ios', 'acnh', 'epaper', 'zed', 'zed-light'] as const;
 
 const THEME_LABELS: Record<string, string> = {
   tech: '通用方案文档',
@@ -27,7 +28,6 @@ const THEME_LABELS: Record<string, string> = {
   excalidraw: '白板讨论',
   ios: 'iOS 系统界面',
   acnh: '动森',
-  glass: 'Fluent 玻璃（亚克力）',
   epaper: '电子纸 / 墨水屏',
   zed: 'Zed 暗色（One Dark）',
   'zed-light': 'Zed 亮色（One Light）',
@@ -89,7 +89,7 @@ const diagramFor = (scene: Scene): string =>
   scene.kind === 'chart' ? chartToMermaid(parseChart(code.chart)) : code.mermaid;
 
 fs.mkdirSync(OUT, { recursive: true });
-const r = await Renderer.create(await loadAssets(), { scale: 2, width: 1200 });
+const r = await Renderer.create(await loadAssets(), { scale: 2, width: 1200, fonts: allFamilies() });
 
 /** Block pages read the theme through tokens, exactly as the CLI does. */
 const tokensFor = (t: ThemeSpec) => ({
@@ -291,8 +291,8 @@ figcaption{display:flex;flex-direction:column;gap:2px;font-size:13px;padding:0 2
 figcaption span{color:#8A919C;font-size:10px;line-height:1.3}
 img{display:block;width:auto;max-width:100%;height:auto;margin:0 auto;border-radius:6px}
 </style></head><body><div class="wrap">
-<h1>9 套内置主题总览</h1>
-<p>同一份灰度发布流程 · tech（默认）/ openai / excalidraw / ios / acnh / glass / epaper / zed / zed-light 各一张 · 分页中有更大的流程图与块版式样例。</p>
+<h1>8 套内置主题总览</h1>
+<p>同一份灰度发布流程 · tech（默认）/ openai / excalidraw / ios / acnh / epaper / zed / zed-light 各一张 · 分页中有更大的流程图与块版式样例。</p>
 <div class="grid">${strip}</div>
 </div></body></html>`;
   const png = await r.renderHtml(allOverview, '#F6F7F9');

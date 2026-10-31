@@ -1,6 +1,7 @@
 // Non-mermaid fenced blocks rendered as styled images through the same
 // Chromium pipeline. PNG only — HTML layout has no portable standalone SVG.
 
+import { MONO_FAMILY } from './fonts.ts';
 import { DEFAULT_TOKENS, tokenCss, type Tokens } from './tokens.ts';
 import { toneCss, type ToneName } from './tone.ts';
 
@@ -814,7 +815,7 @@ body { margin: 0; background: var(--paper, #ffffff); }
 .wrap {
   display: inline-block; box-sizing: border-box;
   padding: 16px 20px;
-  font-family: "Noto Sans SC", -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: var(--font, "Noto Sans SC", -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif);
   font-size: 14px; line-height: 1.6; font-weight: 400;
   color: var(--ink, #1B1F26);
   background: var(--paper, #ffffff);
@@ -839,7 +840,7 @@ th, td { padding: 10px 16px; border-bottom: 1px solid var(--rule); }
 tbody tr:last-child td { border-bottom: none; }
 th + th, td + td { border-left: 1px solid var(--rule); }
 tbody tr:nth-child(even) td { background: var(--paper-2); }
-code { font-family: "Cascadia Code", Consolas, monospace; font-size: 12.5px; background: var(--paper-2); border-radius: 4px; padding: 1px 5px; }
+code { font-family: "${MONO_FAMILY}", "Cascadia Code", Consolas, monospace; font-size: 12.5px; background: var(--paper-2); border-radius: 4px; padding: 1px 5px; }
 
 .cards { display: grid; grid-template-columns: repeat(2, 268px); gap: 12px; }
 .card { box-sizing: border-box; background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 16px 16px 20px; position: relative; }
