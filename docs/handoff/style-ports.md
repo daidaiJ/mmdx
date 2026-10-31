@@ -5,7 +5,7 @@ status: active
 
 > 本文件按用户要求随仓库提交，供跨会话/跨机器交接。评审图和原型脚本仍在本地 gitignored 的 `review/`、`.handoff/` 目录，不随仓库分发。
 >
-> 当前本地 `main` 与 `origin/main` 同点（`28e98f6`）；2026-10-31 的本轮改动（砍掉 `glass`、字体随包、门槛与画廊重出）在提交前。
+> 本地 `main` 领先 `origin/main` 一个提交：2026-10-31 的本轮改动（字体随包、砍掉 `glass`、门槛与画廊重出）已提交为 `445e7a4`，**未推送**——先等用户目测 `review/styles/` 与 `docs/gallery/`。
 
 ## 1. 目标
 
@@ -16,7 +16,7 @@ status: active
 - **当前阶段：** 八套主题落地（`excalidraw` 走 Pele + rough.js 与 `--style-fill solid|hachure`；`ios` 纯平面系统界面，2026-10-30 加强系统感；`acnh` 奶油纸 + 点阵；`epaper` 电子纸 + 纸纹；`zed` / `zed-light` 取 Zed 的 One Dark / One Light，是第一套暗色预设，节点按 Zed 的 `node_counter % 8` 轮转 8 个 player 色、描边取 accent 原色、填充 accent 15% 混页面底色）。`--tone`（`paper` 另换网格纸）与 `mmdx card`（默认 `openai`）已落地。无障碍契约已由测试守住，2026-10-30 又加三条承载语义的门槛（连线对底、8 色系列两两色觉、系列色对底）。画廊案例改用满四个形状族的流程图并新增饼图场景。OpenAI 编辑风与 5 套办公/工程主题的移植已放弃并移除。2026-10-31 按用户判断砍掉 `glass`（亚克力依赖 `backdrop-filter`，Chromium 不渲染 SVG 形状上的该属性，与 `openai` / `ios` 区分不足），并把八套主题命名的字体全部随包（`src/fonts.ts` 注册表 + `assets/fonts/` 8 个家族约 7.3MB，`theme.fonts` 接入渲染，块页字体栈进 `blockCss` 的 `--font`），新增 `lint/theme-fonts` 门槛。用户已目测通过上一轮；正式评审仍待做。
 - **状态：** in-progress
 - **进度：** 调研 100% / 原型 100% / 生产实现 95% / 正式评审 0%
-- **工作区：** 2026-10-30 的改动已提交为 `28e98f6` 并推送；2026-10-31 的改动（字体 + 砍 glass）在本轮提交前。开工前先 `git log -1` / `git diff` 确认起点。
+- **工作区：** 干净。`28e98f6`（Zed 样式）已推送；`445e7a4`（字体随包 + 砍 glass）已提交未推送。开工前先 `git log -1` / `git status` 确认起点。
 
 ## 3. 关键证据
 
@@ -95,7 +95,7 @@ status: active
 
 ## 11. 用户下个会话聚焦重点
 
-- 先目测 `review/styles/before-after-2026-10-30.png`（glass 与 ios 的改前 / 改后）与 `review/styles/light-compare/review-sheet.png`（tech / openai / ios / glass 四套「浅色平面」并排，看同质化是否还成立）；再看 `review/styles/{tech,openai,excalidraw,ios,acnh,glass,epaper,zed,zed-light}/review-sheet.png`（每套 4 图 + 饼图 + 3 块），Zed 那一对另看 `review/styles/zed-compare/review-sheet.png`，最后看 `docs/gallery/` 的对应分页（每套主题五张：流程图 / 饼图 / KPI / 卡片 / 表格）。重出画廊跑 `node --experimental-transform-types --no-warnings scripts/make-gallery.ts`，重出评审图跑同参数的 `scripts/make-style-review.ts`。
+- 先目测本轮字体的实际效果：`review/styles/{acnh,epaper,excalidraw,ios}/review-sheet.png`（快乐体 / 衬线 / 手绘拉丁 + 楷体 / 拉丁落到随包黑体）与 `review/styles/light-compare/review-sheet.png`（tech / openai / ios / acnh / zed-light 五套并排）；再看其余主题的 `review/styles/<theme>/review-sheet.png`（每套 4 图 + 饼图 + 3 块），Zed 那一对另看 `review/styles/zed-compare/review-sheet.png`，最后看 `docs/gallery/` 的对应分页（每套主题五张：流程图 / 饼图 / KPI / 卡片 / 表格）。重出画廊跑 `node --experimental-transform-types --no-warnings scripts/make-gallery.ts`，重出评审图跑同参数的 `scripts/make-style-review.ts`（两者都注入全部随包家族，否则样张字体与 CLI 不一致）。
 - 决定是否补齐生产字体子集；不提前混入 CLI 瘦身。
 - 任何提交/推送前，先让用户看正式图。
 
