@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-31
+
 ### Themes (added)
 
 - Added `zed` / `zed-light`: Zed's One Dark / One Light, palette taken from Zed's `assets/themes/one/one.json` and mapped the way `crates/markdown/src/mermaid.rs` (`build_mermaid_theme`) maps editor tokens. The first dark preset in the set
@@ -207,6 +209,7 @@ First stable release.
 
 - `mmdx-windows-x64.exe` — windows x64 single file (no Node; needs system Edge/Chrome)
 
+[3.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v3.0.0
 [2.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v2.0.0
 [1.1.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.1.0
 [1.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.0.0

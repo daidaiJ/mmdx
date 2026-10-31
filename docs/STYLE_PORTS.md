@@ -1,6 +1,6 @@
 # 风格移植方案：Excalidraw 手绘
 
-> 状态：**`excalidraw` / `ios` / `acnh` / `epaper` / `zed` / `zed-light` 已实现；`glass` 已砍掉；OpenAI 编辑风与办公/工程批次已放弃；主题集合为 `tech` / `openai` / `excalidraw` / `ios` / `acnh` / `epaper` / `zed` / `zed-light` 八套，字体全部随包** · 更新：2026-10-31 · 范围：mmdx 2.x 主题与渲染管线
+> 状态：**`excalidraw` / `ios` / `acnh` / `epaper` / `zed` / `zed-light` 已实现；`glass` 已砍掉；OpenAI 编辑风与办公/工程批次已放弃；主题集合为 `tech` / `openai` / `excalidraw` / `ios` / `acnh` / `epaper` / `zed` / `zed-light` 八套，字体全部随包** · 更新：2026-10-31 · 范围：mmdx 2.x–3.x 主题与渲染管线
 >
 > 本文是风格移植的决策与交接文档。色板与 rough 参数见第 3 节，Pele 集成见第 5 节，放弃的移植见第 6 节，未决问题见第 7 节。
 

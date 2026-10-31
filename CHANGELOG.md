@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-31
+
 ### 主题（新增）
 
 - 新增 `zed` / `zed-light`：Zed 编辑器的 One Dark / One Light，色板取自 Zed 仓库 `assets/themes/one/one.json`，映射照 `crates/markdown/src/mermaid.rs` 的 `build_mermaid_theme`。这是主题集合里第一套暗色预设
@@ -206,6 +208,7 @@
 
 - `mmdx-windows-x64.exe` — windows x64 单文件（免 Node，需系统 Edge/Chrome）
 
+[3.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v3.0.0
 [2.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v2.0.0
 [1.1.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.1.0
 [1.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.0.0

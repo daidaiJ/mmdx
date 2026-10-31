@@ -40,11 +40,14 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          mkdir -p dist/mmdx-dynamic/assets/fonts
+          mkdir -p dist/mmdx-dynamic/assets
           cp -r src dist/mmdx-dynamic/src
-          cp assets/fonts/*-Subset.woff2 dist/mmdx-dynamic/assets/fonts/
+          # every bundled face, not just the *-Subset ones (Excalifont ships as
+          # per-script chunks) plus the license texts that travel with them
+          cp -r assets/fonts dist/mmdx-dynamic/assets/fonts
           cp -r skill dist/mmdx-dynamic/skill
-          cp package.json tsconfig.json README.md LICENSE dist/mmdx-dynamic/
+          cp -r licenses dist/mmdx-dynamic/licenses
+          cp package.json tsconfig.json README.md LICENSE THIRD_PARTY_NOTICES.md dist/mmdx-dynamic/
           cat > dist/mmdx-dynamic/RUNTIME.md <<'EOF'
           # mmdx dynamic runtime
 
@@ -64,6 +67,8 @@ jobs:
           mkdir -p dist/mmdx-skill/bin
           cp -r skill/. dist/mmdx-skill/
           cp dist/mmdx-windows-x64.exe dist/mmdx-skill/bin/mmdx.exe
+          cp THIRD_PARTY_NOTICES.md dist/mmdx-skill/
+          cp -r licenses dist/mmdx-skill/licenses
           cat > dist/mmdx-skill/INSTALL.md <<'EOF'
           # mmdx skill + CLI
 
