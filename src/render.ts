@@ -519,6 +519,60 @@ export class Renderer {
     }, `page#${this.pages.length + 1}`);
   }
 
+  /**
+   * Screenshot a standalone SVG (the editor's working document) through the
+   * same font-injected Chromium page used by the CLI. Width and height come
+   * from the root tag; an explicit background rect is expected to be in the
+   * SVG when the caller wants a filled export.
+   */
+  async screenshotSvg(
+    svg: string,
+    opts: { scale: number; transparent?: boolean } = { scale: 2 },
+  ): Promise<Buffer> {
+    const tag = /<svg\b[^>]*>/.exec(svg)?.[0] ?? '';
+    const attr = (name: string): number | null => {
+      const m = new RegExp(`\\b${name}="([\\d.]+)(?:px)?"`).exec(tag);
+      const n = m ? Number(m[1]) : NaN;
+      return Number.isFinite(n) ? n : null;
+    };
+    const vb = /\bviewBox="\s*([-\d.]+)\s+([-\d.]+)\s+([\d.]+)\s+([\d.]+)/.exec(tag);
+    const width = attr('width') ?? (vb ? Number(vb[3]) : null);
+    const height = attr('height') ?? (vb ? Number(vb[4]) : null);
+    if (!width || !height) throw new Error('editor export: SVG has no usable width/height');
+    if (width * height > 120_000_000) throw new Error('editor export: SVG canvas is too large');
+    const w = Math.max(1, Math.ceil(width));
+    const h = Math.max(1, Math.ceil(height));
+    return this.run(async (page) => {
+      await this.resetBody(page);
+      await this.injectFont(page);
+      await page.setViewport({
+        width: w,
+        height: h,
+        deviceScaleFactor: Math.max(0.25, Math.min(4, opts.scale)),
+      });
+      await page.evaluate(({ markup, w, h }) => {
+        document.body.style.cssText = 'margin:0;padding:0;overflow:hidden;background:transparent';
+        document.body.innerHTML = markup;
+        const el = document.querySelector('svg') as SVGSVGElement | null;
+        if (!el) throw new Error('editor export: no <svg> in payload');
+        el.setAttribute('width', String(w));
+        el.setAttribute('height', String(h));
+        el.style.width = `${w}px`;
+        el.style.height = `${h}px`;
+        el.style.maxWidth = 'none';
+        el.style.pointerEvents = 'none';
+      }, { markup: svg, w, h });
+      await page.evaluate(async () => {
+        try { await document.fonts.ready; } catch { /* system fallback */ }
+      });
+      await page.bringToFront();
+      return (await page.screenshot({
+        clip: { x: 0, y: 0, width: w, height: h },
+        omitBackground: !!opts.transparent,
+      })) as Buffer;
+    });
+  }
+
   /** Render one diagram through Pele. */
   async render(opts: EngineRenderOptions): Promise<{ svg: string; png?: Buffer }> {
     return this.run(async (page) => {

@@ -12,6 +12,7 @@ This guide targets **human users** and covers installing mmdx, the full CLI refe
   - [Option C: clone & build](#option-c-clone--build)
   - [Browser dependency](#browser-dependency)
 - [Quick start](#quick-start)
+- [Interactive editing / manual touch-ups](#interactive-editing--manual-touch-ups)
 - [Full CLI reference](#full-cli-reference)
 - [Extension blocks](#extension-blocks)
 - [Whole-page HTML screenshots](#whole-page-html-screenshots)
@@ -87,6 +88,19 @@ Four input forms:
 | `-` (stdin) | Reads a single mermaid diagram from standard input |
 
 Output naming: by default next to the input, `<name>-m<N>.svg/.png` numbered by block order; `-o` sets the output directory; when the input holds exactly one diagram, `-o` may be an exact filename.
+
+## Interactive editing / manual touch-ups
+
+When you want to "adjust this diagram by hand", "interactive render/export", or "AI drafts it and I refine it", use the local browser canvas:
+
+```bash
+mmdx edit docs/arch.md --index 2 -t openai   # second block in a Markdown file
+mmdx edit diagram.mmd --project .mmdx/arch   # single diagram / explicit project
+```
+
+The canvas supports marquee / multi-select, move, 8-handle resize, in-place text editing, node fill / stroke / text colours, edge colour / width / dash / arrowhead and routing (auto / orthogonal / straight / curve), dragging anchors or reconnecting an edge to another node, live switching among the eight themes, background / grid / transparent / theme backdrop, undo/redo, SVG download and 2× PNG export.
+
+The project lives in `.mmdx/<slug>/` beside the source (`draft.svg` / `working.svg` / scene JSON) and autosaves; reopening resumes the working copy, and "restore draft" discards manual edits without touching Markdown. The server binds to `127.0.0.1` only and the URL carries a random token. Phase 0 supports flowchart / state; adding nodes or edges and class / ER / sequence are not covered yet.
 
 ## Full CLI reference
 

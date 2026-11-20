@@ -25,3 +25,6 @@ review/
 issues
 tasks
 wiki
+
+# local editor working copies
+.mmdx/

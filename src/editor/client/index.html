@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>mmdx edit</title>
+  <link rel="stylesheet" href="/fonts.css" id="theme-fonts">
+  <link rel="stylesheet" href="/editor.css">
+</head>
+<body>
+  <div id="app">
+    <header class="toolbar">
+      <div class="brand">mmdx <span>edit</span></div>
+      <div class="doc" id="doc-meta">
+        <strong id="doc-name">打开中…</strong>
+        <span id="doc-sub"></span>
+      </div>
+      <div class="spacer"></div>
+      <div class="tool-group">
+        <button class="icon-btn" id="undo" title="撤销 (Ctrl+Z)" disabled>撤销</button>
+        <button class="icon-btn" id="redo" title="重做 (Ctrl+Shift+Z)" disabled>重做</button>
+      </div>
+      <div class="tool-group">
+        <button class="icon-btn" id="fit" title="适应画布 (F)">适应</button>
+        <button class="icon-btn" id="zoom-out" title="缩小">−</button>
+        <span class="zoom-label" id="zoom-label">100%</span>
+        <button class="icon-btn" id="zoom-in" title="放大">+</button>
+      </div>
+      <div class="tool-group">
+        <button class="btn" id="restore" title="丢弃人工修改，恢复 AI 初稿">还原初稿</button>
+        <button class="btn" id="export-svg">SVG</button>
+        <button class="btn primary" id="export-png">PNG 2×</button>
+      </div>
+      <button class="icon-btn panel-toggle" id="panel-toggle" aria-expanded="false">画布</button>
+    </header>
+
+    <main class="stage" id="stage">
+      <div class="canvas-bg" id="canvas-bg"></div>
+      <svg id="grid" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+      <svg id="diagram" xmlns="http://www.w3.org/2000/svg" aria-label="mmdx diagram"></svg>
+      <svg id="overlay" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+      <div id="text-layer"></div>
+      <div class="stage-hint" id="stage-hint">滚轮缩放 · 空格平移 · 点选连线拖锚点</div>
+      <div class="drop-status" id="save-status">已就绪</div>
+      <div class="error-card" id="error-card" hidden></div>
+      <div class="toast" id="toast" hidden></div>
+    </main>
+
+    <aside class="inspector" id="inspector">
+      <section>
+        <h2>模板</h2>
+        <label class="row">
+          <span>内置主题</span>
+          <select id="theme-select"></select>
+        </label>
+        <p class="note" id="theme-note">字体与图形主体配色随主题切换；节点位置、文字和连线锚点会保留。</p>
+        <div class="swatches" id="theme-swatches" title="主题图表系列色"></div>
+      </section>
+
+      <section>
+        <h2>画布</h2>
+        <label class="row">
+          <span>背景</span>
+          <input type="color" id="bg-color" value="#ffffff">
+        </label>
+        <label class="check">
+          <input type="checkbox" id="bg-transparent">
+          <span>透明背景</span>
+        </label>
+        <label class="row">
+          <span>网格</span>
+          <select id="grid-mode">
+            <option value="none">无</option>
+            <option value="dots">点阵</option>
+            <option value="lines">方格</option>
+          </select>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="snap-grid">
+          <span>吸附到 8px 网格</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="theme-backdrop">
+          <span>主题底纹</span>
+        </label>
+        <p class="note" id="backdrop-note"></p>
+      </section>
+
+      <section>
+        <h2>选中</h2>
+        <div class="selection-card" id="selection-info">
+          <span class="muted">未选择对象</span>
+        </div>
+        <div class="selection-actions">
+          <button class="btn small" id="delete-selection" disabled>删除</button>
+          <button class="btn small" id="clear-selection" disabled>取消选择</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>工程</h2>
+        <dl class="facts">
+          <dt>源文件</dt><dd id="fact-source">—</dd>
+          <dt>主题</dt><dd id="fact-theme">—</dd>
+          <dt>尺寸</dt><dd id="fact-size">—</dd>
+          <dt>保存</dt><dd id="fact-saved">—</dd>
+        </dl>
+        <button class="link-btn" id="save-now">立即保存</button>
+      </section>
+
+      <section>
+        <h2>快捷键</h2>
+        <dl class="keys">
+          <dt>V / 空白</dt><dd>点选、框选</dd>
+          <dt>空格拖拽</dt><dd>平移画布</dd>
+          <dt>滚轮</dt><dd>以光标为中心缩放</dd>
+          <dt>双击节点</dt><dd>编辑文字</dd>
+          <dt>点选连线</dt><dd>拖两端圆点改锚点或重连</dd>
+          <dt>方向键</dt><dd>移动 1px（Shift 10px）</dd>
+          <dt>Delete</dt><dd>删除选中节点与连线</dd>
+          <dt>Ctrl+Z</dt><dd>撤销</dd>
+          <dt>F</dt><dd>适应画布</dd>
+        </dl>
+      </section>
+      <p class="footnote">Phase 0 · 编辑只改工作副本，源 Markdown 不被写入。</p>
+    </aside>
+  </div>
+  <script type="module" src="/editor.js"></script>
+</body>
+</html>

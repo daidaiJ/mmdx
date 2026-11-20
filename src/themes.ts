@@ -201,18 +201,18 @@ const TECH_CSS = `
 .mindmap-node.section-1 rect, .mindmap-node.section-1 path, .mindmap-node.section-1 circle { fill: #F3E4C8 !important; stroke: #A87428 !important; }
 .mindmap-node.section-2 rect, .mindmap-node.section-2 path, .mindmap-node.section-2 circle { fill: #E3DCEC !important; stroke: #5A4E82 !important; }
 .mindmap-node.section-3 rect, .mindmap-node.section-3 path, .mindmap-node.section-3 circle { fill: #D4E8E4 !important; stroke: #3A7A74 !important; }
-.mindmap-node.section-4 rect, .mindmap-node.section-4 path, .mindmap-node.section-4 circle { fill: #F3E0E6 !important; stroke: #A05A72 !important; }
+.mindmap-node.section-4 rect, .mindmap-node.section-4 path, .mindmap-node.section-4 circle { fill: #F7E2E8 !important; stroke: #B14356 !important; }
 .mindmap-node.section-5 rect, .mindmap-node.section-5 path, .mindmap-node.section-5 circle { fill: #EEF1F5 !important; stroke: #5B6570 !important; }
 .radarCurve-0 { color: #3B7FC4 !important; fill: #3B7FC4 !important; }
 .radarCurve-1 { color: #3D9A6A !important; fill: #3D9A6A !important; }
 .radarCurve-2 { color: #5C6570 !important; fill: #5C6570 !important; }
 .radarCurve-3 { color: #C9A227 !important; fill: #C9A227 !important; }
-.radarCurve-4 { color: #C45C4A !important; fill: #C45C4A !important; }
+.radarCurve-4 { color: #B14356 !important; fill: #B14356 !important; }
 .radarCurve-5 { color: #4A9BB8 !important; fill: #4A9BB8 !important; }
 .radarCurve-6 { color: #7A6BA8 !important; fill: #7A6BA8 !important; }
 .radarCurve-7 { color: #C4842A !important; fill: #C4842A !important; }
 .radarCurve-8 { color: #3D9A6A !important; fill: #3D9A6A !important; }
-.radarCurve-9 { color: #A05A72 !important; fill: #A05A72 !important; }
+.radarCurve-9 { color: #B14356 !important; fill: #B14356 !important; }
 .radarCurve-10 { color: #5C6570 !important; fill: #5C6570 !important; }
 .radarCurve-11 { color: #5A4E82 !important; fill: #5A4E82 !important; }
 .timeline-node .node-bkg { stroke: #C3C8D1 !important; stroke-width: 1.5px !important; }
@@ -232,7 +232,7 @@ const TECH_CSS = `
 .actor-2 { fill: #3A7A74; stroke: #FFFFFF; }
 .actor-3 { fill: #A87428; stroke: #FFFFFF; }
 .actor-4 { fill: #5C6570; stroke: #FFFFFF; }
-.actor-5 { fill: #A05A72; stroke: #FFFFFF; }
+.actor-5 { fill: #B14356; stroke: #FFFFFF; }
 `;
 
 const tech: ThemePreset = {
@@ -336,7 +336,7 @@ const tech: ThemePreset = {
       vertLineColor: '#C3C8D1',
       excludeBkgColor: '#EEF1F5',
       cScale0: '#D7E4F4', cScale1: '#D4E8DA', cScale2: '#F3E4C8', cScale3: '#E3DCEC',
-      cScale4: '#D4E8E4', cScale5: '#F3E0E6', cScale6: '#EEF1F5', cScale7: '#D7E4F4',
+      cScale4: '#D4E8E4', cScale5: '#F7E2E8', cScale6: '#EEF1F5', cScale7: '#D7E4F4',
       cScale8: '#D4E8DA', cScale9: '#F3E4C8', cScale10: '#E3DCEC', cScale11: '#D4E8E4',
       cScale12: '#1B1F26',
       cScaleLabel0: '#1B1F26', cScaleLabel1: '#1B1F26', cScaleLabel2: '#1B1F26',
@@ -344,15 +344,15 @@ const tech: ThemePreset = {
       cScaleLabel6: '#1B1F26', cScaleLabel7: '#1B1F26', cScaleLabel8: '#1B1F26',
       cScaleLabel9: '#1B1F26', cScaleLabel10: '#1B1F26', cScaleLabel11: '#1B1F26',
       cScaleInv0: '#3A6F9C', cScaleInv1: '#3B7A4C', cScaleInv2: '#A87428', cScaleInv3: '#5A4E82',
-      cScaleInv4: '#3A7A74', cScaleInv5: '#A05A72', cScaleInv6: '#5C6570', cScaleInv7: '#C9A227',
+      cScaleInv4: '#3A7A74', cScaleInv5: '#B14356', cScaleInv6: '#5C6570', cScaleInv7: '#C9A227',
       cScaleInv8: '#3A6F9C', cScaleInv9: '#3B7A4C', cScaleInv10: '#A87428', cScaleInv11: '#5A4E82',
       // ---- user journey: official section fills (themes) — actor dot
       // colours live in the journey CONFIG section below
       fillType0: '#D7E4F4', fillType1: '#D4E8DA', fillType2: '#F3E4C8', fillType3: '#E3DCEC',
-      fillType4: '#D4E8E4', fillType5: '#F3E0E6', fillType6: '#EEF1F5', fillType7: '#D7E4F4',
+      fillType4: '#D4E8E4', fillType5: '#F7E2E8', fillType6: '#EEF1F5', fillType7: '#D7E4F4',
       // ---- gitgraph
       git0: '#3A6F9C', git1: '#3B7A4C', git2: '#A87428', git3: '#5A4E82',
-      git4: '#3A7A74', git5: '#A05A72', git6: '#5C6570', git7: '#C9A227',
+      git4: '#3A7A74', git5: '#B14356', git6: '#5C6570', git7: '#C9A227',
       gitBranchLabel0: '#FFFFFF', gitBranchLabel1: '#FFFFFF', gitBranchLabel2: '#FFFFFF',
       gitBranchLabel3: '#FFFFFF', gitBranchLabel4: '#FFFFFF', gitBranchLabel5: '#FFFFFF',
       gitBranchLabel6: '#FFFFFF', gitBranchLabel7: '#FFFFFF',
@@ -364,8 +364,8 @@ const tech: ThemePreset = {
       tagLabelBackground: '#D7E4F4',
       tagLabelBorder: '#3A6F9C',
       pie1: '#3B7FC4', pie2: '#3D9A6A', pie3: '#5C6570', pie4: '#C9A227',
-      pie5: '#C45C4A', pie6: '#4A9BB8', pie7: '#7A6BA8', pie8: '#C4842A',
-      pie9: '#3D9A6A', pie10: '#A05A72', pie11: '#5C6570', pie12: '#5A4E82',
+      pie5: '#B14356', pie6: '#4A9BB8', pie7: '#7A6BA8', pie8: '#C4842A',
+      pie9: '#3D9A6A', pie10: '#B14356', pie11: '#5C6570', pie12: '#5A4E82',
       pieOpacity: '1',
       pieStrokeColor: '#FFFFFF',
       pieStrokeWidth: '1.5px',
@@ -394,7 +394,7 @@ const tech: ThemePreset = {
         yAxisTickColor: '#C3C8D1',
         xAxisLineColor: '#C3C8D1',
         yAxisLineColor: '#C3C8D1',
-        plotColorPalette: '#3B7FC4,#C9A227,#3D9A6A,#7A6BA8,#C45C4A,#4A9BB8',
+        plotColorPalette: '#3B7FC4,#C9A227,#3D9A6A,#7A6BA8,#B14356,#4A9BB8',
       },
     },
     themeCSS: (baseConfig('#FFFFFF').themeCSS as string) + TECH_CSS,
@@ -427,7 +427,7 @@ const tech: ThemePreset = {
   },
   background: '#FFFFFF',
   remap: {
-    '#4e79a7': '#3A6F9C', '#f28e2c': '#A87428', '#e15759': '#A05A72',
+    '#4e79a7': '#3A6F9C', '#f28e2c': '#A87428', '#e15759': '#B14356',
     '#76b7b2': '#3A7A74', '#59a14f': '#3B7A4C', '#edc949': '#C9A227',
     '#af7aa1': '#5A4E82', '#ff9da7': '#C4842A', '#9c755f': '#5C6570',
     '#bab0ac': '#C3C8D1',
@@ -1020,7 +1020,9 @@ const PELE_THEMES: Record<string, ThemeSpec> = {
     name: 'tech', dark: false, bg: '#FFFFFF', fg: '#1B1F26', muted: '#5B6470',
     line: '#5B6570', surface: '#D7E4F4', surfaceAlt: '#EEF1F5', border: '#C3C8D1',
     accent: '#2563EB', critical: '#A87428', radius: '6px',
-    series: ['#3B7FC4', '#3D9A6A', '#5C6570', '#B98F00', '#C45C4A', '#4A9BB8', '#7A6BA8', '#C77A16'],
+    // rose carries the fifth data slot; the green sits in the second and in
+    // the state family, so both read as first-class accents on white.
+    series: ['#3B7FC4', '#3D9A6A', '#5C6570', '#B98F00', '#B14356', '#4A9BB8', '#7A6BA8', '#C77A16'],
     shapes: {
       process: ['#D7E4F4', '#3A6F9C'],
       decision: ['#F3E4C8', '#A87428'],

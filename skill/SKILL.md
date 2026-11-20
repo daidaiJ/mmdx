@@ -1,6 +1,6 @@
 ---
 name: mermaid
-description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 流程 flowchart, KPI/表格/卡片, 审批与泳道, 半环进度 gauge, 日历热力 heatmap, HTML 文件截图导出. Use when the user wants 图/图表/流程图/构成图/对比卡/周报贴图/投屏/PPT/上会/渲染/导出图片/HTML 截图/把网页导出成图片. NOT for AI image generation (文生图/照片级插画) and NOT for analysis-grade stats (grouped bar, dual axis → AntV).
+description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 流程 flowchart, KPI/表格/卡片, 审批与泳道, 半环进度 gauge, 日历热力 heatmap, HTML 文件截图导出. Use when the user wants 图/图表/流程图/构成图/对比卡/周报贴图/投屏/PPT/上会/渲染/导出图片/HTML 截图/把网页导出成图片. Also use `mmdx edit` when the user wants 手动修图 / 手动微调 / 在浏览器里改图 / 交互式出图 / 交互式渲染 / 可视化编辑 / AI 出初稿后人来改：移动缩放、改文字与配色、改连线样式与走线算法、拖锚点重连、切主题、导出 SVG/PNG、还原初稿. NOT for AI image generation (文生图/照片级插画) and NOT for analysis-grade stats (grouped bar, dual axis → AntV).
 ---
 
 # mmdx — 办公出图（结构图 + 轻量数据图 + 版式块 → PNG）
@@ -28,7 +28,7 @@ CLI 获取（按优先级）：
 - [`editorial/`](editorial/README.md) — vendored diagram-design 手绘规格（偶发封面 / 方案插图动笔前）
 - [`info-card-designer/`](info-card-designer/SKILL.md) — URL / 文本 → 杂志感信息卡（`mmdx card`，见 §5b）
 
-**适用边界**：流程/审批/排期、轻量占比/趋势/对比、KPI/表格/卡片/任务快照、**场景引导（状态图讲一次故障 / 审批的处境变化）** → 用本 skill。**多图叙事解释页 / diff·plan 评审 / recap / 幻灯片页** → [explain/](explain/README.md)。**已有 HTML 文件要导出图片**（如 diagram-design 产物）→ `mmdx page.html`（见 §1c-4）。反例：文生图；分组柱/双轴/散点 → [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
+**适用边界**：流程/审批/排期、轻量占比/趋势/对比、KPI/表格/卡片/任务快照、**场景引导（状态图讲一次故障 / 审批的处境变化）** → 用本 skill。**用户要手动改图 / 交互式微调 / 在浏览器里改位置、文字、连线与配色** → `mmdx edit`（§0b）。**多图叙事解释页 / diff·plan 评审 / recap / 幻灯片页** → [explain/](explain/README.md)。**已有 HTML 文件要导出图片**（如 diagram-design 产物）→ `mmdx page.html`（见 §1c-4）。反例：文生图；分组柱/双轴/散点 → [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
 
 ## 0. 环境自检（会话内首次使用先跑，30 秒）
 
@@ -38,6 +38,24 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 ```
 
 冒烟 JSON 且 `rendered:1` → 就绪；`engine` 恒为 `"pele"`。`rendered:0` → §4 错误速诊。
+
+## 0b. 交互式微调（`mmdx edit`，用户要「手动修 / 交互式出图」时）
+
+当用户说下面这些话，走本地交互画布，**不要**手写 SVG、不要让用户自己改 Markdown 里的坐标：
+
+- **手动 / 交互**：手动修、手动微调、我来改、在浏览器里改、打开画布、可视化编辑、交互式出图、交互式渲染、AI 出初稿我再微调
+- **改具体东西**：改节点位置 / 大小 / 文字、改颜色、改线型 / 箭头、换走线（曲线 / 折线 / 直线）、连线接错重连、拖锚点、切主题
+- **交付动作**：改完导出 SVG / PNG、保留工程下次再改、一键还原 AI 初稿
+
+```bash
+mmdx edit docs/arch.md --index 2 -t openai        # Markdown 里的第 2 个图块
+mmdx edit diagram.mmd --project .mmdx/arch        # 单图 / 指定工程目录
+```
+
+- 命令只在 `127.0.0.1` 起服务并打开浏览器；URL 带随机 token，不要转发
+- 工程默认写在源文件旁的 `.mmdx/<slug>/`（`draft.svg` / `working.svg` / 场景 JSON），自动保存；「还原初稿」只丢弃人工修改，不改 Markdown
+- Phase 0 支持 **flowchart / state**；不支持新增节点 / 新建连线，class / ER / sequence 未覆盖。只想要静态出图时仍走普通渲染命令，不要为「可编辑」另造 HTML
+- 人工改完从画布导出 SVG / PNG；后续再改直接重开同一工程恢复 `working.svg`
 
 ## 1. Agent Loop（选型 → 先砍再画 → 渲染 → 自检）
 

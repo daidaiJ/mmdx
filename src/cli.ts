@@ -7,12 +7,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  blockPage, captionPresent, fenceKind, htmlKindToInner, HTML_KINDS,
-  mergeCaption, type BlockKind, type Caption, type PageOpts,
+  blockPage, captionPresent, htmlKindToInner, HTML_KINDS,
+  mergeCaption, type Caption, type PageOpts,
 } from './blocks.ts';
 import { chartToMermaid, parseChart } from './chart.ts';
 import { getBuildVersion, loadAssets } from './embed.ts';
 import { MONO_FAMILY } from './fonts.ts';
+import { extractBlocks, frontTitle, type InputBlock as Block } from './input.ts';
 import { scanColumnHints, scanLimits, type LimitHit } from './limits.ts';
 import { Renderer } from './render.ts';
 import { accentTint, applyBrand, type Tokens } from './tokens.ts';
@@ -23,7 +24,7 @@ import {
 import { isToneName, type ToneName } from './tone.ts';
 import type { IconPack } from './engine/types.ts';
 
-let VERSION = '2.1.0';
+let VERSION = '2.2.0';
 
 type Optimize = (svg: string, opts: unknown) => { data: string };
 let svgoOptimize: Optimize | null = null;
@@ -40,6 +41,10 @@ mmdx ${VERSION} — render Mermaid diagrams to SVG + PNG, styled for docs
 Usage:
   mmdx <file.md|file.mmd|file.html>... [-o OUT] [options]
   mmdx - < [options]                render mermaid from stdin
+  mmdx edit <file.md|file.mmd> [--index N] [options]
+                                    open a local canvas for manual touch-ups:
+                                    move/resize, edit text, node & edge styles,
+                                    routing, themes, export, restore draft
   mmdx card --in <file.md> [-o OUT] [options]
                                     render a Markdown/URL info card (PNG)
 
@@ -107,6 +112,7 @@ Examples:
   mmdx a.md b.md -o dist/ -t openai
   mmdx diagram.mmd -o out/diagram.svg     # writes out/diagram.svg + out/diagram.png
   echo "graph LR; A-->B" | mmdx - -f svg
+  mmdx edit docs/arch.md --index 2 -t openai
   mmdx card --in note.md -t openai --tone neutral -o note-card.png
   mmdx card --url https://example.com/post -t excalidraw --width 600
 `;
@@ -242,52 +248,6 @@ function parseArgs(argv: string[]): Options {
     if (!o.formatExplicit) o.format = 'png';
   }
   return o;
-}
-
-interface Block {
-  input: string;
-  base: string;
-  index: number;
-  line: number;
-  code: string;
-  kind: BlockKind;
-}
-
-const FENCE_RE = /^[ \t]*```([A-Za-z0-9_-]+)[^\n]*\n([\s\S]*?)^[ \t]*```\s*$/gm;
-
-function extractBlocks(input: string, raw: string): Block[] {
-  if (/\.html?$/i.test(input)) {
-    // authored HTML document: shot as-is, never a fence kind in .md files
-    const code = raw.trim();
-    const base = path.basename(input).replace(/\.html?$/i, '');
-    return code ? [{ input, base, index: 1, line: 1, code, kind: 'html' }] : [];
-  }
-  const isMd = /\.md$|\.markdown$/i.test(input);
-  if (isMd) {
-    const blocks: Block[] = [];
-    const base = path.basename(input).replace(/\.(md|markdown)$/i, '');
-    FENCE_RE.lastIndex = 0;
-    let m: RegExpExecArray | null;
-    while ((m = FENCE_RE.exec(raw)) !== null) {
-      const kind = fenceKind(m[1]);
-      if (kind === 'unknown') continue;
-      const code = m[2].replace(/\r\n/g, '\n').trim();
-      if (!code) continue;
-      const line = raw.slice(0, m.index).split('\n').length;
-      blocks.push({ input, base, index: blocks.length + 1, line, code, kind });
-    }
-    return blocks;
-  }
-  const code = raw.trim();
-  const base = input === '-' ? 'diagram' : path.basename(input).replace(/\.(md|markdown|mmd)$/i, '');
-  return code ? [{ input, base, index: 1, line: 1, code, kind: 'mermaid' }] : [];
-}
-
-function frontTitle(code: string): string {
-  const m = /^---\s*\n([\s\S]*?)\n---\s*\n/.exec(code);
-  if (!m) return '';
-  const t = /^title:\s*(.+)$/m.exec(m[1]);
-  return t ? t[1].trim().replace(/^["']|["']$/g, '') : '';
 }
 
 const log = (quiet: boolean, msg: string): void => {
@@ -431,6 +391,10 @@ async function main(): Promise<void> {
   if (process.argv[2] === 'card') {
     const { runCardCommand } = await import('./card.ts');
     process.exit(await runCardCommand(process.argv.slice(3), VERSION));
+  }
+  if (process.argv[2] === 'edit') {
+    const { runEditCommand } = await import('./editor/server.ts');
+    process.exit(await runEditCommand(process.argv.slice(3), VERSION));
   }
   const o = parseArgs(process.argv.slice(2));
 

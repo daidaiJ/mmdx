@@ -37,6 +37,19 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 
 冒烟输出 JSON 且 `rendered:1` → 环境就绪。`rendered:0` → 查下方[错误速诊](#错误速诊)。
 
+## 交互式微调（用户要手动改图时）
+
+触发：**手动修、手动微调、我来改、在浏览器里改图、打开画布、可视化编辑、交互式出图、交互式渲染、AI 出初稿我再微调、改节点 / 文字 / 颜色 / 线型 / 箭头、换走线（曲线 / 折线 / 直线）、切线重连、拖锚点、改完导出、还原初稿**。
+
+```bash
+mmdx edit docs/arch.md --index 2 -t openai
+mmdx edit diagram.mmd --project .mmdx/arch
+```
+
+`edit` 用现有 Pele / 主题 / 字体管线渲染初稿，然后在 `127.0.0.1` 打开本地画布：移动 / 缩放 / 改字、节点配色、连线样式与走线算法、锚点重连、八套主题即时切换、背景 / 网格、撤销重做、SVG / PNG 导出、一键还原初稿。工程默认在源文件旁 `.mmdx/<slug>/`，自动保存，源 Markdown 不写入。
+
+边界：Phase 0 支持 flowchart / state；不支持新增节点 / 新建连线，class / ER / sequence 未覆盖。用户只要静态图时仍走普通渲染命令，不要为「可编辑」另造 HTML 或手写 SVG。
+
 ## 何时不要画
 
 - 纯列表 → ` ```list ` 或正文

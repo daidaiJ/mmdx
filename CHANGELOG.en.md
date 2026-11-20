@@ -4,7 +4,24 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioned per [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.2.0] - 2026-11-20
+
+### Interactive editing (Phase 0 prototype)
+
+- Added `mmdx edit <file.md|file.mmd> [--index N]`: a local HTTP server and browser SVG canvas. The draft still comes from the existing Pele / theme / font pipeline; the editing layer patches the rendered SVG
+- Marquee / multi-select, dragging, 8-handle resizing, in-place text editing (Canvas metrics + `<tspan>` wrapping), L/Z rerouting for connected edges, canvas background / grid / transparency / theme-backdrop switches, undo/redo, SVG download and server-side 2× PNG export
+- Projects live in `.mmdx/<slug>/` with `draft.svg`, `working.svg`, `draft.scene.json` and `working.scene.json`; reopening resumes `working.svg`, `--fresh` or "restore draft" returns to the AI draft, and the source Markdown is never written
+- **Editable edge anchors**: selecting an edge shows an endpoint dot at each end. Dragging one moves it anywhere along the node's four sides (the normalized offset is stored as `data-mmdx-*-anchor`) or onto another node, which rebinds the edge through `data-mmdx-from/to`. Anchors survive node moves, resizing, theme switches and project reopen; dropping on empty canvas or undoing restores the previous path exactly
+- **Per-node colour overrides**: a single selected node exposes fill / stroke / text colour pickers. Overrides are stored as `data-mmdx-fill` / `data-mmdx-stroke` / `data-mmdx-text`, persist with the working SVG, and are replayed across template switches, reloads and project reopen. "Follow theme" clears all three and restores the active template palette; one continuous picker adjustment collapses into a single undo step
+- **Edge styles**: one or several selected edges expose colour, width (1–4 px), line style (solid / dashed / dotted) and arrowhead (filled / open / none). Overrides are stored as `data-mmdx-edge-*`, persist with the working SVG, and survive node moves, rerouting, template switches, reloads and project reopen. "Follow theme" clears all overrides and returns to the active template's connector baseline; the open arrowhead is an outlined triangle that follows the line colour
+- **Edge routing algorithms**: each edge can use auto / orthogonal / straight / curve. Orthogonal keeps the L/Z router with 14 px alignment; straight connects the two anchors directly; curve builds a cubic Bézier from both anchor normals and centres the label on the curve. Auto restores the path from before routing was overridden (the original Pele route or the previous orthogonal route). The mode persists with the edge style and is re-applied after anchor drags, node moves, template switches and reloads
+- **Save reliability**: `/api/save` now refreshes the in-memory bootstrap snapshot, so reloading no longer serves the SVG captured at server start; a save requested while another is in flight is queued instead of dropped, so the latest edit reaches disk
+- **Small-distance route alignment**: when both edge endpoints land on parallel sides (left/right or top/bottom) within 14 px on the shared axis, routing pulls them onto one coordinate, removing the 1–2 px Z-shaped jog. Only the endpoints move; nodes and anchors stay put. Larger offsets keep the normal L/Z route
+- **Fixed lost edges when switching themes on state diagrams**: composite-state / subgraph ids are not `.pele-node` ids, so the old replay treated edges bound to them as deleted. Deletions now come solely from the pre-switch edge-id set; `tech → openai` and similar switches keep every node and all 7 edges in the fixture
+- **Built-in template switch**: the sidebar "template" picker lists all eight themes. The server re-renders the original Mermaid with the selected theme, and the client replays node positions, scales, labels, edge bindings/anchors and deletions before committing `working.svg` / `draft.svg` / meta in one request. Font CSS loads per theme, so both typography and primary shape colours follow the template; dark themes switch the editor chrome too; a failed commit restores the previous canvas
+- Editor client and assets live in a separate `src/editor/` module that `src/embed.ts` and the normal render path never import. Only `mmdx edit` loads them; the non-interactive CLI's startup module graph and 201-case acceptance suite stay unchanged
+- Edge hit-testing now caches a world-space polyline and bounding box per edge at scene load. On 200 nodes / 370 edges: scene extraction 70ms, 2,000 node hits 2.8ms, 100 edge hits 2.6ms, anchor reroute 0.072ms/update, moving all 200 nodes 5.6ms
+- The `tech` palette gains rose `#B14356` in the fifth series / pie / radar / actor / git slot; green remains in the second series slot and the state family. `lint/theme-series-cvd` and `lint/theme-series-contrast` pass again
 
 ## [2.1.0] - 2026-10-31
 
@@ -209,6 +226,7 @@ First stable release.
 
 - `mmdx-windows-x64.exe` — windows x64 single file (no Node; needs system Edge/Chrome)
 
+[2.2.0]: https://github.com/daidaiJ/mmdx/releases/tag/v2.2.0
 [2.1.0]: https://github.com/daidaiJ/mmdx/releases/tag/v2.1.0
 [2.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v2.0.0
 [1.1.0]: https://github.com/daidaiJ/mmdx/releases/tag/v1.1.0

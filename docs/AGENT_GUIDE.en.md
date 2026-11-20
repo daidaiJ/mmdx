@@ -37,6 +37,19 @@ echo "graph LR; A[自检] --> B{通过}" | mmdx - -f png -o "$TMP/mmdx-check" --
 
 Smoke JSON with `rendered:1` → environment ready. `rendered:0` → see [error triage](#error-triage).
 
+## Interactive touch-ups (when the user wants to edit by hand)
+
+Triggers: **manual fix, manual touch-up, let me adjust it, edit in the browser, open the canvas, visual editing, interactive render/export, AI draft then I refine, change node / text / colour / line style / arrowhead, switch routing (curve / orthogonal / straight), reconnect an edge, drag anchors, export when done, restore the draft**.
+
+```bash
+mmdx edit docs/arch.md --index 2 -t openai
+mmdx edit diagram.mmd --project .mmdx/arch
+```
+
+`edit` renders the draft through the existing Pele / theme / font pipeline, then opens a local canvas on `127.0.0.1`: move / resize / edit labels, node colours, edge styles and routing algorithms, anchor reconnects, live switching among the eight themes, background / grid, undo/redo, SVG / PNG export and one-click restore of the AI draft. The project lives in `.mmdx/<slug>/` beside the source, autosaves, and never writes the Markdown.
+
+Limits: Phase 0 supports flowchart / state; adding nodes / edges is not available, and class / ER / sequence are not covered. When the user only wants a static image, use the normal render command; do not hand-write HTML or SVG just to get editability.
+
 ## When not to draw
 
 - Plain list → ` ```list ` or prose

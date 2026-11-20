@@ -67,6 +67,15 @@ More (multi-file batches, exact naming, title injection) in the [HUMAN_GUIDE qui
 
 The engine is always Pele — there is no `--engine` / `--layout` switch; syntax Pele cannot parse fails with `Parsing error` (exit 1), so rewrite the diagram per the message. `-f svg` bakes theme colors to hex; `--svg-themeable` keeps `--pele-*` CSS variables.
 
+### Interactive editing / manual touch-ups (Phase 0)
+
+```bash
+mmdx edit docs/arch.md --index 2 -t openai
+```
+
+Use this when the user asks to "adjust this diagram by hand", "interactive render/export", or "let me refine the AI draft".
+`edit` renders the draft through the normal Pele + theme pipeline, then opens a local browser canvas for marquee / multi-select, dragging, 8-handle resizing, in-place text editing, per-node fill / stroke / text colours on single selection (overrides persist with the working SVG, and "follow theme" restores the template palette), per-edge routing (auto / orthogonal / straight / curve), colour, width, line style (solid / dashed / dotted) and arrowhead (filled / open / none) on one or several selected edges, selecting an edge and dragging either endpoint (anywhere along a node side, or onto another node to reconnect), L/Z edge rerouting (endpoints on parallel sides within 14 px snap onto one coordinate to remove tiny jogs), live switching among the eight built-in themes (node positions, text, colours, edge styles, anchors and deleted edges survive the switch), background / grid / transparent canvas, undo/redo and SVG / PNG export. The project lives in `.mmdx/<slug>/` beside the source (`draft.svg`, `working.svg`, scene JSON). "Restore draft" discards human edits without touching Markdown. Phase 0 covers flowchart / state; editor assets and the HTTP server are loaded only by the `edit` subcommand and stay out of the normal batch-render path.
+
 ## 🖼 Usage
 
 ```bash
