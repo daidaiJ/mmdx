@@ -4,7 +4,7 @@
 
 ## 🔄 Handoff 摘要
 
-### 图片元信息 — 已完成，待提交
+### 图片元信息 — 已发布（v2.3.0）
 
 - **当前状态（2026-11-21）：** `mmdx` / `mmdx card` / `mmdx edit` 默认给 PNG / SVG 写图片元信息：`Title`（`--title` / 块标题 / 输出名）、`Author`（仅 `--author` / `--meta author`）、`Copyright`（默认 `Copyright © 2026 daidaiJ`，可用 `--copyright` 改）、`Creation Time`（UTC）、`Software` / `Version`（`mmdx <version>`）、`Theme` / `Tone`、`Source`（输入文件 / URL），以及任意 `--meta key=value`。`--no-meta` 关闭；空值删除字段。
 - **实现：** 新增 `src/meta.ts`：`parseMetaOptions` / `buildImageMeta` / `addPngMetadata` / `readPngMetadata` / `addSvgMetadata` / `svgMetadataXml` / `htmlTitle`。PNG 写标准 `tEXt`（Latin-1）/ `iTXt`（UTF-8），插在 IHDR 之后、IDAT 之前，并替换同 key 旧块；SVG 写 RDF/Dublin Core `<metadata>`（dc / xmp / mmdx 命名空间），在 svgo 之后插入，避免被 `removeMetadata` 清掉。`addPngMetadata` 先 `Buffer.from()`，兼容 Chromium 返回的 `Uint8Array`（`--png-colors off` 与量化回退路径）。
@@ -12,8 +12,9 @@
 - **验证：** `bun run test` **225/225**（新增 8 项：参数解析 / 字段构建 / PNG tEXt+iTXt / SVG RDF / HTML title / CLI PNG+SVG / 非法 `--meta` / card 元信息）；`bun run typecheck` 通过。CLI 实测 PNG 读回 9 个字段，SVG 含 `dc:title` / `dc:creator` / `dc:rights` / `mmdx:meta`；`--no-meta` 下 PNG 无文本块、SVG 无 `<metadata>`。headless Edge 实测编辑器：PNG/SVG 均带 `张三` / `© 2026 Acme` / `project=demo` / 固定时间；切到 openai 后两边的 `Theme` 都变 `openai`。
 - **文档：** README(.en)、HUMAN_GUIDE(.en)、AGENT_GUIDE(.en)、EXTENSIONS(.en)、QUALITY(.en)、STYLE_PORTS、skill/SKILL.md、CHANGELOG(.en) 已更新；帮助文本（主 CLI / card / edit）已列新参数。README 新增「图片元信息」小节并链接到 HUMAN_GUIDE 的完整字段表。
 - **未验证 / 局限：** 没有独立读取/修改已有图片元信息的命令（当前只在出图时写入）；PNG 关键字限 Latin-1，自定义 key 不能写中文；未写 XMP 二进制包（PNG 用标准文本块，SVG 用 RDF）；元信息不参与像素，`lint/deterministic` 仍按像素比对。
+- **已发布：** v2.3.0（tag `v2.3.0`，`origin/main` 已同步）。Release 工作流产出 `mmdx-windows-x64.exe`（`--version` 为 `v2.3.0`）、`mmdx-dynamic-v2.3.0.zip`、`mmdx-skill-v2.3.0.zip` 及各自 `.sha256`，发布说明见 `release-notes-v2.3.0.md`，Release 见 https://github.com/daidaiJ/mmdx/releases/tag/v2.3.0 。
 
-### PNG 调色板压缩 — 已完成，待提交
+### PNG 调色板压缩 — 已发布（v2.3.0）
 
 - **当前状态（2026-11-21）：** PNG 输出默认走调色板量化（`--png-colors auto` + `--png-quality balanced`）：高频色加权的 k-means（取自已评估的 mpl，ISC；固定高频色 + 加权最远点播种 + Lloyd），按主题的**实测门槛**从 128 / 160 / 192 / 224 / 256 色中选最小可行档；没有候选过门槛或索引文件不更小时保留 RGBA。`fast` / `balanced` / `best` 三档调整采样、迭代、稀有颜色反馈、候选色数与门槛。索引 PNG 写 1/2/4/8 位深、`PLTE`、透明底 `tRNS`，filter 0 + zlib level 9。`mmdx edit` 工具栏的 PNG 质量下拉提供「自动均衡 / 质量 / 快速」，默认跟随启动时的 `--png-quality`，每次导出单独生效。
 - **标定标准：** 8 套主题 × flowchart / state / class / ER / pie / xychart / mindmap / sequence / table（72 张 2x）。逐主题取「所有图型 p99 边缘 Oklab ΔE ≤0.035」的最小色数，再减 0.3 dB 作为边缘门槛；全局统一 53 dB。`scripts/calibrate-png.ts` 可复跑，输出 `review/png-calibration/report.md`；逐主题表在 `docs/QUALITY.md`。三档实测总量 40.9% / 41.2% / 41.8%，最差 p99 边缘 ΔE 0.040 / 0.035 / 0.033，中位 49 / 69 / 81 ms。`best` 只抬高边缘门槛而保留 53 dB 全局门槛，避免信息卡这类文本页在 256 色边界回退 RGBA（构建后实测发现并修复）。
