@@ -4,6 +4,26 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+## [2.3.0] - 2026-11-21
+
+### 图片元信息
+
+- PNG / SVG 默认写入图片元信息：标题、创建时间（UTC）、软件与版本（`mmdx <version>`）、主题 / tone、来源，以及默认的 mmdx 项目版权；作者只在传入时写入
+- 新增 `--author <text>`、`--copyright <text>` 与可重复的 `--meta <key=value>`；`--no-meta` 关闭全部元信息。已知 key 会映射到标准字段，其余按自定义 key 写入；空值删除字段
+- PNG 写标准 `tEXt`（Latin-1）/ `iTXt`（UTF-8）文本块，插在 IHDR 之后、IDAT 之前；SVG 写 RDF/Dublin Core `<metadata>`（dc / xmp / mmdx 命名空间），在 svgo 之后插入。`mmdx card` 与 `mmdx edit` 的 PNG / SVG 导出使用同一套逻辑；编辑器新增 `/api/export/svg`，导出时由服务端补元信息
+- `--meta created=...` 可固定时间戳，`--meta author=` 可清除作者；PNG 关键字限 Latin-1，值可为中文等 UTF-8 文本
+
+### PNG 输出
+
+- 新增 `--png-colors <auto|off|2..256>`（默认 `auto`）：截图后量化成调色板 PNG。调色板用加权 k-means（高频色固定、加权最远点播种、10 轮 Lloyd 迭代，取自已评估的 mpl，ISC）；`auto` 从 128 / 160 / 192 / 224 / 256 色中挑最小且通过质量门槛的一档（全局 PSNR + 文字/描边边缘 PSNR，按主题微调），没有候选过门槛时保留原始 RGBA
+- 新增 `--png-quality <fast|balanced|best>`（默认 `balanced`）：`fast` 降采样与迭代并放宽全局 / 边缘门槛，`best` 提高采样、增加稀有颜色反馈并抬高色数下限（只抬边缘门槛，全局保持 53 dB，避免文本页在 256 色边界回退）；三档总输出 40.9% / 41.2% / 41.8%，最差 p99 边缘 Oklab ΔE 0.040 / 0.035 / 0.033
+- 门槛改为固定语料标定：8 套主题 × 9 图型（flowchart / state / class / ER / pie / xychart / mindmap / sequence / table，72 张 2x），以 p99 边缘 ΔE ≤0.035 取最小色数再减 0.3 dB；`scripts/calibrate-png.ts` 可复跑并输出 `review/png-calibration/report.md`。旧的 43 dB 默认边缘门槛在 256 色仍可能无候选，本次一并消除
+- 索引 PNG 按色数写 1 / 2 / 4 / 8 位深与 `PLTE`，透明底写 `tRNS`；filter 0 + zlib level 9。`--profile` 新增 `png-quant` 阶段（色数 + PSNR）
+- 22 张 2x 图实测缩到原始体积的 32–50%（典型流程图 55KB → 17–19KB），量化耗时 30–330ms；`mmdx card` 与 `mmdx edit` 的 PNG 导出共用同一路径，`--png-colors off` 保留 RGBA
+- `mmdx edit` 工具栏新增 PNG 质量下拉「自动均衡 / 质量 / 快速」，默认跟随启动时的 `--png-quality`；每次导出把档位传给 `/api/export/png`，响应头 `X-Mmdx-Png-Quality` 回显实际档位。浏览器实测快速档 18,206B、质量档 18,767B，均为 8 位索引 PNG
+
 ## [2.2.0] - 2026-11-20
 
 ### 交互式编辑（Phase 0 原型）
@@ -225,6 +245,7 @@
 
 - `mmdx-windows-x64.exe` — windows x64 单文件（免 Node，需系统 Edge/Chrome）
 
+[2.3.0]: https://github.com/daidaiJ/mmdx/releases/tag/v2.3.0
 [2.2.0]: https://github.com/daidaiJ/mmdx/releases/tag/v2.2.0
 [2.1.0]: https://github.com/daidaiJ/mmdx/releases/tag/v2.1.0
 [2.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v2.0.0

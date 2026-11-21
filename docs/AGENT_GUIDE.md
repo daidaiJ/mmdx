@@ -46,7 +46,7 @@ mmdx edit docs/arch.md --index 2 -t openai
 mmdx edit diagram.mmd --project .mmdx/arch
 ```
 
-`edit` 用现有 Pele / 主题 / 字体管线渲染初稿，然后在 `127.0.0.1` 打开本地画布：移动 / 缩放 / 改字、节点配色、连线样式与走线算法、锚点重连、八套主题即时切换、背景 / 网格、撤销重做、SVG / PNG 导出、一键还原初稿。工程默认在源文件旁 `.mmdx/<slug>/`，自动保存，源 Markdown 不写入。
+`edit` 用现有 Pele / 主题 / 字体管线渲染初稿，然后在 `127.0.0.1` 打开本地画布：移动 / 缩放 / 改字、节点配色、连线样式与走线算法、锚点重连、八套主题即时切换、背景 / 网格、撤销重做、SVG / PNG 导出（PNG 旁可选自动均衡 / 质量 / 快速；导出图自带元信息）、一键还原初稿。工程默认在源文件旁 `.mmdx/<slug>/`，自动保存，源 Markdown 不写入。
 
 边界：Phase 0 支持 flowchart / state；不支持新增节点 / 新建连线，class / ER / sequence 未覆盖。用户只要静态图时仍走普通渲染命令，不要为「可编辑」另造 HTML 或手写 SVG。
 
@@ -74,11 +74,17 @@ mmdx doc.md --index 2 -f png
 echo "graph LR; A-->B" | mmdx - -f png
 # 信息卡（Markdown 或 URL；--tone 控制结构）
 mmdx card --in note.md -t openai --tone neutral --width 600 -o card.png
+# 图片元信息：作者 / 项目版权 / 自定义字段
+mmdx doc.md --title "架构总览" --author "张三" --copyright "© 2026 Acme" --meta project=支付平台
 ```
 
 聊天/幻灯片 `-f png` 或 `--preset slide|a4|square|column`（preset 未显式 `-f` 时默认 png）。**投屏 / PPT / 上会 / 周会 / 大屏** 必须 `--preset slide`（字号 18 + 加粗描边），并带 `--title`；不要用 `--css` 手调对比度，也不要把深色页面投会议室。聊天/窄栏用 `--preset column`（800px@2，字号 18、标签换行 200px），流程图用 `TD`——不要加宽 `--width`（缩完字更小）。飞书卡片 `square`，Word `a4`。`both` 仅开发者嵌 Markdown。显式 `--width`/`--scale`/`-f` 覆盖 preset。跟 VI：`--brand #2563EB`（只改强调色；投影不要用过浅的蓝）。`--json.warnings` 出现 `column-landscape` / `column-shrink` → 改 `flowchart TD` 或拆图。
 
 只有 Pele 一个引擎，没有 `--engine` / `--layout` 开关；Pele 解析不了的写法直接 `Parsing error`（exit 1），改写成等价图型。`-f svg` 默认烘焙颜色，`--svg-themeable` 才保留 CSS 变量。
+
+PNG 默认 `balanced` 调色板量化（约 41% 体积，p99 边缘 ΔE ≤0.035）；批量预览用 `--png-quality fast`，交付高保真用 `best`。只有下游明确要求 RGBA 才 `--png-colors off`，要再压可 `--png-colors 64`。
+
+每张 PNG / SVG 默认写图片元信息（时间、标题、主题、`mmdx <version>`、项目版权、来源）；交付时加 `--author "…"`，需要项目自己的版权就加 `--copyright "© 2026 …"`。任意字段用可重复的 `--meta key=value`（已知 key：title / author / copyright / created / software / version / theme / tone / source / description），`--meta created=...` 固定时间戳，`--meta author=` 清除作者；`--no-meta` 全部关闭。`mmdx card` 与 `mmdx edit` 导出同样支持。
 
 ## HTML 文件导出
 

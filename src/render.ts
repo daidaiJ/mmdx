@@ -10,6 +10,7 @@ import { BASE_FAMILY, DOC_FAMILIES, MONO_FAMILY, faceCss } from './fonts.ts';
 import { peleEngine } from './engine/pele.ts';
 import type { EngineRenderOptions, MarkFn } from './engine/types.ts';
 import { auditContrast, auditLayout, auditSvgText, type LayoutIssue } from './lint.ts';
+import { quantizePng, type PngColorMode, type PngQuality } from './png-quant.ts';
 
 export interface RendererOptions {
   browserPath?: string;
@@ -21,6 +22,12 @@ export interface RendererOptions {
   iconPacks?: Array<{ name: string; json: string }>;
   /** record per-stage timings into renderer.profile */
   profile?: boolean;
+  /** palette PNG output; off keeps the RGBA screenshot */
+  pngColors?: PngColorMode;
+  /** quantization effort tier when pngColors is auto or fixed */
+  pngQuality?: PngQuality;
+  /** theme name for block pages and cards when pngColors is auto */
+  pngTheme?: string;
 }
 
 export interface ProfileEntry {
@@ -85,6 +92,35 @@ export class Renderer {
     const out = await fn();
     this.profile.push({ stage, ms: Math.round(performance.now() - t0), label });
     return out;
+  }
+
+  /** Palette output is an optimization: any failure keeps the RGBA screenshot. */
+  private quantizePng(
+    png: Buffer,
+    background: string,
+    theme: string,
+    quality: PngQuality | undefined = this.opts.pngQuality,
+  ): Buffer {
+    if (!this.opts.pngColors || this.opts.pngColors === 'off') return png;
+    const t0 = performance.now();
+    try {
+      const res = quantizePng(png, {
+        mode: this.opts.pngColors,
+        theme,
+        background,
+        quality,
+      });
+      if (this.opts.profile && res) {
+        this.profile.push({
+          stage: 'png-quant',
+          ms: Math.round(performance.now() - t0),
+          label: `${res.colors}c ${res.psnr.toFixed(1)}dB${res.used ? '' : ' keep-rgba'}`,
+        });
+      }
+      return res?.png ?? png;
+    } catch {
+      return png;
+    }
   }
 
   static async create(assets: Assets, opts: RendererOptions): Promise<Renderer> {
@@ -196,7 +232,7 @@ export class Renderer {
         clip: { x: 0, y: 0, width: box.width, height: box.height },
         omitBackground: transparent,
       })) as Buffer;
-      return { png, issues };
+      return { png: this.quantizePng(png, background, this.opts.pngTheme ?? 'tech'), issues };
     }), label);
   }
 
@@ -483,10 +519,11 @@ export class Renderer {
         });
       }
       await page.bringToFront();
-      return (await page.screenshot({
+      const png = (await page.screenshot({
         clip: { x: 0, y: 0, width: size.w, height: size.h },
         omitBackground: transparent,
       })) as Buffer;
+      return this.quantizePng(png, background ?? '#ffffff', 'document');
     })));
   }
 
@@ -527,7 +564,7 @@ export class Renderer {
    */
   async screenshotSvg(
     svg: string,
-    opts: { scale: number; transparent?: boolean } = { scale: 2 },
+    opts: { scale: number; transparent?: boolean; theme?: string; quality?: PngQuality } = { scale: 2 },
   ): Promise<Buffer> {
     const tag = /<svg\b[^>]*>/.exec(svg)?.[0] ?? '';
     const attr = (name: string): number | null => {
@@ -566,10 +603,16 @@ export class Renderer {
         try { await document.fonts.ready; } catch { /* system fallback */ }
       });
       await page.bringToFront();
-      return (await page.screenshot({
+      const png = (await page.screenshot({
         clip: { x: 0, y: 0, width: w, height: h },
         omitBackground: !!opts.transparent,
       })) as Buffer;
+      return this.quantizePng(
+        png,
+        opts.transparent ? 'transparent' : '#ffffff',
+        opts.theme ?? this.opts.pngTheme ?? 'tech',
+        opts.quality,
+      );
     });
   }
 
@@ -578,7 +621,9 @@ export class Renderer {
     return this.run(async (page) => {
       await this.resetBody(page);
       await this.ensurePele(page);
-      return peleEngine.render(page, { ...opts, roughJs: this.assets.roughJs }, this.mark.bind(this) as MarkFn);
+      const out = await peleEngine.render(page, { ...opts, roughJs: this.assets.roughJs }, this.mark.bind(this) as MarkFn);
+      if (out.png) out.png = this.quantizePng(out.png, opts.background, opts.theme.name);
+      return out;
     });
   }
 

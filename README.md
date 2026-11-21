@@ -14,7 +14,7 @@
 | 读者 | 文档 | 说明 |
 |---|---|---|
 | 🤖 AI Agent | [docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md) | 省 token 版：环境自检、选型表、参数速查、JSON 契约、错误速诊 |
-| 👤 人类用户 | [docs/HUMAN_GUIDE.md](docs/HUMAN_GUIDE.md) | 易读版：安装部署、CLI 全参数、主题定制、性能调优、排障 |
+| 👤 人类用户 | [docs/HUMAN_GUIDE.md](docs/HUMAN_GUIDE.md) | 易读版：安装部署、CLI 全参数、图片元信息、主题定制、性能调优、排障 |
 | 🖼 扩展块 | [docs/EXTENSIONS.md](docs/EXTENSIONS.md) | 每种围栏一张工具渲染的 PNG + 语法 |
 | 🎭 风格画廊 | [docs/GALLERY.md](docs/GALLERY.md) | 同一案例在八套主题下的流程图 / 饼图 / KPI / 卡片 / 表格对照 |
 | 🧪 质量门禁 | [docs/QUALITY.md](docs/QUALITY.md) | 像素 lint 覆盖、已知盲区、发布前许可证清单 |
@@ -74,7 +74,7 @@ mmdx edit docs/arch.md --index 2 -t openai
 ```
 
 用户说「这张图我手动改一下」「交互式出图 / 渲染」「AI 出初稿我来微调」时走这条。
-`edit` 会用现有 Pele + 主题管线渲染初稿，然后在浏览器里打开本地画布：框选 / 多选、拖动、8 手柄缩放、双击改字、单选节点后改填充 / 描边 / 文字色（覆盖值随工作图保存，「跟随主题」恢复模板配色）、点选连线后改走线算法（自动 / 折线 / 直线 / 曲线）、颜色 / 粗细 / 线型（实线 / 虚线 / 点线）/ 箭头（实心 / 空心 / 无），多选连线可批量设置，拖动两端锚点（沿节点四边任意位置，或拖到另一个节点重连）、L/Z 折线路由（两端落在平行边且坐标差 ≤14px 时自动并线，消掉小台阶）、八套内置主题即时切换（切换时保留节点位置、文字、颜色、连线样式、锚点和连线删除）、背景色 / 网格 / 透明底、撤销重做、SVG / PNG 导出。工程写在源文件旁的 `.mmdx/<slug>/`（`draft.svg` + `working.svg` + 场景 JSON）；「还原初稿」只丢弃人工修改，不改 Markdown。Phase 0 支持 flowchart / state，编辑器资源与 HTTP 服务只在 `edit` 子命令中按需加载，不进入正常批量渲染路径。
+`edit` 会用现有 Pele + 主题管线渲染初稿，然后在浏览器里打开本地画布：框选 / 多选、拖动、8 手柄缩放、双击改字、单选节点后改填充 / 描边 / 文字色（覆盖值随工作图保存，「跟随主题」恢复模板配色）、点选连线后改走线算法（自动 / 折线 / 直线 / 曲线）、颜色 / 粗细 / 线型（实线 / 虚线 / 点线）/ 箭头（实心 / 空心 / 无），多选连线可批量设置，拖动两端锚点（沿节点四边任意位置，或拖到另一个节点重连）、L/Z 折线路由（两端落在平行边且坐标差 ≤14px 时自动并线，消掉小台阶）、八套内置主题即时切换（切换时保留节点位置、文字、颜色、连线样式、锚点和连线删除）、背景色 / 网格 / 透明底、撤销重做、SVG / PNG 导出（PNG 旁可选自动均衡 / 质量 / 快速档位）。工程写在源文件旁的 `.mmdx/<slug>/`（`draft.svg` + `working.svg` + 场景 JSON）；「还原初稿」只丢弃人工修改，不改 Markdown。Phase 0 支持 flowchart / state，编辑器资源与 HTTP 服务只在 `edit` 子命令中按需加载，不进入正常批量渲染路径。
 
 ## 🖼 使用示例
 
@@ -82,9 +82,24 @@ mmdx edit docs/arch.md --index 2 -t openai
 mmdx a.md b.md other/*.md -o dist/          # 多文件批量，并行
 mmdx diagram.mmd -o out/arch.svg            # 精确命名，同目录附带 .png
 mmdx page.html -o out/page.png --scale 2    # 整页 HTML 原样截图（免 Playwright）
+mmdx diagram.mmd -f png --png-colors off    # 保留 RGBA（默认 auto 按主题量化，约 1/3 体积）
+mmdx doc.md -f png --png-quality best       # 质量优先（更慢、略大）
 mmdx report.md --index 2 --title "架构总览" --title-pos bottom
 mmdx doc.md -t tech --background transparent -f png --json
+mmdx doc.md --title "架构总览" --author "张三" --copyright "© 2026 Acme"
 ```
+
+### 图片元信息（PNG / SVG）
+
+PNG 与 SVG 默认带图片元信息：写入时间、标题、作者（传了才写）、主题 / tone、`mmdx <version>`、来源与项目版权。PNG 用 `tEXt` / `iTXt`，SVG 用 RDF/Dublin Core `<metadata>`；字段在量化与 svgo 之后写入，不会被压缩步骤丢掉。
+
+```bash
+mmdx doc.md --author "张三" --copyright "© 2026 Acme" --meta project=支付平台
+mmdx doc.md --meta created=2026-01-02T03:04:05Z --meta author=
+mmdx doc.md --no-meta
+```
+
+`--meta key=value` 可重复，`--no-meta` 全部关闭；`mmdx card` 与 `mmdx edit` 的导出同样生效。完整字段表与读取方式见 [HUMAN_GUIDE 图片元信息](docs/HUMAN_GUIDE.md#图片元信息)。
 
 Markdown 围栏：`mermaid`（图表）以及 `table` / `list` / `card` / `chart` / `kpi` / `compare` / `vs` / `funnel` / `task` / `progress` / `gauge` / `heatmap` / `swimlane`（扩展块，PNG only）。贴 PPT 用 `mmdx doc.md --preset slide --title "…" --source "…"`。贴聊天/窄栏用 `--preset column`。独立 `.html` 文件整页截图（保留页面自身样式与背景，内嵌中文字体兜底 CJK），见 [HUMAN_GUIDE](docs/HUMAN_GUIDE.md#html-整页截图)。
 
@@ -158,7 +173,8 @@ page-init       ~1.0s ×页     screenshot      ~90ms ×图（含像素级二次
 - 只有一个引擎资源：Pele bundle（~700KB）懒注入；二进制不再内嵌 Mermaid（~3.5MB）与 ELK（~5MB）bundle
 - 截图跨页面串行化（headless Chrome 只服务活动 tab）+ 视口按内容适配，2x 高清单图仍在 ~100ms 量级
 - 渲染卡死 60s 必然报错而不是挂住整批；每个图自动重试一次
-- PNG 为 2x 无损（典型架构图 20–80KB）；SVG 经 svgo 压缩——二进制内嵌 svgo 官方 browser 构建（自包含 ESM），压缩后的 SVG 与 PNG 一样开箱即得
+- PNG 为 2x 超采样，默认按实测门槛量化成调色板 PNG（balanced 档约 41% 体积，p99 边缘 ΔE ≤0.035）；`--png-quality fast|best` 切速度 / 质量，`--png-colors off` 保留 RGBA，`--png-colors 64` 可再压；SVG 经 svgo 压缩——二进制内嵌 svgo 官方 browser 构建（自包含 ESM），压缩后的 SVG 与 PNG 一样开箱即得
+- 图片元信息：PNG 写标准 `tEXt` / `iTXt`（时间、软件版本、主题、作者、版权、来源），SVG 写 RDF/Dublin Core `<metadata>`；`--author` / `--copyright` / `--meta key=value` 可覆盖，`--no-meta` 关闭。元信息在量化和 svgo 之后写入，不会被压缩步骤丢掉
 
 调优手段（并发、视口、缩放）见 [HUMAN_GUIDE 性能调优](docs/HUMAN_GUIDE.md#性能调优)。
 

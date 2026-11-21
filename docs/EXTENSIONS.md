@@ -2,7 +2,7 @@
 
 # 扩展块图鉴
 
-每种围栏一张 **本工具渲染** 的 PNG（`bun scripts/make-review.ts`）。扩展块只出 PNG，均吃 `--title` / `--subtitle` / `--source` / `--unit` 图题层，强调色走 `--brand`。
+每种围栏一张 **本工具渲染** 的 PNG（`bun scripts/make-review.ts`）。扩展块只出 PNG，均吃 `--title` / `--subtitle` / `--source` / `--unit` 图题层，强调色走 `--brand`。这些 PNG 同样默认写图片元信息（时间、标题、主题、`mmdx <version>`、项目版权、来源）；用 `--author` / `--copyright` / `--meta key=value` 定制、`--no-meta` 关闭，字段表见 [HUMAN_GUIDE 图片元信息](HUMAN_GUIDE.md#图片元信息)。
 
 mermaid 二十种图型拼图：[contact-sheet-pele.png](../tests/contact-sheet-pele.png)（脚本 `bun scripts/make-contact-sheet.ts` 产出 `tests/contact-sheet.png`，`-pele` 是同一张图的副本、保留给旧链接；Pele 是唯一引擎，不再按引擎出两版）。
 

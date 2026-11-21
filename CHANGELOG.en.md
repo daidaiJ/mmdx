@@ -4,6 +4,26 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioned per [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+## [2.3.0] - 2026-11-21
+
+### Image metadata
+
+- PNG / SVG output now carries image metadata by default: title, creation time (UTC), software and version (`mmdx <version>`), theme / tone, source, and the mmdx project copyright; author is written only when supplied
+- Added `--author <text>`, `--copyright <text>` and repeatable `--meta <key=value>`; `--no-meta` disables the whole set. Known keys map to standard fields, other keys are written as custom fields, and an empty value removes a field
+- PNGs get standard `tEXt` (Latin-1) / `iTXt` (UTF-8) chunks between IHDR and IDAT; SVGs get an RDF/Dublin Core `<metadata>` block (dc / xmp / mmdx namespaces) inserted after svgo. `mmdx card` and both `mmdx edit` exports share the logic; the editor gains `/api/export/svg`, which adds the block server-side
+- `--meta created=...` fixes the timestamp and `--meta author=` clears the author; PNG keywords are limited to Latin-1 while values may be any UTF-8 text
+
+### PNG output
+
+- Added `--png-colors <auto|off|2..256>` (default `auto`): screenshots are quantized to palette PNGs. The palette uses weighted k-means (frequent colors pinned, weighted farthest-point seeding, 10 Lloyd iterations; adapted from the evaluated mpl project, ISC). `auto` picks the smallest of 128 / 160 / 192 / 224 / 256 colors that clears the theme's quality gates (global PSNR plus an edge PSNR for text and strokes); when no candidate clears them, the original RGBA is kept
+- Added `--png-quality <fast|balanced|best>` (default `balanced`): `fast` lowers sampling/iterations and relaxes both global and edge gates; `best` raises sampling, adds rare-color feedback and lifts the palette floor (it raises only the edge gate and keeps the global floor at 53 dB, so text pages near the 256-colour ceiling still get a palette). The three tiers total 40.9% / 41.2% / 41.8% of the original size, with worst p99 edge Oklab ΔE 0.040 / 0.035 / 0.033
+- Gates are now calibrated on a fixed corpus: 8 themes × 9 surfaces (flowchart / state / class / ER / pie / xychart / mindmap / sequence / table, 72 2× PNGs). The smallest palette meeting p99 edge ΔE ≤0.035 defines each floor, and the gate is that floor's minimum PSNR minus 0.3 dB. `scripts/calibrate-png.ts` reproduces the table and writes `review/png-calibration/report.md`; the old 43 dB default edge gate (unreachable at 256 colors for some inputs) is gone
+- Indexed PNGs are written at 1 / 2 / 4 / 8-bit depth with `PLTE` and, for transparency, `tRNS`; filter 0 + zlib level 9. `--profile` adds a `png-quant` stage (palette size + PSNR)
+- Across 22 sampled 2× images, output was 32–50% of the original size (a typical flowchart went from 55 KB to 17–19 KB) at 30–330 ms; `mmdx card` and the `mmdx edit` PNG export share the path, and `--png-colors off` keeps RGBA
+- The `mmdx edit` toolbar gains a PNG quality dropdown (balanced / best / fast), defaulting to the `--png-quality` given at startup. Each export sends its tier to `/api/export/png`, and the `X-Mmdx-Png-Quality` response header echoes the tier actually used. Browser check: fast produced 18,206 B and best 18,767 B, both 8-bit indexed PNGs
+
 ## [2.2.0] - 2026-11-20
 
 ### Interactive editing (Phase 0 prototype)
@@ -226,6 +246,7 @@ First stable release.
 
 - `mmdx-windows-x64.exe` — windows x64 single file (no Node; needs system Edge/Chrome)
 
+[2.3.0]: https://github.com/daidaiJ/mmdx/releases/tag/v2.3.0
 [2.2.0]: https://github.com/daidaiJ/mmdx/releases/tag/v2.2.0
 [2.1.0]: https://github.com/daidaiJ/mmdx/releases/tag/v2.1.0
 [2.0.0]: https://github.com/daidaiJ/mmdx/releases/tag/v2.0.0

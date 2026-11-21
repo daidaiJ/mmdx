@@ -46,7 +46,7 @@ mmdx edit docs/arch.md --index 2 -t openai
 mmdx edit diagram.mmd --project .mmdx/arch
 ```
 
-`edit` renders the draft through the existing Pele / theme / font pipeline, then opens a local canvas on `127.0.0.1`: move / resize / edit labels, node colours, edge styles and routing algorithms, anchor reconnects, live switching among the eight themes, background / grid, undo/redo, SVG / PNG export and one-click restore of the AI draft. The project lives in `.mmdx/<slug>/` beside the source, autosaves, and never writes the Markdown.
+`edit` renders the draft through the existing Pele / theme / font pipeline, then opens a local canvas on `127.0.0.1`: move / resize / edit labels, node colours, edge styles and routing algorithms, anchor reconnects, live switching among the eight themes, background / grid, undo/redo, SVG / PNG export (with a balanced / best / fast PNG tier selector and image metadata) and one-click restore of the AI draft. The project lives in `.mmdx/<slug>/` beside the source, autosaves, and never writes the Markdown.
 
 Limits: Phase 0 supports flowchart / state; adding nodes / edges is not available, and class / ER / sequence are not covered. When the user only wants a static image, use the normal render command; do not hand-write HTML or SVG just to get editability.
 
@@ -74,11 +74,17 @@ mmdx doc.md --index 2 -f png
 echo "graph LR; A-->B" | mmdx - -f png
 # Info card (Markdown or URL; --tone controls structure)
 mmdx card --in note.md -t openai --tone neutral --width 600 -o card.png
+# Image metadata: author / project copyright / custom fields
+mmdx doc.md --title "Architecture" --author "Zhang San" --copyright "© 2026 Acme" --meta project=payments
 ```
 
 Chat/slides: `-f png` or `--preset slide|a4|square|column` (preset defaults to png unless `-f` is explicit). **Projection / PPT / all-hands / big screen** must use `--preset slide` (18px type + heavier strokes) plus `--title`. Do not hand-tune contrast with `--css`; do not project a dark page in a meeting room. Chat / narrow column: `--preset column` (800px@2, 18px type, 200px label wrap) with `flowchart TD` — do not raise `--width` (smaller type after scaling). Feishu cards: `square`. Word: `a4`. `both` is for developers embedding Markdown. Explicit `--width`/`--scale`/`-f` override the preset. Brand: `--brand #2563EB` (accent only; skip washed-out light blues on a projector). `column-landscape` / `column-shrink` in `--json.warnings` → switch to `flowchart TD` or split.
 
 Pele is the only engine — there is no `--engine` / `--layout` switch; syntax Pele cannot parse fails with `Parsing error` (exit 1), so rewrite it into an equivalent diagram type. `-f svg` bakes colors by default; `--svg-themeable` keeps CSS variables.
+
+PNG output is `balanced` palette-quantized by default (about 41% of the size, p99 edge ΔE ≤0.035); use `--png-quality fast` for batch previews and `best` for deliverables. Use `--png-colors off` only when a downstream step requires RGBA, or `--png-colors 64` to shrink further.
+
+Every PNG / SVG carries image metadata by default (time, title, theme, `mmdx <version>`, project copyright, source). Add `--author "…"` for delivery, and `--copyright "© 2026 …"` to stamp your own project. Use repeatable `--meta key=value` for any field (known keys: title / author / copyright / created / software / version / theme / tone / source / description); `--meta created=...` fixes the timestamp, `--meta author=` clears the author, and `--no-meta` disables the set. `mmdx card` and `mmdx edit` exports support the same flags.
 
 ## HTML export
 

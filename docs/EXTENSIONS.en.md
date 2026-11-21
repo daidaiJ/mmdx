@@ -2,7 +2,7 @@
 
 # Extension-block gallery
 
-One PNG **rendered by this tool** per fence (`bun scripts/make-review.ts`). Extension blocks are PNG-only. All of them take `--title` / `--subtitle` / `--source` / `--unit` chrome; accent color follows `--brand`.
+One PNG **rendered by this tool** per fence (`bun scripts/make-review.ts`). Extension blocks are PNG-only. All of them take `--title` / `--subtitle` / `--source` / `--unit` chrome; accent color follows `--brand`. Their PNGs also carry image metadata by default (time, title, theme, `mmdx <version>`, project copyright, source); customize with `--author` / `--copyright` / `--meta key=value`, or disable with `--no-meta`. Field table: [HUMAN_GUIDE image metadata](HUMAN_GUIDE.en.md#image-metadata).
 
 Twenty mermaid types: [contact-sheet-pele.png](../tests/contact-sheet-pele.png) (`bun scripts/make-contact-sheet.ts` writes `tests/contact-sheet.png`; the `-pele` file is an identical copy, kept for older links — Pele is the only engine, so there is no per-engine pair anymore).
 

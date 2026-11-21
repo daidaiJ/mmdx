@@ -19,12 +19,43 @@
 - **主题色板门槛**：正文 `fg` ≥ 7:1（AAA）、`muted` ≥ 4.5:1、`accent` / `critical` ≥ 3:1；每个形状族的描边对底、对自己的填充各 ≥ 3:1（`lint/theme-shape-marks`）；四个形状族必须是四种形态（`lint/shape-form-redundant`）。
 - **承载语义的颜色**：形状族描边色不同的两两之间、8 色图表系列的任意两色之间，在 protan / deutan / tritan（Machado 2009）模拟下 OKLab ΔE ≥ 0.02（`lint/theme-cvd` / `lint/theme-series-cvd`）；连线色对底 ≥ 3:1（`lint/theme-connectors`）；饼图切片对底 ≥ 3:1，因为 Pele 的切片数值用页面底色「抠」在切片上（`lint/theme-series-contrast`）。
 - **稳定性**：渲染前等待内置字体加载；CSS 关闭动画/过渡/光标；Chromium 使用 `--font-render-hinting=none`。
-- **可读报告**：`scripts/lint-visuals.ts` 渲染全部八套主题的流程图与卡片块，逐行输出实测边距、阈值和问题；`scripts/lint-a11y.ts` 逐主题输出文本对比度、形状族描边、色觉模拟、连线对比度、系列色与（开轮转的主题）描边对自己填充的报告。
+- **可读报告**：`scripts/lint-visuals.ts` 渲染全部八套主题的流程图与卡片块，逐行输出实测边距、阈值和问题；`scripts/lint-a11y.ts` 逐主题输出文本对比度、形状族描边、色觉模拟、连线对比度、系列色与（开轮转的主题）描边对自己填充的报告；`scripts/calibrate-png.ts` 标定调色板 PNG 的逐主题门槛（见下节）。
+- **图片元信息**：CLI / card / edit 的 PNG / SVG 默认带 `Title` / `Author` / `Copyright` / `Creation Time` / `Software` / `Version` / `Theme` / `Tone` / `Source` 与自定义字段；`unit/meta-*`、`cli/meta-image`、`cli/card-meta` 断言 PNG 文本块、SVG RDF、`--no-meta` 关闭与非法参数。元信息在量化 / svgo 之后写入，不参与像素确定性比较。
 - **契约**：`ThemeSpec` 必需字段、`shapeCoverage`、`--style-fill`、块版式 CSS、CLI 退出码/命名/JSON/并发。
 
-当前基线：`201/201 passed`（`mmdx card` 在 bun 下的 `buf.readUInt32BE` 问题已修：`src/card.ts` 的 `pngSize()` 先 `Buffer.from()`）；`scripts/lint-visuals.ts` 16/16、`scripts/lint-a11y.ts` 全部通过。已用 2x 渲染验证过长页面：44,548px 高的列表底部留白 51px，56,952px 高的流程图底部留白 22px；Excalidraw 流程图连续两次渲染像素差为 0。
+当前基线：`225/225 passed`（`mmdx card` 在 bun 下的 `buf.readUInt32BE` 问题已修：`src/card.ts` 的 `pngSize()` 先 `Buffer.from()`）；`scripts/lint-visuals.ts` 16/16、`scripts/lint-a11y.ts` 全部通过。已用 2x 渲染验证过长页面：44,548px 高的列表底部留白 51px，56,952px 高的流程图底部留白 22px；Excalidraw 流程图连续两次渲染像素差为 0。
 
 色板门槛的实测极值：`fg` 最低 8.35:1（`acnh`）、`muted` 最低 4.54:1（`ios`）、形状描边对底最低 3.06:1（`zed-light` state）、连线对底最低 3.11:1（`--tone paper`）、8 色系列色觉最低 ΔE 0.040、系列色对底最低 3.01:1（`zed`）。
+
+## PNG 调色板量化门槛（实测）
+
+调色板输出用「边缘 p99 OKLab ΔE」定义风格细节的保留程度：取文字/描边两侧的像素，计算量化前后在 OKLab 的色差，取 99 分位。平坦填色由高频色固定保证精确，不单独计。固定语料是 8 套主题 × flowchart / state / class / ER / pie / xychart / mindmap / sequence / table，共 72 张 2x PNG；每张在 128 / 160 / 192 / 224 / 256 色下量化，取该主题所有图型都能满足 p99 ≤0.035 的最小色数，再减 0.3 dB 作为边缘门槛。全局门槛统一 53 dB。
+
+| 主题 | 推荐色数下限 | 边缘门槛 | 实测最差 p99 ΔE | 实测最低边缘 PSNR |
+| --- | --- | --- | --- | --- |
+| `tech` | 192 | 41.0 | 0.033 | 41.3 |
+| `openai` | 224 | 41.0 | 0.034 | 41.4 |
+| `excalidraw` | 224 | 41.2 | 0.033 | 41.5 |
+| `ios` | 224 | 40.9 | 0.032 | 41.3 |
+| `acnh` | 128 | 39.9 | 0.033 | 40.2 |
+| `epaper` | 160 | 41.4 | 0.032 | 41.7 |
+| `zed` | 128 | 40.7 | 0.034 | 41.0 |
+| `zed-light` | 160 | 40.7 | 0.034 | 41.1 |
+
+`paper` 共用 `excalidraw` 的粗糙描边门槛；`document`（任意 HTML）保留 41.0 的保守门槛。三档输出在同一语料上的实测：
+
+| 档位 | 总输出 | 最差 p99 边缘 ΔE | 中位 / p95 耗时 |
+| --- | --- | --- | --- |
+| `fast` | 40.9% | 0.040 | 49 / 169 ms |
+| `balanced` | 41.2% | 0.035 | 69 / 170 ms |
+| `best` | 41.8% | 0.033 | 81 / 193 ms |
+
+同一色数下三档的 PSNR 差 <0.15 dB——k-means 已收敛，档位差异主要来自候选色数与门槛。`fast` 同时把全局门槛降到 51.5 dB；`best` 只抬边缘门槛（+0.5 dB），全局保持 53 dB，保证信息卡这类文本页在 256 色仍能出调色板。`mmdx edit` 的 PNG 导出在工具栏提供同一组三档（显示为「自动均衡 / 质量 / 快速」），默认取启动时的 `--png-quality`，每次导出单独传入。复跑：
+
+```bash
+bun scripts/calibrate-png.ts
+# 报告：review/png-calibration/report.md，语料 PNG 在 review/png-calibration/off/
+```
 
 ## 下一阶段：lint 加强
 

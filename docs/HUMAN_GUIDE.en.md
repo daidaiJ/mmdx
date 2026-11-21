@@ -98,7 +98,7 @@ mmdx edit docs/arch.md --index 2 -t openai   # second block in a Markdown file
 mmdx edit diagram.mmd --project .mmdx/arch   # single diagram / explicit project
 ```
 
-The canvas supports marquee / multi-select, move, 8-handle resize, in-place text editing, node fill / stroke / text colours, edge colour / width / dash / arrowhead and routing (auto / orthogonal / straight / curve), dragging anchors or reconnecting an edge to another node, live switching among the eight themes, background / grid / transparent / theme backdrop, undo/redo, SVG download and 2× PNG export.
+The canvas supports marquee / multi-select, move, 8-handle resize, in-place text editing, node fill / stroke / text colours, edge colour / width / dash / arrowhead and routing (auto / orthogonal / straight / curve), dragging anchors or reconnecting an edge to another node, live switching among the eight themes, background / grid / transparent / theme backdrop, undo/redo, SVG download and 2× PNG export. A quality dropdown next to the PNG button offers balanced / best / fast; it starts from the `--png-quality` given at launch and applies per export. SVG and PNG exports carry image metadata (time, title, theme, version, author and copyright); pass `--author` / `--copyright` / `--meta` to `mmdx edit` to customize it.
 
 The project lives in `.mmdx/<slug>/` beside the source (`draft.svg` / `working.svg` / scene JSON) and autosaves; reopening resumes the working copy, and "restore draft" discards manual edits without touching Markdown. The server binds to `127.0.0.1` only and the URL carries a random token. Phase 0 supports flowchart / state; adding nodes or edges and class / ER / sequence are not covered yet.
 
@@ -115,12 +115,18 @@ The project lives in `.mmdx/<slug>/` beside the source (`draft.svg` / `working.s
 | `--background <color>` | Page background, e.g. `white` \| `transparent` \| `#1A1A1A` (pass it explicitly for a dark page) |
 | `--svg-themeable` | Keep `--pele-*` CSS variables in SVG; default bakes hex for Office/PPT |
 | `--scale <n>` | PNG scale factor (default 2) |
+| `--png-colors <mode>` | `auto` (default) picks a palette under the theme's quality gates; `off` keeps RGBA; `2..256` fixes the palette size |
+| `--png-quality <tier>` | `fast` \| `balanced` (default) \| `best`; quantization speed / quality tier, see below |
 | `--width <px>` | Layout viewport width (default 1200; Pele uses it as `maxWidth` without flipping direction) |
 | `--title <text>` | Figure title (PNG chrome; no longer injected as mermaid frontmatter) |
 | `--subtitle <text>` | Subtitle |
 | `--source <text>` | Source line in the footer |
 | `--unit <text>` | Unit line in the footer |
 | `--title-pos <pos>` | `top` (default) \| `bottom` (chrome title above/below the figure) |
+| `--meta <key=value>` | Image metadata, repeatable. Known keys: `title` / `author` / `copyright` / `created` / `software` / `version` / `theme` / `tone` / `source` / `description`; other keys are custom. Values may be UTF-8; an empty value removes the field |
+| `--author <text>` | Metadata author, same as `--meta author=...`; omitted when not passed |
+| `--copyright <text>` | Metadata copyright; defaults to the mmdx project, override for your own |
+| `--no-meta` | Write no image metadata |
 | `--index <n[,n…]>` | Render only these 1-based block indexes |
 | `--brand <hex>` | Accent for extension blocks (default `#2563EB`; `2563EB` also works); does not recolor flowchart shapes. Use a deep hex on a projector |
 | `--strict-chart` | Promote mermaid pie/xychart/radar/flowchart/sequence budget hits to errors (default: warn) |
@@ -154,6 +160,53 @@ The `--json` contract:
 ```
 
 (`preset`/`brand`/`caption` appear only when those flags are used; `engine` is always `"pele"`; `warnings` is always an array; `profile` appears only when `--profile` is also passed.)
+
+### PNG palette compression
+
+PNG output is palette-quantized by default: colors are clustered by frequency-weighted k-means, then the smallest of 128 / 160 / 192 / 224 / 256 colors that clears the theme's measured gates is written. The gates come from a fixed corpus (8 themes × flowchart / state / class / ER / pie / xychart / mindmap / sequence / table, 72 2× PNGs) and target p99 edge Oklab ΔE ≤0.035 for text and strokes, with a global PSNR floor of 53 dB (`fast` relaxes it by 1.5 dB). If no candidate clears the gates, or the indexed file is not smaller, the original RGBA is kept. The `balanced` tier totals 41.2% of the original size with a worst p99 edge ΔE of 0.035; per-theme gates and the repro command are in [QUALITY.en.md](QUALITY.en.md#png-palette-quality-gates-measured).
+
+| Value | Behavior |
+| --- | --- |
+| `auto` (default) | Picks the palette size per theme; falls back to RGBA when quality misses |
+| `off` | No quantization; writes RGBA (for downstream lossless processing) |
+| `2..256` | Fixed palette size; bypasses the quality gates, fewer colors means a smaller file |
+
+| Tier | Approach | Total size | Worst p99 edge ΔE | Median time |
+| --- | --- | --- | --- | --- |
+| `fast` | 2048-color sample, 3 iterations, 3 candidate sizes, global / edge gates −1.5 dB | 40.9% | 0.040 | 49 ms |
+| `balanced` (default) | 8192-color sample, 10 iterations, 5 candidate sizes, calibrated gates | 41.2% | 0.035 | 69 ms |
+| `best` | 16384-color sample, 10 iterations ×2 (rare-color feedback), 160-color floor, edge gate +0.5 dB (global stays 53 dB) | 41.8% | 0.033 | 81 ms |
+
+At a fixed palette size the tiers differ by <0.15 dB: k-means has converged, so the tier difference comes from candidate sizes and gates. Use `fast` for batch previews, `best` for deliverables, and keep `balanced` as the default.
+
+Transparent backgrounds (`--background transparent`) write `tRNS`; `--scale`, `--preset`, `mmdx card`, and the `mmdx edit` PNG export share the same path. `--profile` adds a `png-quant` row with the palette size and PSNR. The editor's PNG export has a balanced / best / fast dropdown next to the button; it starts from the launch-time `--png-quality`, sends the chosen tier with each request, and echoes it in the `X-Mmdx-Png-Quality` response header.
+
+### Image metadata
+
+Every PNG and SVG carries a metadata set for asset tracking and agent provenance:
+
+| Field | Default / source |
+| --- | --- |
+| `Title` | `--title` / block frontmatter title / output name (e.g. `flowchart-m1`) |
+| `Author` | `--author` or `--meta author=...`; omitted when absent |
+| `Copyright` | `--copyright`; defaults to `Copyright © 2026 daidaiJ` (mmdx project) |
+| `Creation Time` | Current UTC time; fix it with `--meta created=2026-01-02T03:04:05Z` |
+| `Software` / `Version` | `mmdx <version>` / `<version>` |
+| `Theme` / `Tone` | Active theme / `--tone` when given |
+| `Source` | Input file or URL |
+| Custom | `--meta key=value`, repeatable |
+
+PNG uses standard text chunks: `tEXt` when the value is Latin-1, `iTXt` for UTF-8 (Chinese and other scripts); chunks are added after palette quantization. SVG gets an RDF/Dublin Core `<metadata>` block (`dc:title` / `dc:creator` / `dc:rights` / `dc:date` / `xmp:CreatorTool` / `mmdx:theme` and so on) after svgo, so minification cannot drop it. `mmdx card` PNGs and both `mmdx edit` exports use the same fields; the editor's SVG export posts to `/api/export/svg` to have the block inserted.
+
+```bash
+mmdx doc.md --title "Architecture" --author "Zhang San" --copyright "© 2026 Acme" \
+  --meta project=payments --meta description="Q4 architecture review"
+mmdx doc.md --meta created=2026-01-02T03:04:05Z --meta author=
+mmdx card --in note.md --author "Platform team" --copyright "© 2026 Acme"
+mmdx doc.md --no-meta
+```
+
+`--meta` keys are limited to printable Latin-1 (the PNG keyword constraint); values can be any UTF-8 text. An empty value removes the field, e.g. `--meta author=`. Read PNG metadata with `exiftool image.png` or `magick identify -verbose`; SVG metadata is the `<metadata>` element in the source.
 
 ## Info cards (`mmdx card`)
 
@@ -285,7 +338,7 @@ page-init       ~1.0s ×page   screenshot      ~90ms ×diagram (incl. pixel-leve
 | Lever | Advice |
 | --- | --- |
 | Batch > 30 blocks | `--jobs 4`; the default 2 is enough — single-browser page pool, diminishing returns and memory pressure beyond that |
-| PNG too large | Lower `--scale` (default 2; 1 is fine for chat); PNG is lossless, typical architecture diagram 20–80 KB |
+| PNG too large | The default `auto` already quantizes per theme; use `--png-quality fast` or `--png-colors 64` to shrink further, or lower `--scale` (default 2; 1 is fine for chat) |
 | Type too small in chat / a narrow column | `--preset column` (800px@2) with `flowchart TD`; do not raise `--width` (wider canvas, smaller type after scaling) |
 | Wide diagram squashed | Raise `--width` (default 1200); horizontal flowcharts tolerate 1600+ |
 | SVG only | `-f svg` skips the screenshot stage |

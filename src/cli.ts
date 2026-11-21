@@ -15,7 +15,11 @@ import { getBuildVersion, loadAssets } from './embed.ts';
 import { MONO_FAMILY } from './fonts.ts';
 import { extractBlocks, frontTitle, type InputBlock as Block } from './input.ts';
 import { scanColumnHints, scanLimits, type LimitHit } from './limits.ts';
+import {
+  addPngMetadata, addSvgMetadata, buildImageMeta, htmlTitle, isoNow, parseMetaOptions,
+} from './meta.ts';
 import { Renderer } from './render.ts';
+import { parsePngColorMode, parsePngQuality, type PngColorMode, type PngQuality } from './png-quant.ts';
 import { accentTint, applyBrand, type Tokens } from './tokens.ts';
 import {
   applyBrandToTheme, applyColumnDensity, applySlideDensity, DEFAULT_THEME, deepMerge, getTheme, paperize, peleConfig,
@@ -24,7 +28,7 @@ import {
 import { isToneName, type ToneName } from './tone.ts';
 import type { IconPack } from './engine/types.ts';
 
-let VERSION = '2.2.0';
+let VERSION = '2.3.0';
 
 type Optimize = (svg: string, opts: unknown) => { data: string };
 let svgoOptimize: Optimize | null = null;
@@ -77,6 +81,11 @@ Options:
                           and stroke weight for projection; column=800px@2
                           (2K office ~1/3 column, tighter wrap)
   --background <color>    page background, e.g. white | transparent | #1A1A1A
+  --png-colors <mode>     auto (default) | off | 2..256 — indexed PNG after
+                          quantization; auto picks the smallest palette that
+                          keeps text/edge detail, per theme
+  --png-quality <tier>    fast | balanced (default) | best — quantization
+                          effort; best adds a rare-color refinement pass
   --scale <n>             PNG scale factor                     (default: 2)
   --width <px>            layout viewport width                (default: 1200)
   --svg-themeable         keep --pele-* CSS variables in SVG output; default
@@ -86,6 +95,12 @@ Options:
   --source <text>         source line in the footer
   --unit <text>           unit line in the footer
   --title-pos <pos>       top (default) | bottom  (chrome title above/below)
+  --meta <key=value>      image metadata; repeatable. Keys: title, author,
+                          copyright, created, software, theme, tone, source,
+                          description, or custom. Values may be UTF-8
+  --author <text>         metadata author (same as --meta author=...)
+  --copyright <text>      metadata copyright (default: mmdx project)
+  --no-meta               omit image metadata from PNG/SVG
   --index <n[,n…]>        render only these 1-based block indexes
   --brand <hex>           accent color for extension blocks (#2563EB or 2563EB).
                           Does not recolor flowchart shape coding
@@ -129,6 +144,8 @@ interface Options {
   background: string | null;
   scale: number;
   scaleExplicit: boolean;
+  pngColors: PngColorMode;
+  pngQuality: PngQuality;
   width: number;
   widthExplicit: boolean;
   svgThemeable: boolean;
@@ -137,6 +154,10 @@ interface Options {
   source: string | null;
   unit: string | null;
   titlePos: 'top' | 'bottom';
+  meta: string[];
+  author: string | null;
+  copyright: string | null;
+  noMeta: boolean;
   index: string | null;
   brand: string | null;
   icons: string[];
@@ -157,10 +178,11 @@ function parseArgs(argv: string[]): Options {
     inputs: [], out: null, format: 'both', formatExplicit: false, theme: DEFAULT_THEME,
     tone: null, styleFill: null,
     preset: null, background: null,
-    scale: 2, scaleExplicit: false, width: 1200, widthExplicit: false,
+    scale: 2, scaleExplicit: false, pngColors: 'auto', pngQuality: 'balanced', width: 1200, widthExplicit: false,
     svgThemeable: false,
     title: null, subtitle: null, source: null, unit: null,
-    titlePos: 'top', index: null, brand: null, icons: [],
+    titlePos: 'top', meta: [], author: null, copyright: null, noMeta: false,
+    index: null, brand: null, icons: [],
     config: null, themeJs: null, css: null, strictChart: false, browser: null,
     jobs: 2, profile: false, list: false, json: false, quiet: false,
   };
@@ -205,6 +227,22 @@ function parseArgs(argv: string[]): Options {
         break;
       }
       case '--background': o.background = need(argv[++i], a); break;
+      case '--png-colors':
+        try {
+          o.pngColors = parsePngColorMode(need(argv[++i], a));
+        } catch (e) {
+          console.error(`mmdx: ${(e as Error).message}`);
+          process.exit(2);
+        }
+        break;
+      case '--png-quality':
+        try {
+          o.pngQuality = parsePngQuality(need(argv[++i], a));
+        } catch (e) {
+          console.error(`mmdx: ${(e as Error).message}`);
+          process.exit(2);
+        }
+        break;
       case '--scale': o.scale = parseFloat(need(argv[++i], a)); o.scaleExplicit = true; break;
       case '--width': o.width = parseInt(need(argv[++i], a), 10); o.widthExplicit = true; break;
       case '--svg-themeable': o.svgThemeable = true; break;
@@ -213,6 +251,10 @@ function parseArgs(argv: string[]): Options {
       case '--source': o.source = need(argv[++i], a); break;
       case '--unit': o.unit = need(argv[++i], a); break;
       case '--title-pos': o.titlePos = need(argv[++i], a) as Options['titlePos']; break;
+      case '--meta': o.meta.push(need(argv[++i], a)); break;
+      case '--author': o.author = need(argv[++i], a); break;
+      case '--copyright': o.copyright = need(argv[++i], a); break;
+      case '--no-meta': o.noMeta = true; break;
       case '--index': o.index = need(argv[++i], a); break;
       case '--brand': o.brand = need(argv[++i], a); break;
       case '--icon': o.icons.push(need(argv[++i], a)); break;
@@ -397,6 +439,21 @@ async function main(): Promise<void> {
     process.exit(await runEditCommand(process.argv.slice(3), VERSION));
   }
   const o = parseArgs(process.argv.slice(2));
+  let metaExtra: Record<string, string> = {};
+  try {
+    metaExtra = parseMetaOptions(o.meta);
+  } catch (e) {
+    console.error(`mmdx: ${(e as Error).message}`);
+    process.exit(2);
+  }
+  const created = isoNow();
+  const metaBase = {
+    version: VERSION,
+    author: o.author,
+    copyright: o.copyright,
+    extra: metaExtra,
+    enabled: !o.noMeta,
+  };
 
   if (!PRESETS[o.theme]) {
     console.error(`mmdx: unknown theme "${o.theme}" (available: ${Object.keys(PRESETS).join(', ')})`);
@@ -525,6 +582,30 @@ async function main(): Promise<void> {
     return path.join(dir, `${stem}.${ext}`);
   };
 
+  const blockName = (b: Block): string =>
+    `${b.base}${selected.length > 1 || o.index ? `-m${b.index}` : ''}`;
+  const metaFor = (b: Block, title: string | null, themeName: string | null | undefined): Record<string, string> =>
+    buildImageMeta({
+      ...metaBase,
+      title: title || blockName(b),
+      theme: themeName,
+      tone: o.tone,
+      source: b.input === '-' ? 'stdin' : b.input,
+      created,
+    });
+  const tagPng = (
+    b: Block,
+    png: Buffer,
+    title: string | null,
+    themeName: string | null | undefined = theme.name,
+  ): Buffer => addPngMetadata(png, metaFor(b, title, themeName));
+  const tagSvg = (
+    b: Block,
+    svg: string,
+    title: string | null,
+    themeName: string | null | undefined = theme.name,
+  ): string => addSvgMetadata(svg, metaFor(b, title, themeName));
+
   const preset = PRESETS[o.theme];
   let mermaidConfig = JSON.parse(JSON.stringify(preset.config)) as Record<string, unknown>;
   if (o.preset === 'slide') applySlideDensity(mermaidConfig);
@@ -555,6 +636,9 @@ async function main(): Promise<void> {
     fonts: [...(theme.fonts ?? []), MONO_FAMILY],
     iconPacks,
     profile: o.profile,
+    pngColors: o.pngColors,
+    pngQuality: o.pngQuality,
+    pngTheme: theme.name,
   });
 
   const results: Array<{
@@ -578,12 +662,18 @@ async function main(): Promise<void> {
     });
   };
 
-  const writePngOnly = (b: Block, png: Buffer, note?: string): string[] => {
+  const writePngOnly = (
+    b: Block,
+    png: Buffer,
+    title: string | null,
+    note?: string,
+    themeName: string | null | undefined = theme.name,
+  ): string[] => {
     if (o.format === 'svg') {
       process.stderr.write(note || `mmdx: ${b.input}#${b.index} ${b.kind} renders to PNG only; writing PNG\n`);
     }
     const f = outFileFor(b, 'png');
-    fs.writeFileSync(f, png);
+    fs.writeFileSync(f, tagPng(b, png, title, themeName));
     return [f];
   };
 
@@ -613,7 +703,7 @@ async function main(): Promise<void> {
           }
           const html = blockPage(`<div class="fig">${svg}</div>`, { ...pageOptsBase, caption: cap });
           const png = await renderer.renderHtml(html, background, label);
-          return { files: writePngOnly(b, png), warnings };
+          return { files: writePngOnly(b, png, cap.title ?? o.title), warnings };
         }
 
         if (b.kind === 'html') {
@@ -623,14 +713,14 @@ async function main(): Promise<void> {
             const i = w.indexOf(':');
             return { input: b.input, index: b.index, code: w.slice(0, i), message: w.slice(i + 2) };
           });
-          return { files: writePngOnly(b, png), warnings: lint };
+          return { files: writePngOnly(b, png, o.title ?? htmlTitle(b.code), undefined, null), warnings: lint };
         }
 
         if (HTML_KINDS.has(b.kind)) {
           const inner = htmlKindToInner(b.kind, b.code);
           const html = blockPage(inner, { ...pageOptsBase, caption: cliCaption });
           const png = await renderer.renderHtml(html, background, label);
-          return { files: writePngOnly(b, png), warnings };
+          return { files: writePngOnly(b, png, o.title), warnings };
         }
 
         const hits: LimitHit[] = scanLimits(b.code);
@@ -661,14 +751,15 @@ async function main(): Promise<void> {
           const files: string[] = [];
           if (wantSvg) {
             const f = outFileFor(b, 'svg');
-            fs.writeFileSync(f, minifySvg(svg, label, o.quiet, o.json, renderer, o.profile));
+            const svgOut = minifySvg(svg, label, o.quiet, o.json, renderer, o.profile);
+            fs.writeFileSync(f, tagSvg(b, svgOut, o.title || frontTitle(b.code)));
             files.push(f);
           }
           if (wantPng || o.format === 'svg') {
             const png = await renderer.renderHtml(html, background, label);
             if (wantPng) {
               const f = outFileFor(b, 'png');
-              fs.writeFileSync(f, png);
+              fs.writeFileSync(f, tagPng(b, png, o.title || frontTitle(b.code)));
               files.push(f);
             } else if (o.format === 'svg' && chromeOn) {
               // chrome is PNG-only; SVG is the diagram
@@ -690,12 +781,13 @@ async function main(): Promise<void> {
         const files: string[] = [];
         if (wantSvg) {
           const f = outFileFor(b, 'svg');
-          fs.writeFileSync(f, minifySvg(svg, label, o.quiet, o.json, renderer, o.profile));
+          const svgOut = minifySvg(svg, label, o.quiet, o.json, renderer, o.profile);
+          fs.writeFileSync(f, tagSvg(b, svgOut, o.title || frontTitle(b.code)));
           files.push(f);
         }
         if (png) {
           const f = outFileFor(b, 'png');
-          fs.writeFileSync(f, png);
+          fs.writeFileSync(f, tagPng(b, png, o.title || frontTitle(b.code)));
           files.push(f);
         }
         return { files, warnings };

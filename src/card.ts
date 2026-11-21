@@ -11,6 +11,8 @@ import path from 'node:path';
 import { blockPage, inlineMd, tableToHtml } from './blocks.ts';
 import { loadAssets } from './embed.ts';
 import { MONO_FAMILY } from './fonts.ts';
+import { addPngMetadata, buildImageMeta, isoNow, parseMetaOptions } from './meta.ts';
+import { parsePngColorMode, parsePngQuality, type PngColorMode, type PngQuality } from './png-quant.ts';
 import { Renderer } from './render.ts';
 import { accentTint, applyBrand, type Tokens } from './tokens.ts';
 import { isToneName, type ToneName } from './tone.ts';
@@ -41,12 +43,18 @@ interface CardOptions {
   out: string | null;
   width: number;
   scale: number;
+  pngColors: PngColorMode;
+  pngQuality: PngQuality;
   theme: string;
   tone: ToneName;
   title: string | null;
   kicker: string | null;
   deck: string | null;
   source: string | null;
+  meta: string[];
+  author: string | null;
+  copyright: string | null;
+  noMeta: boolean;
   brand: string | null;
   maxHeight: number;
   browser: string | null;
@@ -68,12 +76,21 @@ Options:
   -o, --out <path>        exact .png or output directory (default: next to input)
   --width <px>            card width in CSS px                  (default: 600)
   --scale <n>             PNG scale factor                    (default: 2)
+  --png-colors <mode>     auto (default) | off | 2..256 — indexed PNG after
+                          quantization; auto keeps text/edge detail per theme
+  --png-quality <tier>    fast | balanced (default) | best — quantization effort
   -t, --theme <name>      palette (default: openai)
   --tone <name>           paper | neutral | product           (default: neutral)
   --title <text>          override the card title
   --kicker <text>         small label above the title
   --deck <text>           standfirst under the title
   --source <text>         footer credit
+  --meta <key=value>      image metadata; repeatable (title, author,
+                          copyright, created, software, theme, tone, source,
+                          description, or custom)
+  --author <text>         metadata author (same as --meta author=...)
+  --copyright <text>      metadata copyright (default: mmdx project)
+  --no-meta               omit image metadata
   --brand <hex>           accent color override
   --max-height <px>       split into another card above this height (default: 1200)
   --browser <path>        browser executable override
@@ -84,9 +101,10 @@ Options:
 
 function parseCardArgs(argv: string[]): CardOptions {
   const o: CardOptions = {
-    input: null, url: null, out: null, width: 600, scale: 2,
+    input: null, url: null, out: null, width: 600, scale: 2, pngColors: 'auto', pngQuality: 'balanced',
     theme: 'openai', tone: 'neutral',
-    title: null, kicker: null, deck: null, source: null, brand: null,
+    title: null, kicker: null, deck: null, source: null,
+    meta: [], author: null, copyright: null, noMeta: false, brand: null,
     maxHeight: 1200, browser: null, json: false, quiet: false, help: false,
   };
   const need = (v: string | undefined, name: string): string => {
@@ -101,6 +119,8 @@ function parseCardArgs(argv: string[]): CardOptions {
       case '-o': case '--out': o.out = need(argv[++i], a); break;
       case '--width': o.width = parseInt(need(argv[++i], a), 10); break;
       case '--scale': o.scale = parseFloat(need(argv[++i], a)); break;
+      case '--png-colors': o.pngColors = parsePngColorMode(need(argv[++i], a)); break;
+      case '--png-quality': o.pngQuality = parsePngQuality(need(argv[++i], a)); break;
       case '-t': case '--theme': o.theme = need(argv[++i], a); break;
       case '--tone': {
         const v = need(argv[++i], a);
@@ -112,6 +132,10 @@ function parseCardArgs(argv: string[]): CardOptions {
       case '--kicker': o.kicker = need(argv[++i], a); break;
       case '--deck': o.deck = need(argv[++i], a); break;
       case '--source': o.source = need(argv[++i], a); break;
+      case '--meta': o.meta.push(need(argv[++i], a)); break;
+      case '--author': o.author = need(argv[++i], a); break;
+      case '--copyright': o.copyright = need(argv[++i], a); break;
+      case '--no-meta': o.noMeta = true; break;
       case '--brand': o.brand = need(argv[++i], a); break;
       case '--max-height': o.maxHeight = parseInt(need(argv[++i], a), 10); break;
       case '--browser': o.browser = need(argv[++i], a); break;
@@ -554,6 +578,13 @@ export async function runCardCommand(argv: string[], version: string): Promise<n
     process.stdout.write(HELP);
     return 0;
   }
+  let metaExtra: Record<string, string> = {};
+  try {
+    metaExtra = parseMetaOptions(o.meta);
+  } catch (e) {
+    console.error(`mmdx card: ${(e as Error).message}`);
+    return 2;
+  }
 
   try {
     const doc = parseCardMarkdown(await loadInput(o));
@@ -568,6 +599,9 @@ export async function runCardCommand(argv: string[], version: string): Promise<n
       browserPath: o.browser || undefined,
       scale: o.scale, width: o.width,
       fonts: [...(getTheme(o.theme).fonts ?? []), MONO_FAMILY],
+      pngColors: o.pngColors,
+      pngQuality: o.pngQuality,
+      pngTheme: o.theme,
     });
     const pages = await renderCardDoc(renderer, doc, {
       themeName: o.theme, tone: o.tone, width: o.width,
@@ -575,8 +609,21 @@ export async function runCardCommand(argv: string[], version: string): Promise<n
     });
     await renderer.close();
 
-    const files = writeCards(pages, o);
-    const sizes = pages.map((p) => pngSize(p));
+    const meta = buildImageMeta({
+      version,
+      title: doc.title,
+      author: o.author,
+      copyright: o.copyright,
+      theme: o.theme,
+      tone: o.tone,
+      source: o.url ?? (o.input === '-' ? 'stdin' : o.input),
+      extra: metaExtra,
+      enabled: !o.noMeta,
+      created: isoNow(),
+    });
+    const tagged = pages.map((page) => addPngMetadata(page, meta));
+    const files = writeCards(tagged, o);
+    const sizes = tagged.map((p) => pngSize(p));
     if (o.json) {
       console.log(JSON.stringify({
         command: 'card', version,

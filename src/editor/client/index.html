@@ -29,6 +29,13 @@
       <div class="tool-group">
         <button class="btn" id="restore" title="丢弃人工修改，恢复 AI 初稿">还原初稿</button>
         <button class="btn" id="export-svg">SVG</button>
+        <label class="quality-select" title="PNG 导出质量档位">
+          <select id="png-quality" aria-label="PNG 导出质量档位">
+            <option value="balanced">自动均衡</option>
+            <option value="best">质量</option>
+            <option value="fast">快速</option>
+          </select>
+        </label>
         <button class="btn primary" id="export-png">PNG 2×</button>
       </div>
       <button class="icon-btn panel-toggle" id="panel-toggle" aria-expanded="false">画布</button>

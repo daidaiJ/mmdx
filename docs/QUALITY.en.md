@@ -18,12 +18,41 @@ This file records what the render-output lint covers, where the known blind spot
 - **Determinism**: the same input rendered twice and compared per pixel (channel tolerance 2); difference ratio must stay under 0.05%; loops over every built-in theme, including the hand-drawn Excalidraw jitter.
 - **Contrast**: body `fg` on background ≥ 4.5:1; `muted` / `accent` / `critical` on background ≥ 3.0:1.
 - **Stability**: wait for the bundled font before rendering; CSS disables animations/transitions/caret; Chromium runs with `--font-render-hinting=none`.
-- **Readable report**: `scripts/lint-visuals.ts` renders the flowchart and card block of every theme (`tech` / `openai` / `excalidraw`), printing measured margins, thresholds and issues line by line.
+- **Readable report**: `scripts/lint-visuals.ts` renders the flowchart and card block of every theme, printing measured margins, thresholds and issues line by line; `scripts/lint-a11y.ts` reports contrast, shape outlines, CVD simulation, connectors and series colours; `scripts/calibrate-png.ts` calibrates the palette-PNG gates (next section).
+- **Image metadata**: CLI / card / edit PNG and SVG outputs carry `Title` / `Author` / `Copyright` / `Creation Time` / `Software` / `Version` / `Theme` / `Tone` / `Source` plus custom fields; `unit/meta-*`, `cli/meta-image` and `cli/card-meta` assert PNG text chunks, SVG RDF, `--no-meta` and invalid arguments. Metadata is written after quantization / svgo and does not participate in pixel determinism.
 - **Contracts**: required `ThemeSpec` fields, `shapeCoverage`, `--style-fill`, block CSS, CLI exit codes/naming/JSON/concurrency.
 
-Current baseline: `148/148 passed`. Measured at 2x: a 44,548px-tall list ended 51px above the image bottom; a 56,952px-tall flowchart ended 22px above it; two consecutive Excalidraw flowchart renders had zero pixel difference.
+Current baseline: `225/225 passed`. Measured at 2x: a 44,548px-tall list ended 51px above the image bottom; a 56,952px-tall flowchart ended 22px above it; two consecutive Excalidraw flowchart renders had zero pixel difference. The lowest measured theme values are `fg` 8.35:1 (`acnh`), `muted` 4.54:1 (`ios`), shape outline 3.06:1 (`zed-light` state), connector 3.11:1 (`--tone paper`), series CVD ΔE 0.040 and series colour 3.01:1 (`zed`).
 
-The contrast gate requires `fg` ≥ 4.5:1 and `muted` / `accent` / `critical` ≥ 3.0:1 for every theme; `tech` / `openai` / `excalidraw` all pass, with the lowest value being `excalidraw`'s `muted` at 3.32:1.
+## PNG palette quality gates (measured)
+
+Palette output is judged by **p99 edge OKLab ΔE**: pixels on both sides of a text/stroke luminance edge, compared before and after quantization, with the 99th percentile taken. Flat fills are pinned exactly, so they are not counted separately. The fixed corpus is 8 themes × flowchart / state / class / ER / pie / xychart / mindmap / sequence / table, 72 2× PNGs. Each image is quantized at 128 / 160 / 192 / 224 / 256 colours; the smallest palette where every surface in a theme stays at p99 ≤0.035 sets that theme's floor, and the edge gate is that floor's minimum edge PSNR minus 0.3 dB. The global gate is a uniform 53 dB.
+
+| Theme | Palette floor | Edge gate | Measured worst p99 ΔE | Measured min edge PSNR |
+| --- | --- | --- | --- | --- |
+| `tech` | 192 | 41.0 | 0.033 | 41.3 |
+| `openai` | 224 | 41.0 | 0.034 | 41.4 |
+| `excalidraw` | 224 | 41.2 | 0.033 | 41.5 |
+| `ios` | 224 | 40.9 | 0.032 | 41.3 |
+| `acnh` | 128 | 39.9 | 0.033 | 40.2 |
+| `epaper` | 160 | 41.4 | 0.032 | 41.7 |
+| `zed` | 128 | 40.7 | 0.034 | 41.0 |
+| `zed-light` | 160 | 40.7 | 0.034 | 41.1 |
+
+`paper` shares excalidraw's rough-stroke gate; `document` (arbitrary authored HTML) keeps a conservative 41.0. The three output tiers on the same corpus:
+
+| Tier | Total size | Worst p99 edge ΔE | Median / p95 time |
+| --- | --- | --- | --- |
+| `fast` | 40.9% | 0.040 | 49 / 169 ms |
+| `balanced` | 41.2% | 0.035 | 69 / 170 ms |
+| `best` | 41.8% | 0.033 | 81 / 193 ms |
+
+At a fixed palette size the tiers differ by <0.15 dB: k-means has converged, so the tier difference comes from candidate sizes and gates. `fast` also lowers the global floor to 51.5 dB; `best` raises only the edge gate (+0.5 dB) and keeps 53 dB, so text-heavy cards still get a palette at 256 colours. The `mmdx edit` PNG export exposes the same three tiers as a toolbar dropdown (balanced / best / fast); it defaults to the launch-time `--png-quality` and sends the tier per export. Reproduce:
+
+```bash
+bun scripts/calibrate-png.ts
+# report: review/png-calibration/report.md; corpus PNGs: review/png-calibration/off/
+```
 
 ## Next: harden the lint
 

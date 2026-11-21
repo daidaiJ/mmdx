@@ -30,6 +30,17 @@ records the coverage contract and the download URLs. License texts ship next to 
 and the sans subset under [`licenses/NotoSansSC-OFL.txt`](licenses/NotoSansSC-OFL.txt).
 Copyright remains with the upstream projects as stated in the font metadata.
 
+## Adapted algorithms
+
+The palette builder in `src/png-quant.ts` is adapted from [mpl](https://github.com/ivarvong/mpl)
+(ISC License): frequency-weighted k-means with frequent colors pinned, weighted
+farthest-point seeding and Lloyd refinement. The `best` tier's rare-color feedback
+pass follows [slimdeer](https://github.com/heydeer/slimdeer) (MIT License): colors far
+from their center receive extra weight in a second refinement pass. The palette-size
+search, per-theme quality gates, indexed PNG writer and integration in mmdx are
+original. The upstream license texts are available in the repositories above; neither
+project is bundled as runtime code.
+
 ## Runtime dependencies
 
 | Component | Version | License | Source | How it is used |

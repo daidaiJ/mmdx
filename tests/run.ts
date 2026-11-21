@@ -22,6 +22,10 @@ import { scanColumnHints, scanLimits } from '../src/limits.ts';
 import { blendOver, CVD_KINDS, perceptualDelta, simulateCvd } from '../src/color.ts';
 import { BASE_FAMILY, BUNDLED_FONTS, DOC_FAMILIES, isBundledFamily, MONO_FAMILY } from '../src/fonts.ts';
 import { bottomBlankLimit, diffPng } from '../src/lint.ts';
+import {
+  addPngMetadata, addSvgMetadata, buildImageMeta, htmlTitle, parseMetaOptions, readPngMetadata,
+} from '../src/meta.ts';
+import { parsePngColorMode, parsePngQuality, pngPolicy, quantizePng } from '../src/png-quant.ts';
 import { Renderer } from '../src/render.ts';
 import { applyColumnDensity, applySlideDensity, DEFAULT_THEME, getTheme, peleCss, PRESETS, type ThemeSpec } from '../src/themes.ts';
 import { accentTint, applyBrand, contrastRatio, normalizeHex, type Tokens } from '../src/tokens.ts';
@@ -132,6 +136,238 @@ const record = (name: string, ok: boolean, detail: string): void => {
   } catch (e) {
     record('unit/gauge-over', /at most 4/.test((e as Error).message), (e as Error).message.slice(0, 80));
   }
+}
+
+// ---------------------------------------------------------------------------
+// 0b. palette PNG output
+// ---------------------------------------------------------------------------
+
+const makePng = (
+  width: number,
+  height: number,
+  paint: (x: number, y: number) => [number, number, number, number],
+): Buffer => {
+  const img = new PNG({ width, height });
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const p = 4 * (y * width + x);
+      const [r, g, b, a] = paint(x, y);
+      img.data[p] = r;
+      img.data[p + 1] = g;
+      img.data[p + 2] = b;
+      img.data[p + 3] = a;
+    }
+  }
+  return PNG.sync.write(img);
+};
+
+{
+  record(
+    'unit/png-colors-parse',
+    parsePngColorMode('auto') === 'auto' && parsePngColorMode('off') === 'off' && parsePngColorMode('256') === 256,
+    'auto/off/256',
+  );
+  let rejected = 0;
+  for (const v of ['0', '1', '257', 'nope', '2.5']) {
+    try {
+      parsePngColorMode(v);
+    } catch {
+      rejected++;
+    }
+  }
+  record('unit/png-colors-parse-bad', rejected === 5, `rejected=${rejected}/5`);
+  record(
+    'unit/png-quality-parse',
+    parsePngQuality('fast') === 'fast' && parsePngQuality('balanced') === 'balanced' && parsePngQuality('best') === 'best',
+    'fast/balanced/best',
+  );
+  let rejectedQuality = 0;
+  for (const v of ['0', 'quick', '', 'FAST']) {
+    try {
+      parsePngQuality(v);
+    } catch {
+      rejectedQuality++;
+    }
+  }
+  record('unit/png-quality-parse-bad', rejectedQuality === 4, `rejected=${rejectedQuality}/4`);
+  const ep = pngPolicy('epaper');
+  const techPolicy = pngPolicy('tech');
+  const unknown = pngPolicy('no-such-theme');
+  record(
+    'unit/png-policy',
+    ep.global === 53 && ep.edge === 41.4 && techPolicy.edge === 41.0 && unknown.global === 53,
+    `epaper=${ep.global}/${ep.edge} tech=${techPolicy.global}/${techPolicy.edge}`,
+  );
+}
+
+{
+  const w = 64;
+  const h = 64;
+  const flat = makePng(w, h, (x) => (x < 20 ? [37, 99, 235, 255] : x < 42 ? [228, 87, 46, 255] : [255, 255, 255, 255]));
+  const off = quantizePng(flat, { mode: 'off', theme: 'tech', background: '#ffffff' });
+  const auto = quantizePng(flat, { mode: 'auto', theme: 'tech', background: '#ffffff' });
+  const decoded = auto ? PNG.sync.read(auto.png) : null;
+  const src = PNG.sync.read(flat);
+  let exact = !!decoded && decoded.width === w && decoded.height === h;
+  if (decoded) {
+    for (let i = 0; exact && i < w * h; i++) {
+      for (let q = 0; q < 4; q++) {
+        if (decoded.data[4 * i + q] !== src.data[4 * i + q]) {
+          exact = false;
+          break;
+        }
+      }
+    }
+  }
+  record(
+    'unit/png-quant-indexed',
+    off === null && !!auto && auto.used && auto.colors === 3 && auto.png[25] === 3 &&
+      auto.png.includes(Buffer.from('PLTE')) && exact,
+    `off=${off === null} colors=${auto?.colors} ct=${auto?.png[25]} exact=${exact}`,
+  );
+  record(
+    'unit/png-quant-smaller',
+    !!auto && auto.png.length < flat.length,
+    `${auto?.png.length ?? 0}B vs ${flat.length}B`,
+  );
+  const again = quantizePng(flat, { mode: 'auto', theme: 'tech', background: '#ffffff' });
+  record(
+    'unit/png-quant-deterministic',
+    !!auto && !!again && auto.png.equals(again.png),
+    `${auto?.png.length ?? 0}B repeat=${again?.png.length ?? 0}B`,
+  );
+}
+
+{
+  const transparent = makePng(32, 32, (x) => (x < 16 ? [0, 0, 0, 0] : [37, 99, 235, 255]));
+  const q = quantizePng(transparent, { mode: 'auto', theme: 'tech', background: 'transparent' });
+  const decoded = q ? PNG.sync.read(q.png) : null;
+  record(
+    'unit/png-quant-transparent',
+    !!q && q.png.includes(Buffer.from('tRNS')) && decoded?.data[3] === 0 &&
+      decoded?.data[4 * 20 + 3] === 255 && decoded?.data[4 * 20] === 37,
+    `tRNS=${!!q?.png.includes(Buffer.from('tRNS'))} alpha0=${decoded?.data[3]} fill=${decoded?.data[4 * 20]}`,
+  );
+}
+
+{
+  const two = makePng(64, 64, (x, y) => ((x + y) % 2 ? [0, 0, 0, 255] : [255, 255, 255, 255]));
+  const q = quantizePng(two, { mode: 2, theme: 'tech', background: '#ffffff' });
+  record(
+    'unit/png-quant-fixed-2',
+    !!q && q.used && q.colors === 2 && q.png[24] === 1 && q.png[25] === 3,
+    `colors=${q?.colors} depth=${q?.png[24]} ct=${q?.png[25]}`,
+  );
+}
+
+{
+  // Random RGBA cannot meet the quality gates, so auto keeps the screenshot.
+  let seed = 123456789;
+  const rand = (): number => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed >>> 24;
+  };
+  const noise = makePng(48, 48, () => [rand(), rand(), rand(), 255]);
+  const q = quantizePng(noise, { mode: 'auto', theme: 'tech', background: '#ffffff' });
+  record('unit/png-quant-gate-fallback', q === null, q ? `${q.colors}c keep?` : 'null');
+}
+
+{
+  const gradient = makePng(96, 96, (x, y) => [x * 2, y * 2, (x + y) & 255, 255]);
+  const runs = (['fast', 'balanced', 'best'] as const).map((quality) =>
+    quantizePng(gradient, { mode: 64, theme: 'tech', background: '#ffffff', quality }),
+  );
+  record(
+    'unit/png-quality-tiers',
+    runs.every((r) => !!r && r.colors === 64 && r.used),
+    runs.map((r) => (r ? `${r.colors}c ${r.psnr.toFixed(1)}dB` : 'null')).join(' / '),
+  );
+  const repeat = quantizePng(gradient, { mode: 64, theme: 'tech', background: '#ffffff', quality: 'best' });
+  record(
+    'unit/png-quality-deterministic',
+    !!runs[2] && !!repeat && runs[2].png.equals(repeat.png),
+    `${runs[2]?.png.length ?? 0}B repeat=${repeat?.png.length ?? 0}B`,
+  );
+}
+
+{
+  const parsed = parseMetaOptions([
+    'author=张三', 'creation-time=2026-01-02T03:04:05Z', 'project=demo', 'copyright=',
+  ]);
+  let rejected = 0;
+  for (const bad of ['nokey', '=value', '作者=张三']) {
+    try { parseMetaOptions([bad]); } catch { rejected++; }
+  }
+  record(
+    'unit/meta-parse',
+    parsed.Author === '张三' && parsed['Creation Time'] === '2026-01-02T03:04:05Z' &&
+      parsed.project === 'demo' && parsed.Copyright === '' && rejected === 3,
+    `keys=${Object.keys(parsed).join(',')} rejected=${rejected}/3`,
+  );
+}
+
+{
+  const meta = buildImageMeta({
+    version: '9.9.9', title: '架构', author: '张三', theme: 'tech', tone: 'paper',
+    source: 'tests/diagrams/flowchart.md', created: '2026-01-02T03:04:05Z',
+    extra: { copyright: '© 2026 Acme', project: 'demo', author: '' },
+  });
+  const off = buildImageMeta({ version: '9.9.9', enabled: false });
+  record(
+    'unit/meta-build',
+    meta.Title === '架构' && meta.Author === undefined && meta.Copyright === '© 2026 Acme' &&
+      meta['Creation Time'] === '2026-01-02T03:04:05Z' &&
+      meta.Software === 'mmdx 9.9.9' && meta.Version === '9.9.9' &&
+      meta.Theme === 'tech' && meta.Tone === 'paper' && meta.project === 'demo' &&
+      Object.keys(off).length === 0,
+    `${Object.keys(meta).join(',')} off=${Object.keys(off).length}`,
+  );
+}
+
+{
+  const base = makePng(12, 8, (x, y) => [x * 10, y * 20, 40, 255]);
+  const tagged = addPngMetadata(base, {
+    Title: '架构总览', Author: '张三', 'Creation Time': '2026-01-02T03:04:05Z',
+  });
+  const read = readPngMetadata(tagged);
+  const twice = addPngMetadata(tagged, { Title: '新标题' });
+  const readTwice = readPngMetadata(twice);
+  record(
+    'unit/meta-png',
+    read.Title === '架构总览' && read.Author === '张三' &&
+      read['Creation Time'] === '2026-01-02T03:04:05Z' &&
+      tagged.includes(Buffer.from('iTXt')) && tagged.includes(Buffer.from('tEXt')) &&
+      tagged.readUInt32BE(16) === 12 && tagged.readUInt32BE(20) === 8 &&
+      readTwice.Title === '新标题' && readTwice.Author === '张三',
+    `bytes=${base.length}->${tagged.length} meta=${Object.keys(read).join(',')}`,
+  );
+}
+
+{
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10"/></svg>';
+  const tagged = addSvgMetadata(svg, {
+    Title: 'A & B', Author: '张三', Copyright: '© 2026 Acme', 'Creation Time': '2026-01-02T03:04:05Z',
+    Software: 'mmdx 9.9.9', Version: '9.9.9', Theme: 'tech', Tone: 'paper', project: 'demo',
+  });
+  const twice = addSvgMetadata(tagged, { Title: '新标题' });
+  record(
+    'unit/meta-svg',
+    tagged.includes('<metadata data-mmdx-meta="1">') &&
+      tagged.includes('<dc:title>A &amp; B</dc:title>') &&
+      tagged.includes('<dc:creator>张三</dc:creator>') &&
+      tagged.includes('<dc:rights>© 2026 Acme</dc:rights>') &&
+      tagged.includes('<xmp:CreatorTool>mmdx 9.9.9</xmp:CreatorTool>') &&
+      tagged.includes('<mmdx:version>9.9.9</mmdx:version>') &&
+      tagged.includes('<mmdx:theme>tech</mmdx:theme>') &&
+      tagged.includes('<mmdx:meta mmdx:key="project">demo</mmdx:meta>') &&
+      twice.match(/<metadata\b/g)?.length === 1 && twice.includes('<dc:title>新标题</dc:title>'),
+    `bytes=${svg.length}->${tagged.length} blocks=${twice.match(/<metadata\b/g)?.length ?? 0}`,
+  );
+  record(
+    'unit/meta-html-title',
+    htmlTitle('<html><head><title>Q1 &amp; 复盘</title></head></html>') === 'Q1 & 复盘',
+    htmlTitle('<html><head><title>Q1 &amp; 复盘</title></head></html>') ?? 'null',
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -898,7 +1134,87 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
 
 {
   const help = runCli(['-h']);
-  record('cli/help-preset-index', help.code === 0 && help.stdout.includes('--preset') && help.stdout.includes('column') && help.stdout.includes('--index') && help.stdout.includes('--brand') && help.stdout.includes('--subtitle'), `exit=${help.code}`);
+  record('cli/help-preset-index', help.code === 0 && help.stdout.includes('--preset') && help.stdout.includes('column') && help.stdout.includes('--index') && help.stdout.includes('--brand') && help.stdout.includes('--subtitle') && help.stdout.includes('--png-colors') && help.stdout.includes('--png-quality') && help.stdout.includes('--meta') && help.stdout.includes('--no-meta'), `exit=${help.code}`);
+}
+
+{
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mmdx-png-'));
+  const flow = path.join('tests', 'diagrams', 'flowchart.md');
+  const off = runCli([flow, '--index', '1', '-f', 'png', '--png-colors', 'off', '--quiet', '--json', '-o', path.join(outDir, 'off')]);
+  const fast = runCli([flow, '--index', '1', '-f', 'png', '--png-colors', 'auto', '--png-quality', 'fast', '--quiet', '--json', '-o', path.join(outDir, 'fast')]);
+  const best = runCli([flow, '--index', '1', '-f', 'png', '--png-colors', 'auto', '--png-quality', 'best', '--quiet', '--json', '-o', path.join(outDir, 'best')]);
+  const oj = JSON.parse(off.stdout || '{}') as { files?: string[] };
+  const fj = JSON.parse(fast.stdout || '{}') as { files?: string[] };
+  const bj = JSON.parse(best.stdout || '{}') as { files?: string[] };
+  const offFile = oj.files?.[0];
+  const fastFile = fj.files?.[0];
+  const bestFile = bj.files?.[0];
+  const offPng = offFile ? fs.readFileSync(offFile) : null;
+  const fastPng = fastFile ? fs.readFileSync(fastFile) : null;
+  const bestPng = bestFile ? fs.readFileSync(bestFile) : null;
+  record(
+    'cli/png-colors',
+    off.code === 0 && fast.code === 0 && best.code === 0 &&
+      (offPng?.[25] === 2 || offPng?.[25] === 6) && fastPng?.[25] === 3 && bestPng?.[25] === 3 &&
+      !!offPng && !!fastPng && !!bestPng && fastPng.length < offPng.length &&
+      bestPng.length >= fastPng.length,
+    `exit=${off.code}/${fast.code}/${best.code} ct=${offPng?.[25]}/${fastPng?.[25]}/${bestPng?.[25]} bytes=${offPng?.length}/${fastPng?.length}/${bestPng?.length}`,
+  );
+  const bad = runCli([flow, '--png-colors', 'nope']);
+  record(
+    'cli/png-colors-bad',
+    bad.code === 2 && /--png-colors must be auto, off, or an integer 2\.\.256/.test(bad.stderr),
+    `exit=${bad.code} stderr=${bad.stderr.trim().slice(0, 80)}`,
+  );
+  const badQuality = runCli([flow, '--png-quality', 'quick']);
+  record(
+    'cli/png-quality-bad',
+    badQuality.code === 2 && /--png-quality must be fast, balanced, or best/.test(badQuality.stderr),
+    `exit=${badQuality.code} stderr=${badQuality.stderr.trim().slice(0, 80)}`,
+  );
+  fs.rmSync(outDir, { recursive: true, force: true });
+}
+
+{
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mmdx-meta-'));
+  const flow = path.join('tests', 'diagrams', 'flowchart.md');
+  const tagged = runCli([
+    flow, '--index', '1', '-f', 'both', '--title', '架构总览', '--author', '张三',
+    '--copyright', '© 2026 Acme', '--meta', 'created=2026-01-02T03:04:05Z',
+    '--meta', 'project=demo', '--quiet', '--json', '-o', path.join(outDir, 'tagged'),
+  ]);
+  const plain = runCli([
+    flow, '--index', '1', '-f', 'both', '--no-meta', '--quiet', '--json', '-o', path.join(outDir, 'plain'),
+  ]);
+  const tj = JSON.parse(tagged.stdout || '{}') as { files?: string[] };
+  const pj = JSON.parse(plain.stdout || '{}') as { files?: string[] };
+  const tPng = tj.files?.find((f) => f.endsWith('.png'));
+  const tSvg = tj.files?.find((f) => f.endsWith('.svg'));
+  const pPng = pj.files?.find((f) => f.endsWith('.png'));
+  const pSvg = pj.files?.find((f) => f.endsWith('.svg'));
+  const meta = tPng ? readPngMetadata(fs.readFileSync(tPng)) : {};
+  const svg = tSvg ? fs.readFileSync(tSvg, 'utf8') : '';
+  const plainMeta = pPng ? readPngMetadata(fs.readFileSync(pPng)) : {};
+  const plainSvg = pSvg ? fs.readFileSync(pSvg, 'utf8') : '';
+  record(
+    'cli/meta-image',
+    tagged.code === 0 && plain.code === 0 &&
+      meta.Title === '架构总览' && meta.Author === '张三' && meta.Copyright === '© 2026 Acme' &&
+      meta['Creation Time'] === '2026-01-02T03:04:05Z' &&
+      /^mmdx \d+\.\d+\.\d+/.test(meta.Software ?? '') && meta.Theme === 'tech' &&
+      meta.Source === flow && meta.project === 'demo' &&
+      svg.includes('<dc:title>架构总览</dc:title>') && svg.includes('<dc:creator>张三</dc:creator>') &&
+      svg.includes('<mmdx:meta mmdx:key="project">demo</mmdx:meta>') &&
+      Object.keys(plainMeta).length === 0 && !plainSvg.includes('<metadata'),
+    `tagged=${Object.keys(meta).length} plain=${Object.keys(plainMeta).length} svg=${svg.includes('<metadata')}`,
+  );
+  const bad = runCli([flow, '--meta', 'nokey']);
+  record(
+    'cli/meta-bad',
+    bad.code === 2 && /--meta expects key=value/.test(bad.stderr),
+    `exit=${bad.code} stderr=${bad.stderr.trim().slice(0, 80)}`,
+  );
+  fs.rmSync(outDir, { recursive: true, force: true });
 }
 
 {
@@ -1011,8 +1327,9 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mmdx-card-'));
   const card = path.join('tests', 'edge', 'card-info.md');
   const r = runCli([
-    'card', '--in', card, '-t', 'excalidraw', '--tone', 'neutral',
-    '--width', '600', '-o', path.join(outDir, 'card.png'), '--json',
+    'card', '--in', card, '-t', 'excalidraw', '--tone', 'neutral', '--png-quality', 'best',
+    '--width', '600', '--author', '王五', '--copyright', '© 2026 Acme',
+    '--meta', 'created=2026-01-02T03:04:05Z', '-o', path.join(outDir, 'card.png'), '--json',
   ]);
   const j = JSON.parse(r.stdout || '{}') as {
     command?: string; cards?: number; files?: string[]; tone?: string;
@@ -1020,10 +1337,17 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
   };
   const w = j.files?.[0] ? PNG.sync.read(fs.readFileSync(j.files[0])).width : 0;
   const h = j.files?.[0] ? PNG.sync.read(fs.readFileSync(j.files[0])).height : 0;
+  const cardType = j.files?.[0] ? fs.readFileSync(j.files[0])[25] : -1;
   record('cli/card-render',
     r.code === 0 && j.command === 'card' && j.tone === 'neutral' &&
-    j.cards === 1 && w === 1200 && h > 400 && h <= 2400,
-    `exit=${r.code} cards=${j.cards} w=${w} h=${h}`);
+    j.cards === 1 && w === 1200 && h > 400 && h <= 2400 && cardType === 3,
+    `exit=${r.code} cards=${j.cards} w=${w} h=${h} ct=${cardType}`);
+  const cardMeta = j.files?.[0] ? readPngMetadata(fs.readFileSync(j.files[0])) : {};
+  record('cli/card-meta',
+    cardMeta.Title === '发布复盘' && cardMeta.Author === '王五' &&
+    cardMeta.Copyright === '© 2026 Acme' && cardMeta.Theme === 'excalidraw' &&
+    cardMeta.Tone === 'neutral' && cardMeta['Creation Time'] === '2026-01-02T03:04:05Z',
+    `title=${cardMeta.Title} author=${cardMeta.Author} theme=${cardMeta.Theme}`);
 
   const paper = runCli([
     'card', '--in', card, '--tone', 'paper', '-o', path.join(outDir, 'paper.png'), '--json',

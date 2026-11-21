@@ -14,14 +14,14 @@
 | Reader | Doc | What's inside |
 |---|---|---|
 | 🤖 AI Agent | [docs/AGENT_GUIDE.en.md](docs/AGENT_GUIDE.en.md) | Token-lean: env self-check, diagram picking, flag cheatsheet, JSON contract, error triage |
-| 👤 Human user | [docs/HUMAN_GUIDE.en.md](docs/HUMAN_GUIDE.en.md) | Readable: install & deploy, full CLI reference, theming, performance tuning, troubleshooting |
+| 👤 Human user | [docs/HUMAN_GUIDE.en.md](docs/HUMAN_GUIDE.en.md) | Readable: install & deploy, full CLI reference, image metadata, theming, performance tuning, troubleshooting |
 | 🖼 Extension blocks | [docs/EXTENSIONS.en.md](docs/EXTENSIONS.en.md) | One tool-rendered PNG + syntax per fence |
 | 🎭 Style gallery | [docs/GALLERY.en.md](docs/GALLERY.en.md) | One case across eight themes: flowchart / KPI / cards / table |
 | 🧪 Quality gates | [docs/QUALITY.en.md](docs/QUALITY.en.md) | Pixel-lint coverage, known blind spots, pre-release license checklist |
 | 🖋 Hand-drawn editorial specs | [skill/editorial/](skill/editorial/README.md) | Vendored diagram-design specs (MIT): hand-draw covers / proposal art per its specs and export with `mmdx file.html --scale 3` |
 | 📃 Narrative explainer specs | [skill/explain/](skill/explain/README.md) | Vendored spec-only adaptation of visual-explainer (MIT): explainers / review pages / recaps / slide decks assembled from a starter, exported with the same command |
 | 📚 Skill reference cards | [skill/references/](skill/references/) | Fence syntax, diagram examples, themes & Pele config, troubleshooting — read on demand |
-| 📜 Changelog | [CHANGELOG.md](CHANGELOG.md) | Release history |
+| 📜 Changelog | [CHANGELOG.en.md](CHANGELOG.en.md) | Release history |
 
 Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 
@@ -32,6 +32,8 @@ Every doc is Chinese-first with an English `.en.md` sibling of the same name.
 - **Every font ships with the package**: GB2312 subsets of Noto Sans SC (general), Noto Serif SC (serif stacks) and LXGW WenKai (kai annotations), plus the per-theme display faces — Excalifont (hand-drawn), ZCOOL KuaiLe + Baloo 2 (rounded), Newsreader (e-paper serif) and JetBrains Mono (monospace) — about 7.3MB in total. Theme stacks name bundled families only, so installed system fonts cannot change a render; `lint/theme-fonts` keeps it that way and `scripts/subset-font.py` records the subsetting contract and sources
 - **Pixel-level even padding**: every image is re-cropped to its ink bounding box; symmetric margins are a construction guarantee, not the engine's unreliable viewBox
 - **Extension blocks**: ```table / ```list / ```card / ```chart / ```kpi / ```compare / ```vs / ```funnel / ```task / ```progress / ```gauge / ```heatmap / ```swimlane straight to PNG
+- **Palette PNG output**: `--png-colors auto` (default) quantizes to an indexed PNG under measured per-theme gates; `--png-quality fast|balanced|best` chooses the effort. Typical output is ~41% of RGBA with p99 edge ΔE ≤0.035; `off` keeps RGBA and `2..256` fixes the palette
+- **Image metadata**: every PNG / SVG carries creation time, title, theme, `mmdx <version>`, source and the project copyright; add `--author`, `--copyright`, repeatable `--meta key=value`, or disable with `--no-meta`. PNG gets `tEXt` / `iTXt` after quantization, SVG gets RDF/Dublin Core after svgo; info cards and editor exports share the path
 - **Office delivery**: `--preset slide|a4|square|column`, title/source/unit chrome, `--brand` accent; agent-friendly `--json` (including `warnings`)
 - **Whole-page HTML shots**: `mmdx page.html` screenshots the page as-is to PNG (fullPage, PNG only) — system Edge, no Playwright, the page keeps its own styles/scripts/background; pairs with the vendored [diagram-design](skill/editorial/README.md) specs for hand-drawn editorial images
 - **Figure lint**: exporting a `.html` input inspects every figure — overflow (`figure-overflow`), text on shape/text (`figure-text-overlap`), adhesion (`figure-text-adhesion`), effective font size <11px (`figure-small-text`), missing caption (`figure-uncaptioned`), missing `aria-label` (`svg-aria-label`); messages carry coordinates and land in `--json.warnings`
@@ -74,7 +76,7 @@ mmdx edit docs/arch.md --index 2 -t openai
 ```
 
 Use this when the user asks to "adjust this diagram by hand", "interactive render/export", or "let me refine the AI draft".
-`edit` renders the draft through the normal Pele + theme pipeline, then opens a local browser canvas for marquee / multi-select, dragging, 8-handle resizing, in-place text editing, per-node fill / stroke / text colours on single selection (overrides persist with the working SVG, and "follow theme" restores the template palette), per-edge routing (auto / orthogonal / straight / curve), colour, width, line style (solid / dashed / dotted) and arrowhead (filled / open / none) on one or several selected edges, selecting an edge and dragging either endpoint (anywhere along a node side, or onto another node to reconnect), L/Z edge rerouting (endpoints on parallel sides within 14 px snap onto one coordinate to remove tiny jogs), live switching among the eight built-in themes (node positions, text, colours, edge styles, anchors and deleted edges survive the switch), background / grid / transparent canvas, undo/redo and SVG / PNG export. The project lives in `.mmdx/<slug>/` beside the source (`draft.svg`, `working.svg`, scene JSON). "Restore draft" discards human edits without touching Markdown. Phase 0 covers flowchart / state; editor assets and the HTTP server are loaded only by the `edit` subcommand and stay out of the normal batch-render path.
+`edit` renders the draft through the normal Pele + theme pipeline, then opens a local browser canvas for marquee / multi-select, dragging, 8-handle resizing, in-place text editing, per-node fill / stroke / text colours on single selection (overrides persist with the working SVG, and "follow theme" restores the template palette), per-edge routing (auto / orthogonal / straight / curve), colour, width, line style (solid / dashed / dotted) and arrowhead (filled / open / none) on one or several selected edges, selecting an edge and dragging either endpoint (anywhere along a node side, or onto another node to reconnect), L/Z edge rerouting (endpoints on parallel sides within 14 px snap onto one coordinate to remove tiny jogs), live switching among the eight built-in themes (node positions, text, colours, edge styles, anchors and deleted edges survive the switch), background / grid / transparent canvas, undo/redo and SVG / PNG export (the PNG button has a balanced / best / fast quality dropdown, and both exports carry image metadata). The project lives in `.mmdx/<slug>/` beside the source (`draft.svg`, `working.svg`, scene JSON). "Restore draft" discards human edits without touching Markdown. Phase 0 covers flowchart / state; editor assets and the HTTP server are loaded only by the `edit` subcommand and stay out of the normal batch-render path.
 
 ## 🖼 Usage
 
@@ -82,9 +84,24 @@ Use this when the user asks to "adjust this diagram by hand", "interactive rende
 mmdx a.md b.md other/*.md -o dist/          # multi-file batch, parallel
 mmdx diagram.mmd -o out/arch.svg            # exact name; sibling .png written alongside
 mmdx page.html -o out/page.png --scale 2    # whole-page HTML screenshot (Playwright-free)
+mmdx diagram.mmd -f png --png-colors off    # keep RGBA (default auto quantizes per theme, ~1/3 size)
+mmdx doc.md -f png --png-quality best       # quality first (slower, slightly larger)
 mmdx report.md --index 2 --title "Architecture" --title-pos bottom
 mmdx doc.md -t tech --background transparent -f png --json
+mmdx doc.md --title "Architecture" --author "Zhang San" --copyright "© 2026 Acme"
 ```
+
+### Image metadata (PNG / SVG)
+
+PNG and SVG output carries image metadata by default: creation time, title, author (only when supplied), theme / tone, `mmdx <version>`, source and project copyright. PNG uses `tEXt` / `iTXt`; SVG uses an RDF/Dublin Core `<metadata>` block. Both are added after quantization / svgo, so compression cannot drop them.
+
+```bash
+mmdx doc.md --author "Zhang San" --copyright "© 2026 Acme" --meta project=payments
+mmdx doc.md --meta created=2026-01-02T03:04:05Z --meta author=
+mmdx doc.md --no-meta
+```
+
+`--meta key=value` is repeatable and `--no-meta` disables the set; `mmdx card` and `mmdx edit` exports share the same fields. See the [HUMAN_GUIDE image metadata section](docs/HUMAN_GUIDE.en.md#image-metadata) for the full field table and reading commands.
 
 Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` / `kpi` / `compare` / `vs` / `funnel` / `task` / `progress` / `gauge` / `heatmap` / `swimlane` (extension blocks, PNG only). For slides: `mmdx doc.md --preset slide --title "…" --source "…"`. For chat / a narrow column: `--preset column`. Standalone `.html` files are screenshotted whole (own styles and background kept, bundled CJK font fills the fallback chain) — see [HUMAN_GUIDE](docs/HUMAN_GUIDE.en.md#whole-page-html-screenshots).
 
@@ -92,7 +109,7 @@ Fence languages: `mermaid` (diagrams) plus `table` / `list` / `card` / `chart` /
 
 ```card
 🚀 | Render pipeline | single-browser page pool, lossless 2x PNG export
-🎨 | Theme system | nine presets, customizable via theme-js, tone and css
+🎨 | Theme system | eight presets, customizable via theme-js, tone and css
 ```
 
 ![Card rendering sample](docs/ext-card.png)
@@ -158,7 +175,8 @@ page-init       ~1.0s ×page   screenshot      ~90ms ×diagram (incl. pixel-leve
 - One engine asset only: the Pele bundle (~700 KB) is injected on demand; the binary no longer embeds the Mermaid (~3.5 MB) and ELK (~5 MB) bundles
 - Screenshots serialized across pages (headless Chrome serves one active tab) + viewport fitted to content; a 2x hi-res diagram still lands around ~100 ms
 - A hung render always errors after 60s instead of stalling the batch; each diagram is retried once
-- PNG is lossless 2x (typical architecture diagram 20–80 KB); SVG is minified by svgo — the official browser build is embedded in the binary (self-contained ESM), so minified SVG is as turnkey as PNG
+- PNG is lossless 2x and palette-quantized by default under measured per-theme gates (`balanced` ≈41% of RGBA, p99 edge ΔE ≤0.035); `--png-quality fast|best` trades speed for quality, `--png-colors off` keeps RGBA and `--png-colors 64` shrinks further. SVG is minified by svgo — the official browser build is embedded in the binary (self-contained ESM), so minified SVG is as turnkey as PNG. Both formats carry image metadata by default
+- The editor's PNG quality dropdown maps to the same three tiers; its SVG and PNG exports carry the same metadata fields as the CLI
 
 Tuning knobs (concurrency, viewport, scale) in the [HUMAN_GUIDE performance section](docs/HUMAN_GUIDE.en.md#performance-tuning).
 

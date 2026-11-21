@@ -13,7 +13,8 @@ import http from 'node:http';
 import path from 'node:path';
 import { parse } from 'pele';
 import { allFamilies, faceCss, BASE_FAMILY, MONO_FAMILY } from '../fonts.ts';
-import { extractBlocks } from '../input.ts';
+import { extractBlocks, frontTitle } from '../input.ts';
+import { addPngMetadata, addSvgMetadata, buildImageMeta, isoNow, parseMetaOptions } from '../meta.ts';
 import { Renderer } from '../render.ts';
 import { loadAssets } from '../embed.ts';
 import { loadEditorFiles } from './embed.ts';
@@ -22,6 +23,7 @@ import {
   PRESETS, SIZE_PRESETS, type SizePreset, type ThemeSpec,
 } from '../themes.ts';
 import { isToneName, type ToneName } from '../tone.ts';
+import { parsePngColorMode, parsePngQuality, type PngColorMode, type PngQuality } from '../png-quant.ts';
 
 interface EditOptions {
   input: string;
@@ -34,6 +36,12 @@ interface EditOptions {
   background: string | null;
   width: number | null;
   scale: number;
+  pngColors: PngColorMode;
+  pngQuality: PngQuality;
+  meta: string[];
+  author: string | null;
+  copyright: string | null;
+  noMeta: boolean;
   port: number;
   project: string | null;
   noOpen: boolean;
@@ -104,6 +112,13 @@ Options:
   --background <color> page background, e.g. white | transparent | #1A1A1A
   --width <px>         layout width used for the initial render (default: 1200)
   --scale <n>          PNG export scale (default: 2)
+  --png-colors <mode>  auto (default) | off | 2..256 — indexed PNG export
+  --png-quality <tier> fast | balanced (default) | best — quantization effort
+  --meta <key=value>   image metadata; repeatable (title, author, copyright,
+                       created, software, theme, tone, source, or custom)
+  --author <text>      metadata author (same as --meta author=...)
+  --copyright <text>   metadata copyright (default: mmdx project)
+  --no-meta            omit image metadata from SVG/PNG exports
   --config <file.json> Pele fontSize / padding / flowchart spacing
   --project <dir>      project directory (default: <source>/.mmdx/<slug>)
   --port <n>           fixed local port (default: random free port)
@@ -128,7 +143,9 @@ function need(argv: string[], i: number, name: string): string {
 function parseEditArgs(argv: string[]): EditOptions | null {
   const o: EditOptions = {
     input: '', index: null, theme: 'tech', themeExplicit: false, tone: null, styleFill: null, preset: null,
-    background: null, width: null, scale: 2, port: 0, project: null, noOpen: false,
+    background: null, width: null, scale: 2, pngColors: 'auto', pngQuality: 'balanced',
+    meta: [], author: null, copyright: null, noMeta: false,
+    port: 0, project: null, noOpen: false,
     browser: null, fresh: false, config: null,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -167,6 +184,12 @@ function parseEditArgs(argv: string[]): EditOptions | null {
         break;
       }
       case '--background': o.background = need(argv, ++i, a); break;
+      case '--png-colors': o.pngColors = parsePngColorMode(need(argv, ++i, a)); break;
+      case '--png-quality': o.pngQuality = parsePngQuality(need(argv, ++i, a)); break;
+      case '--meta': o.meta.push(need(argv, ++i, a)); break;
+      case '--author': o.author = need(argv, ++i, a); break;
+      case '--copyright': o.copyright = need(argv, ++i, a); break;
+      case '--no-meta': o.noMeta = true; break;
       case '--width': {
         const v = Number.parseInt(need(argv, ++i, a), 10);
         if (!Number.isFinite(v) || v < 240) throw new Error(`--width must be a number >= 240, got "${v}"`);
@@ -361,6 +384,13 @@ export async function runEditCommand(argv: string[], version: string): Promise<n
     return 2;
   }
   if (!o) return 0;
+  let metaExtra: Record<string, string> = {};
+  try {
+    metaExtra = parseMetaOptions(o.meta);
+  } catch (e) {
+    console.error(`mmdx edit: ${(e as Error).message}`);
+    return 2;
+  }
 
   if (!PRESETS[o.theme]) {
     console.error(`mmdx edit: unknown theme "${o.theme}" (available: ${Object.keys(PRESETS).join(', ')})`);
@@ -456,6 +486,19 @@ export async function runEditCommand(argv: string[], version: string): Promise<n
   if (o.styleFill && theme.name !== 'excalidraw') {
     console.error(`mmdx edit: --style-fill only applies to excalidraw; ignored for "${theme.name}"`);
   }
+  const imageTitle = frontTitle(block.code) || `${block.base}${o.index ? `-m${block.index}` : ''}`;
+  const imageMeta = (): Record<string, string> => buildImageMeta({
+    version,
+    title: imageTitle,
+    author: o.author,
+    copyright: o.copyright,
+    theme: activeThemeName,
+    tone: o.tone,
+    source: o.input,
+    extra: metaExtra,
+    enabled: !o.noMeta,
+    created: isoNow(),
+  });
 
   const size = o.preset ? SIZE_PRESETS[o.preset] : null;
   const width = o.width ?? size?.width ?? 1200;
@@ -518,6 +561,8 @@ export async function runEditCommand(argv: string[], version: string): Promise<n
       // One editor renderer serves every theme, so a template switch does not
       // wait for a second Chromium page pool. All faces are bundled locally.
       fonts: allFamilies(),
+      pngColors: o.pngColors,
+      pngQuality: o.pngQuality,
     });
     return renderer;
   };
@@ -688,6 +733,7 @@ export async function runEditCommand(argv: string[], version: string): Promise<n
           themes: Object.keys(PRESETS).map((name) => themePayload(themeSpecFor(name), name)),
           fonts: fontFamiliesFor(activeThemeName),
           render: renderCfg,
+          pngQuality: o.pngQuality,
           canvas,
           svg: initialSvg,
           edges: model.edges,
@@ -837,23 +883,52 @@ export async function runEditCommand(argv: string[], version: string): Promise<n
       if (req.method === 'POST' && url.pathname === '/api/export/png') {
         if (!originOk(req)) { sendJson(res, 403, { error: 'bad origin' }); return; }
         const body = JSON.parse(await readBody(req)) as {
-          svg?: string; scale?: number; transparent?: boolean;
+          svg?: string; scale?: number; transparent?: boolean; quality?: string;
         };
         if (typeof body.svg !== 'string' || !body.svg.includes('<svg')) {
           sendJson(res, 400, { error: 'missing svg' });
           return;
         }
+        let quality: PngQuality | undefined;
+        if (body.quality !== undefined) {
+          try {
+            quality = parsePngQuality(String(body.quality));
+          } catch (e) {
+            sendJson(res, 400, { error: (e as Error).message });
+            return;
+          }
+        }
         const r = await startRenderer();
-        const png = await r.screenshotSvg(body.svg, {
+        const png = addPngMetadata(await r.screenshotSvg(body.svg, {
           scale: typeof body.scale === 'number' ? body.scale : scale,
           transparent: !!body.transparent,
-        });
+          theme: theme.name,
+          quality,
+        }), imageMeta());
         res.writeHead(200, {
           'Content-Type': 'image/png',
           'Cache-Control': 'no-store',
           'Content-Length': png.length,
+          'X-Mmdx-Png-Quality': quality ?? o.pngQuality,
         });
         res.end(png);
+        return;
+      }
+
+      if (req.method === 'POST' && url.pathname === '/api/export/svg') {
+        if (!originOk(req)) { sendJson(res, 403, { error: 'bad origin' }); return; }
+        const body = JSON.parse(await readBody(req)) as { svg?: string };
+        if (typeof body.svg !== 'string' || !body.svg.includes('<svg')) {
+          sendJson(res, 400, { error: 'missing svg' });
+          return;
+        }
+        const svg = addSvgMetadata(body.svg, imageMeta());
+        res.writeHead(200, {
+          'Content-Type': 'image/svg+xml; charset=utf-8',
+          'Cache-Control': 'no-store',
+          'Content-Length': Buffer.byteLength(svg),
+        });
+        res.end(svg);
         return;
       }
 

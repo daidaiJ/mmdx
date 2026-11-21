@@ -1,6 +1,6 @@
 ---
 name: mermaid
-description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 流程 flowchart, KPI/表格/卡片, 审批与泳道, 半环进度 gauge, 日历热力 heatmap, HTML 文件截图导出. Use when the user wants 图/图表/流程图/构成图/对比卡/周报贴图/投屏/PPT/上会/渲染/导出图片/HTML 截图/把网页导出成图片. Also use `mmdx edit` when the user wants 手动修图 / 手动微调 / 在浏览器里改图 / 交互式出图 / 交互式渲染 / 可视化编辑 / AI 出初稿后人来改：移动缩放、改文字与配色、改连线样式与走线算法、拖锚点重连、切主题、导出 SVG/PNG、还原初稿. NOT for AI image generation (文生图/照片级插画) and NOT for analysis-grade stats (grouped bar, dual axis → AntV).
+description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 流程 flowchart, KPI/表格/卡片, 审批与泳道, 半环进度 gauge, 日历热力 heatmap, HTML 文件截图导出. Use when the user wants 图/图表/流程图/构成图/对比卡/周报贴图/投屏/PPT/上会/渲染/导出图片/HTML 截图/把网页导出成图片. Also use `mmdx edit` when the user wants 手动修图 / 手动微调 / 在浏览器里改图 / 交互式出图 / 交互式渲染 / 可视化编辑 / AI 出初稿后人来改：移动缩放、改文字与配色、改连线样式与走线算法、拖锚点重连、切主题、导出 SVG/PNG、还原初稿. Use `--author` / `--copyright` / `--meta` when the user wants 图片元信息 / 作者 / 版权 / 来源 / 自定义字段. NOT for AI image generation (文生图/照片级插画) and NOT for analysis-grade stats (grouped bar, dual axis → AntV).
 ---
 
 # mmdx — 办公出图（结构图 + 轻量数据图 + 版式块 → PNG）
@@ -28,7 +28,7 @@ CLI 获取（按优先级）：
 - [`editorial/`](editorial/README.md) — vendored diagram-design 手绘规格（偶发封面 / 方案插图动笔前）
 - [`info-card-designer/`](info-card-designer/SKILL.md) — URL / 文本 → 杂志感信息卡（`mmdx card`，见 §5b）
 
-**适用边界**：流程/审批/排期、轻量占比/趋势/对比、KPI/表格/卡片/任务快照、**场景引导（状态图讲一次故障 / 审批的处境变化）** → 用本 skill。**用户要手动改图 / 交互式微调 / 在浏览器里改位置、文字、连线与配色** → `mmdx edit`（§0b）。**多图叙事解释页 / diff·plan 评审 / recap / 幻灯片页** → [explain/](explain/README.md)。**已有 HTML 文件要导出图片**（如 diagram-design 产物）→ `mmdx page.html`（见 §1c-4）。反例：文生图；分组柱/双轴/散点 → [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
+**适用边界**：流程/审批/排期、轻量占比/趋势/对比、KPI/表格/卡片/任务快照、**场景引导（状态图讲一次故障 / 审批的处境变化）** → 用本 skill。**用户要手动改图 / 交互式微调 / 在浏览器里改位置、文字、连线与配色** → `mmdx edit`（§0b）。**需要写图片元信息（作者、版权、标题、时间、主题、自定义字段）** → `--author` / `--copyright` / `--meta`（§1c）。**多图叙事解释页 / diff·plan 评审 / recap / 幻灯片页** → [explain/](explain/README.md)。**已有 HTML 文件要导出图片**（如 diagram-design 产物）→ `mmdx page.html`（见 §1c-4）。反例：文生图；分组柱/双轴/散点 → [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
 
 ## 0. 环境自检（会话内首次使用先跑，30 秒）
 
@@ -55,7 +55,7 @@ mmdx edit diagram.mmd --project .mmdx/arch        # 单图 / 指定工程目录
 - 命令只在 `127.0.0.1` 起服务并打开浏览器；URL 带随机 token，不要转发
 - 工程默认写在源文件旁的 `.mmdx/<slug>/`（`draft.svg` / `working.svg` / 场景 JSON），自动保存；「还原初稿」只丢弃人工修改，不改 Markdown
 - Phase 0 支持 **flowchart / state**；不支持新增节点 / 新建连线，class / ER / sequence 未覆盖。只想要静态出图时仍走普通渲染命令，不要为「可编辑」另造 HTML
-- 人工改完从画布导出 SVG / PNG；后续再改直接重开同一工程恢复 `working.svg`
+- 人工改完从画布导出 SVG / PNG；PNG 按钮旁可选「自动均衡 / 质量 / 快速」档位（默认跟随启动参数），导出图自带元信息（时间、标题、主题、版本、作者与版权）。后续再改直接重开同一工程恢复 `working.svg`
 
 ## 1. Agent Loop（选型 → 先砍再画 → 渲染 → 自检）
 
@@ -152,6 +152,10 @@ echo "graph TD; A-->B" | mmdx - -f png --preset column
 ```
 
 只有 Pele 一个引擎，没有 `--engine` / `--layout` 开关；Pele 解析不了的写法直接 `Parsing error`（exit 1），改成等价图型。`-f svg` 默认把颜色烘焙成 hex；要可换肤 SVG 加 `--svg-themeable`。
+
+PNG 默认 `balanced` 调色板量化（约 41% 体积，p99 边缘 ΔE ≤0.035）；批量预览用 `--png-quality fast`，交付高保真用 `best`。不要传 `--png-colors off`，除非下游明确要 RGBA；要再压可 `--png-colors 64`。
+
+PNG / SVG 默认写图片元信息（时间、标题、主题、`mmdx <version>`、项目版权、来源）。交付时加 `--author "…"`；要盖项目自己的版权加 `--copyright "© 2026 …"`。任意字段用可重复的 `--meta key=value`；`--meta created=...` 固定时间戳，`--meta author=` 清除作者，`--no-meta` 全部关闭。`mmdx card` 与 `mmdx edit` 同样支持。
 
 覆盖关系：显式 `--width` / `--scale` / `-f` 覆盖 preset 默认值。叠加顺序：主题 → `--brand` → `--theme-js` → `--config` → `--css`。
 

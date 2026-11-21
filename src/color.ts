@@ -144,7 +144,8 @@ export function simulateCvd(color: string, kind: CvdKind): Rgb {
   ) as Rgb;
 }
 
-function oklab(c: Rgb): Rgb {
+/** OKLab coordinates for an sRGB triple (0–255). */
+export function oklab(c: Rgb): Rgb {
   return oklabFromLinear(toLinear(c[0]), toLinear(c[1]), toLinear(c[2]));
 }
 

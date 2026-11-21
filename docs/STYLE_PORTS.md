@@ -337,7 +337,7 @@ export interface ThemeBackdrop {
 - `mmdx card`（`src/card.ts`）：Markdown 或 URL → 信息卡 PNG，默认 `openai`，`--tone`、480/600/900+ 宽度、按实际像素高度拆页。
 - `scripts/make-style-review.ts` 生成 `review/styles/` 三套主题的 4 类图 + card/kpi/table，Excalidraw 另加 hachure 版。
 - `scripts/make-gallery.ts` 与 [docs/GALLERY.md](GALLERY.md)：同一「灰度发布复盘」案例在八套主题下的五个分场景对照（流程图 / 饼图 / KPI / 卡片 / 表格），另出 `--tone paper` 的块页报告（`tone-paper-report.png`）。案例流程图用满四个形状族，饼图用满系列色。
-- `tests/run.ts` 覆盖样式契约、rough 形状、`--style-fill`、八套主题的渲染筛查（流程图 / 状态图 / 类图 / ER + 块页）、双跑确定性与无障碍门槛（文本分档、形状描边、形状色觉、形态冗余、连线对比度、系列色觉、系列对底对比度、节点轮转、主题字体）；当前 **201/201 通过**。
+- `tests/run.ts` 覆盖样式契约、rough 形状、`--style-fill`、八套主题的渲染筛查（流程图 / 状态图 / 类图 / ER + 块页）、双跑确定性与无障碍门槛（文本分档、形状描边、形状色觉、形态冗余、连线对比度、系列色觉、系列对底对比度、节点轮转、主题字体）；当前 **225/225 通过**。
 - `scripts/lint-a11y.ts`：逐主题打印正文/次要文字/形状描边对比度、色觉模拟距离、连线对比度与系列色报告，作为色板改动的前置检查。
 
 待做：

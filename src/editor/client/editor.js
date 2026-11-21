@@ -66,6 +66,7 @@ const els = {
   restore: $('#restore'),
   exportSvg: $('#export-svg'),
   exportPng: $('#export-png'),
+  pngQuality: $('#png-quality'),
   fit: $('#fit'),
   zoomIn: $('#zoom-in'),
   zoomOut: $('#zoom-out'),
@@ -1928,7 +1929,13 @@ async function exportSvg() {
   try {
     const transparent = state.canvas.background === 'transparent';
     const svg = exportSvgString(transparent);
-    downloadBlob(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), `${state.boot.project.slug}.svg`);
+    const res = await fetch('/api/export/svg', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ svg }),
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? `HTTP ${res.status}`);
+    downloadBlob(await res.blob(), `${state.boot.project.slug}.svg`);
     toast('SVG 已导出');
   } catch (e) {
     toast(`SVG 导出失败：${e.message}`, 4200);
@@ -1948,7 +1955,12 @@ async function exportPng() {
     const res = await fetch('/api/export/png', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ svg, scale: state.boot.render.scale ?? 2, transparent }),
+      body: JSON.stringify({
+        svg,
+        scale: state.boot.render.scale ?? 2,
+        transparent,
+        quality: els.pngQuality?.value ?? 'balanced',
+      }),
     });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? `HTTP ${res.status}`);
     downloadBlob(await res.blob(), `${state.boot.project.slug}.png`);
@@ -2161,6 +2173,9 @@ async function boot() {
     if (!res.ok) throw new Error(await res.text());
     state.boot = await res.json();
     state.canvas = { ...state.boot.canvas };
+    if (els.pngQuality && ['fast', 'balanced', 'best'].includes(state.boot.pngQuality)) {
+      els.pngQuality.value = state.boot.pngQuality;
+    }
     populateThemes(state.boot.themes);
     applyTheme(state.boot.theme);
     docMeta();

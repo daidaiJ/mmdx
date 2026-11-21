@@ -98,7 +98,7 @@ mmdx edit docs/arch.md --index 2 -t openai   # Markdown 里的第 2 个图块
 mmdx edit diagram.mmd --project .mmdx/arch   # 单图 / 指定工程目录
 ```
 
-浏览器打开后可以框选 / 多选、移动、8 手柄缩放、双击改字、改节点填充 / 描边 / 文字色；选中连线可改颜色、粗细、线型、箭头，并切换走线算法（自动 / 折线 / 直线 / 曲线）、拖两端锚点或拖到另一个节点重连；侧栏可即时切换八套主题，画布背景 / 网格 / 透明底 / 主题底纹也可调。支持撤销重做、SVG 下载、2× PNG 导出。
+浏览器打开后可以框选 / 多选、移动、8 手柄缩放、双击改字、改节点填充 / 描边 / 文字色；选中连线可改颜色、粗细、线型、箭头，并切换走线算法（自动 / 折线 / 直线 / 曲线）、拖两端锚点或拖到另一个节点重连；侧栏可即时切换八套主题，画布背景 / 网格 / 透明底 / 主题底纹也可调。支持撤销重做、SVG 下载、2× PNG 导出；PNG 按钮旁的质量下拉提供「自动均衡 / 质量 / 快速」三档，默认跟随启动时的 `--png-quality`，每次导出单独生效。导出的 SVG / PNG 自带图片元信息（时间、标题、主题、版本、作者与版权），启动 `mmdx edit` 时可用 `--author` / `--copyright` / `--meta` 定制。
 
 工程写在源文件旁的 `.mmdx/<slug>/`（`draft.svg` / `working.svg` / 场景 JSON），自动保存；重开恢复工作稿，「还原初稿」丢弃人工修改但不改 Markdown。服务只监听 `127.0.0.1`，URL 带随机 token。Phase 0 支持 flowchart / state；新增节点、新建连线与 class / ER / sequence 暂未覆盖。
 
@@ -115,12 +115,18 @@ mmdx edit diagram.mmd --project .mmdx/arch   # 单图 / 指定工程目录
 | `--background <color>` | 页面背景，如 `white` \| `transparent` \| `#1A1A1A`（需要深色页面时显式传） |
 | `--svg-themeable` | SVG 保留 `--pele-*` CSS 变量；默认烘焙成 hex，便于 Office/PPT 打开 |
 | `--scale <n>` | PNG 缩放倍数（默认 2） |
+| `--png-colors <mode>` | `auto`（默认）按主题质量门槛自动选调色板；`off` 保留 RGBA；`2..256` 固定调色板色数 |
+| `--png-quality <tier>` | `fast` \| `balanced`（默认）\| `best`；量化速度 / 质量档位，见下文 |
 | `--width <px>` | 布局视口宽（默认 1200；Pele 作为 `maxWidth`，不自动翻转方向） |
 | `--title <text>` | 图题（印在 PNG chrome 上，不再写入 mermaid frontmatter） |
 | `--subtitle <text>` | 副标题 |
 | `--source <text>` | 来源（底栏） |
 | `--unit <text>` | 单位（底栏） |
 | `--title-pos <pos>` | `top`（默认）\| `bottom`（chrome 标题在主图上方/下方） |
+| `--meta <key=value>` | 图片元信息，可重复；已知 key：`title` / `author` / `copyright` / `created` / `software` / `version` / `theme` / `tone` / `source` / `description`，其余按自定义 key 写入。值可为 UTF-8；空值删除该字段 |
+| `--author <text>` | 元信息作者，等价 `--meta author=...`；不传则不写 Author |
+| `--copyright <text>` | 元信息版权；默认 mmdx 项目版权，可改为你的项目版权 |
+| `--no-meta` | 不写入任何图片元信息 |
 | `--index <n[,n…]>` | 只渲染这些 1-based 块序号 |
 | `--brand <hex>` | 扩展块强调色（默认 `#2563EB`；可写 `2563EB`）；不重涂 flowchart 形状分色。投屏请用深色，避免浅蓝 |
 | `--strict-chart` | mermaid pie/xychart/radar/flowchart/sequence 超限当错误（默认只警告） |
@@ -154,6 +160,53 @@ mmdx edit diagram.mmd --project .mmdx/arch   # 单图 / 指定工程目录
 ```
 
 （`preset`/`brand`/`caption` 仅在使用对应参数时出现；`engine` 恒为 `"pele"`；`warnings` 始终为数组；`profile` 仅在同时传 `--profile` 时出现。）
+
+### PNG 调色板压缩
+
+PNG 默认走调色板量化：按出现次数加权聚类颜色，再按主题的实测门槛从 128 / 160 / 192 / 224 / 256 色中挑最小的一档。门槛由固定语料（8 套主题 × flowchart / state / class / ER / pie / xychart / mindmap / sequence / table，共 72 张 2x 图）标定，标准是文字/描边边缘的 p99 Oklab 色差 ≤0.035，全局 PSNR 统一不低于 53 dB（`fast` 档放宽 1.5 dB）；没有候选能过门槛或索引文件不更小时保留原始 RGBA，不硬压。`balanced` 档总输出为原始体积的 41.2%，最差 p99 边缘 ΔE 0.035。逐主题门槛与复跑方法见 [QUALITY.md](QUALITY.md#png-调色板量化门槛实测)。
+
+| 值 | 行为 |
+| --- | --- |
+| `auto`（默认） | 按主题自动选色数，质量不达标就回退 RGBA |
+| `off` | 不量化，输出 RGBA（需要后续无损处理时用） |
+| `2..256` | 固定调色板色数；显式覆盖质量门槛，色数越少体积越小 |
+
+| 档位 | 做法 | 总输出 | 最差 p99 边缘 ΔE | 中位耗时 |
+| --- | --- | --- | --- | --- |
+| `fast` | 2048 色采样、3 轮迭代、3 个候选色数、全局 / 边缘门槛 -1.5 dB | 40.9% | 0.040 | 49 ms |
+| `balanced`（默认） | 8192 色采样、10 轮迭代、5 个候选色数、标定门槛 | 41.2% | 0.035 | 69 ms |
+| `best` | 16384 色采样、10 轮 ×2（稀有颜色反馈）、色数下限 160、边缘门槛 +0.5 dB（全局保持 53 dB） | 41.8% | 0.033 | 81 ms |
+
+同一色数下三档的 PSNR 差 <0.15 dB——k-means 已收敛，档位差异主要来自候选色数与门槛。`fast` 适合批量预览，`best` 适合交付物，默认 `balanced`。
+
+透明底（`--background transparent`）会写 `tRNS`；`--scale`、`--preset`、`mmdx card` 与 `mmdx edit` 的 PNG 导出走同一套逻辑。`--profile` 会多一行 `png-quant`，显示色数与 PSNR。编辑器的 PNG 导出在按钮旁有「自动均衡 / 质量 / 快速」下拉，默认取启动时的 `--png-quality`，每次导出的档位写进请求并由 `X-Mmdx-Png-Quality` 响应头回显。
+
+### 图片元信息
+
+每张 PNG / SVG 默认带一组元信息，便于资产管理和 agent 追踪来源：
+
+| 字段 | 默认 / 来源 |
+| --- | --- |
+| `Title` | `--title` / 块 frontmatter 标题 / 输出文件名（如 `flowchart-m1`） |
+| `Author` | `--author` 或 `--meta author=...`；不传则不写 |
+| `Copyright` | `--copyright`；默认 `Copyright © 2026 daidaiJ`（mmdx 项目） |
+| `Creation Time` | 当前 UTC 时间；`--meta created=2026-01-02T03:04:05Z` 可固定 |
+| `Software` / `Version` | `mmdx <version>` / `<version>` |
+| `Theme` / `Tone` | 当前主题 / `--tone`（有则写） |
+| `Source` | 输入文件或 URL |
+| 自定义 | `--meta key=value`，可重复 |
+
+PNG 用标准文本块：值只含 Latin-1 时写 `tEXt`，含中文等 UTF-8 时写 `iTXt`；写入发生在调色板量化之后。SVG 写 RDF/Dublin Core `<metadata>`（`dc:title` / `dc:creator` / `dc:rights` / `dc:date` / `xmp:CreatorTool` / `mmdx:theme` 等），写入发生在 svgo 之后，不会被压缩掉。`mmdx card` 的 PNG 与 `mmdx edit` 的 SVG/PNG 导出使用同一套字段；编辑器的 SVG 导出经 `/api/export/svg` 加元信息。
+
+```bash
+mmdx doc.md --title "架构总览" --author "张三" --copyright "© 2026 Acme" \
+  --meta project=支付平台 --meta description="Q4 架构评审"
+mmdx doc.md --meta created=2026-01-02T03:04:05Z --meta author=
+mmdx card --in note.md --author "平台工程组" --copyright "© 2026 Acme"
+mmdx doc.md --no-meta
+```
+
+`--meta` 的 key 限 Latin-1 可打印字符（PNG 关键字约束），值可写中文；空值会删除该字段，例如 `--meta author=` 不写作者。PNG 可用 `exiftool image.png` / `magick identify -verbose` 查看，SVG 直接搜 `<metadata>`。
 
 ## 信息卡（mmdx card）
 
@@ -297,7 +350,7 @@ page-init       ~1.0s ×页     screenshot      ~90ms ×图（含像素级二次
 | 手段 | 建议 |
 | --- | --- |
 | 批量块数 > 30 | `--jobs 4`；默认 2 已够用——单浏览器页池，更高收益递减且增加内存压力 |
-| PNG 体积大 | 降 `--scale`（默认 2，聊天场景 1 足够）；PNG 无损压缩，架构图典型 20–80KB |
+| PNG 体积大 | 默认 `auto` 已按主题量化；用 `--png-quality fast` 或 `--png-colors 64` 再压，或降 `--scale`（默认 2，聊天场景 1 足够） |
 | 聊天/窄栏里字太小 | `--preset column`（800px@2），流程图用 `TD`；不要加大 `--width`（画布更宽，缩完字更小） |
 | 宽图被压窄 | 调 `--width`（默认 1200），横向流程图可到 1600+ |
 | 只要 SVG | `-f svg` 跳过截图环节 |

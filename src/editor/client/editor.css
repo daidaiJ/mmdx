@@ -119,6 +119,17 @@ button:disabled { cursor: default; opacity: .38; }
   color: var(--chrome-muted);
   font-size: 11px;
 }
+.quality-select { display: inline-flex; align-items: center; }
+.quality-select select {
+  height: 30px;
+  max-width: 100px;
+  padding: 0 6px;
+  border: 1px solid var(--chrome-line);
+  border-radius: 7px;
+  background: var(--chrome-panel);
+  color: var(--chrome-fg);
+  font-size: 12px;
+}
 .panel-toggle { display: none; }
 
 .stage {
@@ -445,6 +456,7 @@ html[data-dark="true"] .swatches i { border-color: rgba(255, 255, 255, .16); }
 @media (max-width: 1120px) {
   .doc { max-width: 22vw; }
   .tool-group .btn { padding-inline: 7px; }
+  .quality-select select { max-width: 84px; }
 }
 
 @media (max-width: 820px) {
