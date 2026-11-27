@@ -121,6 +121,11 @@ Figure-lint codes and fixes:
 | Option compare | ` ```compare ` | exactly 2 columns |
 | Numeric before/after | ` ```vs ` | ≤6 rows × 2 cols |
 | Process / approval / decision | flowchart | ≤9 nodes / ≤12 edges |
+| System / service / cloud boundaries | architecture-beta | ≤5 groups / ≤12 services |
+| System context (people / systems / externals) | C4Context | ≤8 people+systems |
+| K8s cluster architecture | flowchart BT + subgraphs | ≤12 components |
+| K8s service access path | flowchart LR | ≤6 pods |
+| Technical explainer (ChatGPT/OpenAI style) | flowchart LR + classDef | ≤4 layers / ≤6 steps |
 | Cross-team handoff | ` ```swimlane ` | ≤5 lanes, ≤8 steps |
 | Task-status snapshot | ` ```task ` | ≤10 rows |
 | Concentric attainment | ` ```progress ` | ≤4 rings |
@@ -132,7 +137,7 @@ Figure-lint codes and fixes:
 | Schedule / composition / flow | gantt / treemap / sankey | |
 | Quadrant / journey / timeline / scores | quadrant / journey / timeline / radar | radar ≤8×3 |
 
-**Appendix (renders, not featured):** sequence, state, class, ER, gitgraph, C4. Over limit → split overview+detail, or hand data charts to [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart).
+**Appendix (renders, not featured):** sequence, state, class, ER, gitgraph, C4, architecture-beta. For C4 / architecture-beta syntax, icons and limits, plus the K8s cluster / service path / ChatGPT-style technical explainer templates, see [ARCHITECTURE.en.md](ARCHITECTURE.en.md). Over limit → split overview+detail, or hand data charts to [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart).
 
 ## Diagram rules
 

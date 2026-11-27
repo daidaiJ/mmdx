@@ -1,6 +1,6 @@
 ---
 name: mermaid
-description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 流程 flowchart, KPI/表格/卡片, 审批与泳道, 半环进度 gauge, 日历热力 heatmap, HTML 文件截图导出. Use when the user wants 图/图表/流程图/构成图/对比卡/周报贴图/投屏/PPT/上会/渲染/导出图片/HTML 截图/把网页导出成图片. Also use `mmdx edit` when the user wants 手动修图 / 手动微调 / 在浏览器里改图 / 交互式出图 / 交互式渲染 / 可视化编辑 / AI 出初稿后人来改：移动缩放、改文字与配色、改连线样式与走线算法、拖锚点重连、切主题、导出 SVG/PNG、还原初稿. Use `--author` / `--copyright` / `--meta` when the user wants 图片元信息 / 作者 / 版权 / 来源 / 自定义字段. NOT for AI image generation (文生图/照片级插画) and NOT for analysis-grade stats (grouped bar, dual axis → AntV).
+description: Export office diagrams as PNG — 占比 pie, 趋势/对比 chart, 流程 flowchart, 架构图/服务拓扑/系统上下文/C4（architecture-beta）/K8s 集群图/技术架构解释图, KPI/表格/卡片, 审批与泳道, 半环进度 gauge, 日历热力 heatmap, HTML 文件截图导出. Use when the user wants 图/图表/流程图/构成图/对比卡/周报贴图/投屏/PPT/上会/渲染/导出图片/HTML 截图/把网页导出成图片. Also use `mmdx edit` when the user wants 手动修图 / 手动微调 / 在浏览器里改图 / 交互式出图 / 交互式渲染 / 可视化编辑 / AI 出初稿后人来改：移动缩放、改文字与配色、改连线样式与走线算法、拖锚点重连、切主题、导出 SVG/PNG、还原初稿. Use `--author` / `--copyright` / `--meta` when the user wants 图片元信息 / 作者 / 版权 / 来源 / 自定义字段. NOT for AI image generation (文生图/照片级插画) and NOT for analysis-grade stats (grouped bar, dual axis → AntV).
 ---
 
 # mmdx — 办公出图（结构图 + 轻量数据图 + 版式块 → PNG）
@@ -22,6 +22,7 @@ CLI 获取（按优先级）：
 
 - [`references/fences.md`](references/fences.md) — 扩展围栏语法速记 + 每围栏细则 + 能上会边界（写围栏前抄语法时）
 - [`references/recipes.md`](references/recipes.md) — 16 种 mermaid 图型最小示例 + 特殊画法（LR+TB 并列双流程、嵌套包含、组织架构、分层横切、对照式 timeline）
+- [`references/architecture.md`](references/architecture.md) — architecture-beta / C4 / K8s 集群与服务路径 / ChatGPT 风技术解释图的语法、色板、边界与选型（画专业场景图时）
 - [`references/troubleshooting.md`](references/troubleshooting.md) — 报错速诊 / `--json.warnings` 处置 / 退出码（渲染失败时）
 - [`references/themes-engines.md`](references/themes-engines.md) — 主题与 tone 选型 / Pele 图型支持面 / `--config` 配置键 / `--theme-js`·`--css`·`--brand` 换色（换主题、调布局或改配色时）
 - [`explain/`](explain/README.md) — vendored visual-explainer 工程解释页规格（多图叙事页 / 评审页 / recap 动笔前；starter 装配式写作，页内图禁 JS 交互态）
@@ -85,6 +86,11 @@ mmdx edit diagram.mmd --project .mmdx/arch        # 单图 / 指定工程目录
 | 四象限 / 优先级 | quadrant | ≤12 项 | |
 | 排期 / 工期 | gantt | | |
 | 流程 / 审批 / 判定 | flowchart | ≤9 节点 / ≤12 边 | 聊天/窄栏 `flowchart TD`；投屏才 `LR` + 命名 subgraph |
+| 系统 / 服务 / 云资源边界 | architecture-beta | 组 ≤5、服务 ≤12 | 见 [ARCHITECTURE.md](../docs/ARCHITECTURE.md)；`--icon logos` 加品牌图标 |
+| 系统上下文（人 / 系统 / 外部系统） | C4Context | 人+系统 ≤8 | 见 [ARCHITECTURE.md](../docs/ARCHITECTURE.md) |
+| K8s 集群架构 | flowchart BT + 子图 | 组件 ≤12 | 控制平面 / 工作节点分区；官方英文组件名；见 [ARCHITECTURE.md](../docs/ARCHITECTURE.md#kubernetes-常见示意图) |
+| K8s 服务访问路径 | flowchart LR | Pod ≤6 | Ingress → Service → Pod；配置/存储旁路 |
+| 技术架构解释图（ChatGPT/OpenAI 风） | flowchart LR + classDef | 层 ≤4、步骤 ≤6 | `-t openai`；固定层色 + 编号请求流；见 [ARCHITECTURE.md](../docs/ARCHITECTURE.md#技术解释图风格openai--chatgpt-系) |
 | 场景引导：一次故障 / 一次审批里「处境怎么变」 | stateDiagram-v2 | 箭头 ≤20 | 见 §1a-2；`--tone paper` 出纸底 |
 | 跨部门交接 | ` ```swimlane ` | 泳道 ≤5、步骤 ≤8 | handoff 才是重点；有环/并行用 flowchart |
 | 需求池 / 多列看板 | kanban | | 当前状态快照改用 ` ```task ` |
@@ -153,7 +159,7 @@ echo "graph TD; A-->B" | mmdx - -f png --preset column
 
 只有 Pele 一个引擎，没有 `--engine` / `--layout` 开关；Pele 解析不了的写法直接 `Parsing error`（exit 1），改成等价图型。`-f svg` 默认把颜色烘焙成 hex；要可换肤 SVG 加 `--svg-themeable`。
 
-PNG 默认 `balanced` 调色板量化（约 41% 体积，p99 边缘 ΔE ≤0.035）；批量预览用 `--png-quality fast`，交付高保真用 `best`。不要传 `--png-colors off`，除非下游明确要 RGBA；要再压可 `--png-colors 64`。
+PNG 默认 `balanced` 调色板量化（约 41% 体积，p99 边缘 ΔE ≤0.035），截图会先做无损重压缩（照片页约省 10%，渐变/文字页约省 20%）；批量预览用 `--png-quality fast`，交付高保真用 `best`。照片/渐变多的 HTML 截图用 `--png-colors near`（低损，约 1/5 体积）；不要传 `--png-colors off`，除非下游明确要 RGBA；要再压可 `--png-colors 64`。
 
 PNG / SVG 默认写图片元信息（时间、标题、主题、`mmdx <version>`、项目版权、来源）。交付时加 `--author "…"`；要盖项目自己的版权加 `--copyright "© 2026 …"`。任意字段用可重复的 `--meta key=value`；`--meta created=...` 固定时间戳，`--meta author=` 清除作者，`--no-meta` 全部关闭。`mmdx card` 与 `mmdx edit` 同样支持。
 
@@ -419,4 +425,4 @@ mmdx card --in note.md -t excalidraw --tone paper -o explainer-like.png
 
 ## 附录 — 开发文档场景（能渲染、不主推）
 
-sequence、state、class、ER、gitgraph、C4。办公选型不要从这里起。这些图型由 Pele 直接渲染，没有备选引擎；渲染不出来就改成 flowchart 或交给 [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
+sequence、state、class、ER、gitgraph、C4、architecture-beta。办公选型不要从这里起；C4 / architecture-beta 用于专业场景时见 [`references/architecture.md`](references/architecture.md)。这些图型由 Pele 直接渲染，没有备选引擎；渲染不出来就改成 flowchart 或交给 [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。

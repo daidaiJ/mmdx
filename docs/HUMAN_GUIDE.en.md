@@ -115,7 +115,7 @@ The project lives in `.mmdx/<slug>/` beside the source (`draft.svg` / `working.s
 | `--background <color>` | Page background, e.g. `white` \| `transparent` \| `#1A1A1A` (pass it explicitly for a dark page) |
 | `--svg-themeable` | Keep `--pele-*` CSS variables in SVG; default bakes hex for Office/PPT |
 | `--scale <n>` | PNG scale factor (default 2) |
-| `--png-colors <mode>` | `auto` (default) picks a palette under the theme's quality gates; `off` keeps RGBA; `2..256` fixes the palette size |
+| `--png-colors <mode>` | `auto` (default) picks a palette under the theme's quality gates; `near` is the low-loss path for authored HTML screenshots (256 colours, ~34.5 dB, falls back to lossless when gradients miss the floor); `off` skips quantization (the lossless recompression still runs); `2..256` fixes the palette size |
 | `--png-quality <tier>` | `fast` \| `balanced` (default) \| `best`; quantization speed / quality tier, see below |
 | `--width <px>` | Layout viewport width (default 1200; Pele uses it as `maxWidth` without flipping direction) |
 | `--title <text>` | Figure title (PNG chrome; no longer injected as mermaid frontmatter) |
@@ -168,7 +168,7 @@ PNG output is palette-quantized by default: colors are clustered by frequency-we
 | Value | Behavior |
 | --- | --- |
 | `auto` (default) | Picks the palette size per theme; falls back to RGBA when quality misses |
-| `off` | No quantization; writes RGBA (for downstream lossless processing) |
+| `off` | No quantization; the screenshot still gets the lossless pass (opaque alpha is dropped, colors unchanged) |
 | `2..256` | Fixed palette size; bypasses the quality gates, fewer colors means a smaller file |
 
 | Tier | Approach | Total size | Worst p99 edge ΔE | Median time |
@@ -338,7 +338,7 @@ page-init       ~1.0s ×page   screenshot      ~90ms ×diagram (incl. pixel-leve
 | Lever | Advice |
 | --- | --- |
 | Batch > 30 blocks | `--jobs 4`; the default 2 is enough — single-browser page pool, diminishing returns and memory pressure beyond that |
-| PNG too large | The default `auto` already quantizes per theme; use `--png-quality fast` or `--png-colors 64` to shrink further, or lower `--scale` (default 2; 1 is fine for chat) |
+| PNG too large | The default `auto` already quantizes per theme, and screenshots get a lossless recompression pass first (re-filtering + better deflate: ~10% on photo pages, ~20% on gradient/text pages). For photo- or gradient-heavy HTML use `--png-colors near` (low loss, about 1/5 the size), or `--png-quality fast` / `--png-colors 64`, or lower `--scale` (default 2; 1 is fine for chat) |
 | Type too small in chat / a narrow column | `--preset column` (800px@2) with `flowchart TD`; do not raise `--width` (wider canvas, smaller type after scaling) |
 | Wide diagram squashed | Raise `--width` (default 1200); horizontal flowcharts tolerate 1600+ |
 | SVG only | `-f svg` skips the screenshot stage |

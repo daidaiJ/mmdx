@@ -6,11 +6,11 @@
 // per-theme gates are mmdx's: flat themes tolerate fewer colors than textured
 // backdrops, and `best` adds slimdeer's rare-color error feedback pass.
 
-import zlib from 'node:zlib';
 import { PNG } from 'pngjs';
 import { parseColor } from './color.ts';
+import { deflateSmallest, filterScanlines } from './png-opt.ts';
 
-export type PngColorMode = 'off' | 'auto' | number;
+export type PngColorMode = 'off' | 'auto' | 'near' | number;
 export type PngQuality = 'fast' | 'balanced' | 'best';
 
 export interface PngQuantOptions {
@@ -43,6 +43,11 @@ export interface PngPolicy {
 
 const DEFAULT_POLICY: PngPolicy = { global: 53.0, edge: 41.5 };
 
+// `--png-colors near` is the low-loss path for authored HTML: 256 colors at
+// 34.5 dB still keep text and photos readable, while gradients that would
+// band below the edge floor fall back to the lossless screenshot.
+const NEAR_POLICY: PngPolicy = { global: 34.5, edge: 27.5 };
+
 // Calibrated on the fixed eight-theme corpus (72 2x PNGs, 2026-11-21). The
 // global gate is a uniform 53 dB floor; each edge gate is the minimum edge
 // PSNR at the smallest palette whose worst-case p99 edge Oklab ΔE stays under
@@ -72,12 +77,12 @@ export function pngPolicy(theme: string): PngPolicy {
   };
 }
 
-/** Parse a CLI value: auto | off | 2..256. */
+/** Parse a CLI value: auto | near | off | 2..256. */
 export function parsePngColorMode(value: string): PngColorMode {
-  if (value === 'auto' || value === 'off') return value;
+  if (value === 'auto' || value === 'near' || value === 'off') return value;
   const n = Number(value);
   if (!Number.isInteger(n) || n < 2 || n > 256) {
-    throw new Error(`--png-colors must be auto, off, or an integer 2..256, got "${value}"`);
+    throw new Error(`--png-colors must be auto, near, off, or an integer 2..256, got "${value}"`);
   }
   return n;
 }
@@ -338,6 +343,17 @@ function pick(
     const palette = paletteFor(e, mode, tier);
     return { palette, quality: quality(e, palette) };
   }
+  if (mode === 'near') {
+    if (theme !== 'document') return null;
+    for (const size of [256, 224, 192]) {
+      const palette = paletteFor(e, size, tier);
+      const q = quality(e, palette);
+      if (q.psnr >= NEAR_POLICY.global && q.edgePsnr >= NEAR_POLICY.edge) {
+        return { palette, quality: q };
+      }
+    }
+    return null;
+  }
   const policy = pngPolicy(theme);
   const globalGate = policy.global + Math.min(0, tier.gateBoost);
   const edgeGate = policy.edge + tier.gateBoost;
@@ -378,7 +394,13 @@ function bitDepthFor(colors: number): number {
   return colors <= 2 ? 1 : colors <= 4 ? 2 : colors <= 16 ? 4 : 8;
 }
 
-function encodeIndexed(width: number, height: number, indices: Uint8Array, palette: Uint8Array): Buffer {
+function encodeIndexed(
+  width: number,
+  height: number,
+  indices: Uint8Array,
+  palette: Uint8Array,
+  effort: PngQuality = 'balanced',
+): Buffer {
   const colors = palette.length / 4;
   const bitDepth = bitDepthFor(colors);
   const ihdr = Buffer.alloc(13);
@@ -403,12 +425,11 @@ function encodeIndexed(width: number, height: number, indices: Uint8Array, palet
     for (let i = 0; i <= last; i++) trns[i] = palette[4 * i + 3];
   }
   const rowBytes = Math.ceil((width * bitDepth) / 8);
-  const raw = Buffer.alloc((rowBytes + 1) * height);
+  const packed = Buffer.alloc(rowBytes * height);
   let o = 0;
   for (let y = 0; y < height; y++) {
-    raw[o++] = 0; // filter None: flat runs compress better than delta rows for palette art
     if (bitDepth === 8) {
-      for (let x = 0; x < width; x++) raw[o++] = indices[y * width + x];
+      for (let x = 0; x < width; x++) packed[o++] = indices[y * width + x];
     } else {
       const per = 8 / bitDepth;
       for (let x0 = 0; x0 < width; x0 += per) {
@@ -417,9 +438,18 @@ function encodeIndexed(width: number, height: number, indices: Uint8Array, palet
           const x = x0 + k;
           b = (b << bitDepth) | (x < width ? indices[y * width + x] : 0);
         }
-        raw[o++] = b;
+        packed[o++] = b;
       }
     }
+  }
+  const filtered = effort === 'fast'
+    ? [filterScanlines(packed, rowBytes, height, 1, true)]
+    : [filterScanlines(packed, rowBytes, height, 1, true),
+      filterScanlines(packed, rowBytes, height, 1, false)];
+  let idat: Buffer | null = null;
+  for (const raw of filtered) {
+    const z = deflateSmallest(raw, effort);
+    if (!idat || z.length < idat.length) idat = z;
   }
   const parts = [
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
@@ -427,7 +457,7 @@ function encodeIndexed(width: number, height: number, indices: Uint8Array, palet
     chunk('PLTE', plte),
   ];
   if (trns) parts.push(chunk('tRNS', trns));
-  parts.push(chunk('IDAT', zlib.deflateSync(raw, { level: 9 })), chunk('IEND', Buffer.alloc(0)));
+  parts.push(chunk('IDAT', idat!), chunk('IEND', Buffer.alloc(0)));
   return Buffer.concat(parts);
 }
 
@@ -455,7 +485,7 @@ export function quantizePng(png: Buffer, opts: PngQuantOptions): PngQuantResult 
     if (j === undefined) return null;
     indices[i] = j;
   }
-  const out = encodeIndexed(img.width, img.height, indices, palette);
+  const out = encodeIndexed(img.width, img.height, indices, palette, opts.quality ?? 'balanced');
   const used = out.length < png.length;
   return {
     png: used ? out : png,

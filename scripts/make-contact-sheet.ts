@@ -16,10 +16,17 @@ const DIAGRAMS = new Set(
     .filter((f) => f.endsWith('.md'))
     .map((f) => f.replace(/\.md$/, '.png')),
 );
-const files = fs.readdirSync(SRC).filter((f) => DIAGRAMS.has(f)).sort();
+const files = fs.readdirSync(SRC)
+  .filter((f) => DIAGRAMS.has(f))
+  .sort()
+  .map((f) => path.join(SRC, f));
+// architecture-beta is documented in docs/ARCHITECTURE.md and has no test
+// fixture; include its gallery render so the homepage collage covers it too.
+const arch = path.join(ROOT, 'docs', 'gallery', 'architecture-beta.png');
+if (fs.existsSync(arch)) files.push(arch);
 if (files.length === 0) throw new Error('no artifacts — run tests first');
 
-const imgs = files.map((f) => PNG.sync.read(fs.readFileSync(path.join(SRC, f))));
+const imgs = files.map((f) => PNG.sync.read(fs.readFileSync(f)));
 // normalize widths, keep aspect
 const COLS = 4;
 const GAP = 16;

@@ -28,7 +28,7 @@ import {
 import { isToneName, type ToneName } from './tone.ts';
 import type { IconPack } from './engine/types.ts';
 
-let VERSION = '2.3.0';
+let VERSION = '2.4.0';
 
 type Optimize = (svg: string, opts: unknown) => { data: string };
 let svgoOptimize: Optimize | null = null;
@@ -81,11 +81,13 @@ Options:
                           and stroke weight for projection; column=800px@2
                           (2K office ~1/3 column, tighter wrap)
   --background <color>    page background, e.g. white | transparent | #1A1A1A
-  --png-colors <mode>     auto (default) | off | 2..256 — indexed PNG after
-                          quantization; auto picks the smallest palette that
-                          keeps text/edge detail, per theme
-  --png-quality <tier>    fast | balanced (default) | best — quantization
-                          effort; best adds a rare-color refinement pass
+  --png-colors <mode>     auto (default) | near | off | 2..256 — indexed PNG
+                          after quantization; auto keeps text/edge detail per
+                          theme; near is the low-loss 256-color path for
+                          authored HTML with photos/gradients
+  --png-quality <tier>    fast | balanced (default) | best — compression
+                          effort; lossless re-filtering always runs; best
+                          adds rare-color refinement and more deflate passes
   --scale <n>             PNG scale factor                     (default: 2)
   --width <px>            layout viewport width                (default: 1200)
   --svg-themeable         keep --pele-* CSS variables in SVG output; default

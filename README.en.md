@@ -7,7 +7,7 @@
 
 **A diagram export CLI built for office agents**: batch-render mermaid and office fences (table / chart / kpi / compare / vs / funnel / task / progress / gauge / heatmap / swimlane …) in Markdown into PNG — themes, CJK fonts, layout engine, and padding are all built in. No MCP server, no browser extension, and the machine producing the output doesn't need Node.
 
-![Rendering samples for twenty diagram types](tests/contact-sheet.png)
+![Rendering samples for twenty-one diagram types](tests/contact-sheet.png)
 
 ## 📖 Documentation
 
@@ -17,6 +17,7 @@
 | 👤 Human user | [docs/HUMAN_GUIDE.en.md](docs/HUMAN_GUIDE.en.md) | Readable: install & deploy, full CLI reference, image metadata, theming, performance tuning, troubleshooting |
 | 🖼 Extension blocks | [docs/EXTENSIONS.en.md](docs/EXTENSIONS.en.md) | One tool-rendered PNG + syntax per fence |
 | 🎭 Style gallery | [docs/GALLERY.en.md](docs/GALLERY.en.md) | One case across eight themes: flowchart / KPI / cards / table |
+| 🏗 Professional diagrams | [docs/ARCHITECTURE.en.md](docs/ARCHITECTURE.en.md) | `architecture-beta` / C4 / K8s cluster & service path / ChatGPT-style technical explainer syntax, palettes, limits and examples |
 | 🧪 Quality gates | [docs/QUALITY.en.md](docs/QUALITY.en.md) | Pixel-lint coverage, known blind spots, pre-release license checklist |
 | 🖋 Hand-drawn editorial specs | [skill/editorial/](skill/editorial/README.md) | Vendored diagram-design specs (MIT): hand-draw covers / proposal art per its specs and export with `mmdx file.html --scale 3` |
 | 📃 Narrative explainer specs | [skill/explain/](skill/explain/README.md) | Vendored spec-only adaptation of visual-explainer (MIT): explainers / review pages / recaps / slide decks assembled from a starter, exported with the same command |

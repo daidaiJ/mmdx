@@ -7,7 +7,7 @@
 
 **为 AI agent 打造的办公出图 CLI**：把 Markdown 里的 mermaid 与办公围栏（table / chart / kpi / compare / vs / funnel / task / progress / gauge / heatmap / swimlane …）批量渲染成 PNG——主题、中文字体、布局引擎、留白全部内置，不需要 MCP server、浏览器插件，产物机器上也不需要 Node。
 
-![二十种图型渲染示例](tests/contact-sheet.png)
+![二十一种图型渲染示例](tests/contact-sheet.png)
 
 ## 📖 文档导航
 
@@ -17,6 +17,7 @@
 | 👤 人类用户 | [docs/HUMAN_GUIDE.md](docs/HUMAN_GUIDE.md) | 易读版：安装部署、CLI 全参数、图片元信息、主题定制、性能调优、排障 |
 | 🖼 扩展块 | [docs/EXTENSIONS.md](docs/EXTENSIONS.md) | 每种围栏一张工具渲染的 PNG + 语法 |
 | 🎭 风格画廊 | [docs/GALLERY.md](docs/GALLERY.md) | 同一案例在八套主题下的流程图 / 饼图 / KPI / 卡片 / 表格对照 |
+| 🏗 专业场景图 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | `architecture-beta` / C4 / K8s 集群与服务路径 / ChatGPT 风技术解释图的语法、色板、边界与示例 |
 | 🧪 质量门禁 | [docs/QUALITY.md](docs/QUALITY.md) | 像素 lint 覆盖、已知盲区、发布前许可证清单 |
 | 🖋 手绘 editorial 规格 | [skill/editorial/](skill/editorial/README.md) | vendored diagram-design 规格（MIT）：偶发封面 / 方案插图按其规格手绘 HTML，`mmdx file.html --scale 3` 导出 |
 | 📃 叙事解释页规格 | [skill/explain/](skill/explain/README.md) | vendored visual-explainer 规格化改造版（MIT）：解释页 / 评审页 / recap / 幻灯片页用 starter 装配 HTML，同命令导出 |

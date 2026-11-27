@@ -121,6 +121,11 @@ figure lint 处置表：
 | 方案对比 | ` ```compare ` | 恰 2 栏 |
 | 数值前后对比 | ` ```vs ` | ≤6 行 × 2 列 |
 | 流程 / 审批 / 判定 | flowchart | ≤9 节点 / ≤12 边 |
+| 系统 / 服务 / 云资源边界 | architecture-beta | 组 ≤5、服务 ≤12 |
+| 系统上下文（人 / 系统 / 外部系统） | C4Context | 人+系统 ≤8 |
+| K8s 集群架构 | flowchart BT + 子图 | 组件 ≤12 |
+| K8s 服务访问路径 | flowchart LR | Pod ≤6 |
+| 技术架构解释图（ChatGPT/OpenAI 风） | flowchart LR + classDef | 层 ≤4、步骤 ≤6 |
 | 跨部门交接 | ` ```swimlane ` | 泳道 ≤5、步骤 ≤8 |
 | 任务状态快照 | ` ```task ` | ≤10 行 |
 | 多指标达成率（同心） | ` ```progress ` | ≤4 环 |
@@ -132,7 +137,7 @@ figure lint 处置表：
 | 排期 / 构成 / 流向 | gantt / treemap / sankey | |
 | 四象限 / 旅程 / 演进 / 打分 | quadrant / journey / timeline / radar | radar ≤8×3 |
 
-**附录（能渲染、不主推）：** sequence、state、class、ER、gitgraph、C4。超限拆总览+局部，或数据图交给 [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
+**附录（能渲染、不主推）：** sequence、state、class、ER、gitgraph、C4、architecture-beta。C4 / architecture-beta 的语法、图标与限制，以及 K8s 集群 / 服务路径 / ChatGPT 风技术解释图模板见 [ARCHITECTURE.md](ARCHITECTURE.md)。超限拆总览+局部，或数据图交给 [AntV mcp-server-chart](https://github.com/antvis/mcp-server-chart)。
 
 ## 写图规则
 

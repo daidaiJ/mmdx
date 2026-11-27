@@ -26,6 +26,7 @@ import {
   addPngMetadata, addSvgMetadata, buildImageMeta, htmlTitle, parseMetaOptions, readPngMetadata,
 } from '../src/meta.ts';
 import { parsePngColorMode, parsePngQuality, pngPolicy, quantizePng } from '../src/png-quant.ts';
+import { optimizePngLossless } from '../src/png-opt.ts';
 import { Renderer } from '../src/render.ts';
 import { applyColumnDensity, applySlideDensity, DEFAULT_THEME, getTheme, peleCss, PRESETS, type ThemeSpec } from '../src/themes.ts';
 import { accentTint, applyBrand, contrastRatio, normalizeHex, type Tokens } from '../src/tokens.ts';
@@ -164,8 +165,9 @@ const makePng = (
 {
   record(
     'unit/png-colors-parse',
-    parsePngColorMode('auto') === 'auto' && parsePngColorMode('off') === 'off' && parsePngColorMode('256') === 256,
-    'auto/off/256',
+    parsePngColorMode('auto') === 'auto' && parsePngColorMode('near') === 'near' &&
+      parsePngColorMode('off') === 'off' && parsePngColorMode('256') === 256,
+    'auto/near/off/256',
   );
   let rejected = 0;
   for (const v of ['0', '1', '257', 'nope', '2.5']) {
@@ -176,6 +178,19 @@ const makePng = (
     }
   }
   record('unit/png-colors-parse-bad', rejected === 5, `rejected=${rejected}/5`);
+  const near = quantizePng(
+    makePng(96, 96, (x, y) => [x * 2, y * 2, (x + y) & 255, 255]),
+    { mode: 'near', theme: 'document', background: '#ffffff' },
+  );
+  const nearWrongTheme = quantizePng(
+    makePng(96, 96, (x, y) => [x * 2, y * 2, (x + y) & 255, 255]),
+    { mode: 'near', theme: 'tech', background: '#ffffff' },
+  );
+  record(
+    'unit/png-colors-near',
+    !!near && near.colors <= 256 && nearWrongTheme === null,
+    `near=${near ? `${near.colors}c ${near.psnr.toFixed(1)}dB` : 'null'} tech=${nearWrongTheme === null}`,
+  );
   record(
     'unit/png-quality-parse',
     parsePngQuality('fast') === 'fast' && parsePngQuality('balanced') === 'balanced' && parsePngQuality('best') === 'best',
@@ -270,6 +285,16 @@ const makePng = (
   const noise = makePng(48, 48, () => [rand(), rand(), rand(), 255]);
   const q = quantizePng(noise, { mode: 'auto', theme: 'tech', background: '#ffffff' });
   record('unit/png-quant-gate-fallback', q === null, q ? `${q.colors}c keep?` : 'null');
+}
+
+{
+  const gradient = makePng(96, 96, (x, y) => [x * 2, y * 2, (x + y) & 255, 255]);
+  const out = optimizePngLossless(new Uint8Array(gradient), 'fast');
+  record(
+    'unit/png-opt-uint8',
+    Buffer.isBuffer(out) && out.length <= gradient.length && out.subarray(0, 8).equals(gradient.subarray(0, 8)),
+    `${gradient.length}->${out.length}B buffer=${Buffer.isBuffer(out)}`,
+  );
 }
 
 {
@@ -1157,13 +1182,13 @@ function runCli(args: string[], opts?: { stdin?: string }): { code: number; stdo
     off.code === 0 && fast.code === 0 && best.code === 0 &&
       (offPng?.[25] === 2 || offPng?.[25] === 6) && fastPng?.[25] === 3 && bestPng?.[25] === 3 &&
       !!offPng && !!fastPng && !!bestPng && fastPng.length < offPng.length &&
-      bestPng.length >= fastPng.length,
+      bestPng.length <= fastPng.length,
     `exit=${off.code}/${fast.code}/${best.code} ct=${offPng?.[25]}/${fastPng?.[25]}/${bestPng?.[25]} bytes=${offPng?.length}/${fastPng?.length}/${bestPng?.length}`,
   );
   const bad = runCli([flow, '--png-colors', 'nope']);
   record(
     'cli/png-colors-bad',
-    bad.code === 2 && /--png-colors must be auto, off, or an integer 2\.\.256/.test(bad.stderr),
+    bad.code === 2 && /--png-colors must be auto, near, off, or an integer 2\.\.256/.test(bad.stderr),
     `exit=${bad.code} stderr=${bad.stderr.trim().slice(0, 80)}`,
   );
   const badQuality = runCli([flow, '--png-quality', 'quick']);

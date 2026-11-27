@@ -4,7 +4,25 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [2.4.0] - 2026-11-27
+
+### PNG 压缩
+
+- 新增 `src/png-opt.ts`：截图在量化前先做无损重压缩——按行选 PNG 滤波器（None / Sub / Up / Average / Paeth），比较 zlib default / filtered / RLE / Huffman 策略，并在全不透明时去掉 alpha 通道；照片页实测省 9.7%，渐变 + 文字页省 21.2%，像素逐字节不变。`--png-quality` 同时控制重压缩与量化的 effort
+- 索引 PNG 编码改为尝试自适应滤波与多种 deflate 策略，取最小结果；`--png-colors off` 也会走无损重压缩
+- 新增 `--png-colors near`：任意 HTML 截图的低损档，256 色、约 34.5 dB，渐变/照片边缘低于 27.5 dB 时回退无损；照片页 1.81MB → 226KB（约 1/8），文字与边界更清楚的纯色页仍走严格 `auto`
+- `--profile` 新增 `png-opt` 阶段（原始字节 → 重压缩后字节）
+- 修复 Chromium 截图返回 `Uint8Array` 时无损重压缩被静默跳过的问题：`optimizePngLossless` 先统一转成 `Buffer`，CLI 的 `.html` 导出恢复 9.7%–21.2% 的无损收益
+
+### 专业场景图
+
+- Pele 已支持的 Mermaid `architecture-beta` 与 C4 正式写入文档：新增 `docs/ARCHITECTURE.md` / `.en.md`、示例图 `docs/gallery/architecture-beta.png` / `c4-context.png`，以及 `skill/references/architecture.md`
+- 新增两套 K8s 标准模板：`flowchart BT` 集群架构（控制平面 / 工作节点、官方英文组件名、层色 `classDef`）与 `flowchart LR` 服务访问路径（Ingress → Service → Pod，配置 / 存储旁路）；示例图 `docs/gallery/kubernetes-architecture.png` / `kubernetes-service-path.png`
+- 新增 ChatGPT / OpenAI 风技术解释图版式：`-t openai` + 四组层色 `classDef` + 编号请求流 + 图题 / 来源；示例图 `docs/gallery/tech-architecture.png`，色板与版式规则写入 `docs/ARCHITECTURE*.md` 与 skill
+- 新增 `docs/research-domain-diagrams.md`：汇总 D2 ELK/TALA/Dagre、PathVis、K8s 官方架构图、ChatGPT 风格与同类项目的可借鉴点和取舍
+- README 首页拼图重出为 21 张图型，加入 `architecture-beta` 示例；`scripts/make-contact-sheet.ts` 会把 `docs/gallery/architecture-beta.png` 一并纳入
+- `architecture-beta` 支持 group / service / junction、四边端口、跨组边界与内置/Iconify 图标；当前 Pele 画线不画箭头，需要箭头时仍用 flowchart
+- AGENT_GUIDE、README、SKILL.md 的选型表加入“系统 / 服务 / 云资源边界”“系统上下文”“K8s 集群架构”“K8s 服务访问路径”“技术架构解释图”五行
 
 ## [2.3.0] - 2026-11-21
 

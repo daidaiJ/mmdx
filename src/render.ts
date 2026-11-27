@@ -11,6 +11,7 @@ import { peleEngine } from './engine/pele.ts';
 import type { EngineRenderOptions, MarkFn } from './engine/types.ts';
 import { auditContrast, auditLayout, auditSvgText, type LayoutIssue } from './lint.ts';
 import { quantizePng, type PngColorMode, type PngQuality } from './png-quant.ts';
+import { optimizePngLossless } from './png-opt.ts';
 
 export interface RendererOptions {
   browserPath?: string;
@@ -94,32 +95,42 @@ export class Renderer {
     return out;
   }
 
-  /** Palette output is an optimization: any failure keeps the RGBA screenshot. */
+  /** PNG size is an optimization: any failure keeps the screenshot. */
   private quantizePng(
     png: Buffer,
     background: string,
     theme: string,
     quality: PngQuality | undefined = this.opts.pngQuality,
   ): Buffer {
-    if (!this.opts.pngColors || this.opts.pngColors === 'off') return png;
+    const q = quality ?? 'balanced';
     const t0 = performance.now();
+    const optimized = optimizePngLossless(png, q);
+    if (this.opts.profile && optimized.length !== png.length) {
+      this.profile.push({
+        stage: 'png-opt',
+        ms: Math.round(performance.now() - t0),
+        label: `${png.length}->${optimized.length}B`,
+      });
+    }
+    if (!this.opts.pngColors || this.opts.pngColors === 'off') return optimized;
+    const t1 = performance.now();
     try {
-      const res = quantizePng(png, {
+      const res = quantizePng(optimized, {
         mode: this.opts.pngColors,
         theme,
         background,
-        quality,
+        quality: q,
       });
       if (this.opts.profile && res) {
         this.profile.push({
           stage: 'png-quant',
-          ms: Math.round(performance.now() - t0),
-          label: `${res.colors}c ${res.psnr.toFixed(1)}dB${res.used ? '' : ' keep-rgba'}`,
+          ms: Math.round(performance.now() - t1),
+          label: `${res.colors}c ${res.psnr.toFixed(1)}dB${this.opts.pngColors === 'near' ? ' near' : ''}${res.used ? '' : ' keep-rgba'}`,
         });
       }
-      return res?.png ?? png;
+      return res?.png ?? optimized;
     } catch {
-      return png;
+      return optimized;
     }
   }
 

@@ -115,8 +115,8 @@ mmdx edit diagram.mmd --project .mmdx/arch   # 单图 / 指定工程目录
 | `--background <color>` | 页面背景，如 `white` \| `transparent` \| `#1A1A1A`（需要深色页面时显式传） |
 | `--svg-themeable` | SVG 保留 `--pele-*` CSS 变量；默认烘焙成 hex，便于 Office/PPT 打开 |
 | `--scale <n>` | PNG 缩放倍数（默认 2） |
-| `--png-colors <mode>` | `auto`（默认）按主题质量门槛自动选调色板；`off` 保留 RGBA；`2..256` 固定调色板色数 |
-| `--png-quality <tier>` | `fast` \| `balanced`（默认）\| `best`；量化速度 / 质量档位，见下文 |
+| `--png-colors <mode>` | `auto`（默认）按主题质量门槛自动选调色板；`near` 是任意 HTML 截图的低损档（256 色，约 34.5 dB，渐变不达标时回退无损）；`off` 不量化（仍做无损重压缩）；`2..256` 固定调色板色数 |
+| `--png-quality <tier>` | `fast` \| `balanced`（默认）\| `best`；无损重滤波与量化的速度 / 质量档位，见下文 |
 | `--width <px>` | 布局视口宽（默认 1200；Pele 作为 `maxWidth`，不自动翻转方向） |
 | `--title <text>` | 图题（印在 PNG chrome 上，不再写入 mermaid frontmatter） |
 | `--subtitle <text>` | 副标题 |
@@ -168,7 +168,7 @@ PNG 默认走调色板量化：按出现次数加权聚类颜色，再按主题�
 | 值 | 行为 |
 | --- | --- |
 | `auto`（默认） | 按主题自动选色数，质量不达标就回退 RGBA |
-| `off` | 不量化，输出 RGBA（需要后续无损处理时用） |
+| `off` | 不量化；截图仍先做无损重压缩（全不透明时去掉 alpha，颜色不变） |
 | `2..256` | 固定调色板色数；显式覆盖质量门槛，色数越少体积越小 |
 
 | 档位 | 做法 | 总输出 | 最差 p99 边缘 ΔE | 中位耗时 |
@@ -350,7 +350,7 @@ page-init       ~1.0s ×页     screenshot      ~90ms ×图（含像素级二次
 | 手段 | 建议 |
 | --- | --- |
 | 批量块数 > 30 | `--jobs 4`；默认 2 已够用——单浏览器页池，更高收益递减且增加内存压力 |
-| PNG 体积大 | 默认 `auto` 已按主题量化；用 `--png-quality fast` 或 `--png-colors 64` 再压，或降 `--scale`（默认 2，聊天场景 1 足够） |
+| PNG 体积大 | 默认 `auto` 已按主题量化，且截图会先做无损重压缩（重滤波 + 更优 deflate，照片页约省 10%，渐变/文字页约省 20%）；照片/渐变多的 HTML 用 `--png-colors near`（低损，约 1/5 体积），或 `--png-quality fast` / `--png-colors 64` 再压，或降 `--scale`（默认 2，聊天场景 1 足够） |
 | 聊天/窄栏里字太小 | `--preset column`（800px@2），流程图用 `TD`；不要加大 `--width`（画布更宽，缩完字更小） |
 | 宽图被压窄 | 调 `--width`（默认 1200），横向流程图可到 1600+ |
 | 只要 SVG | `-f svg` 跳过截图环节 |

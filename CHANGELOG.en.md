@@ -4,7 +4,25 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioned per [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.4.0] - 2026-11-27
+
+### PNG compression
+
+- New `src/png-opt.ts`: screenshots get a lossless recompression pass before quantization — per-row PNG filters (None / Sub / Up / Average / Paeth), compared zlib default / filtered / RLE / Huffman strategies, and the alpha channel is dropped when every pixel is opaque. Measured 9.7% smaller on a photo page and 21.2% on a gradient + text page with byte-identical pixels. `--png-quality` now controls both recompression and quantization effort
+- Indexed PNG encoding tries adaptive filtering and several deflate strategies and keeps the smallest result; `--png-colors off` also gets the lossless pass
+- New `--png-colors near`: a low-loss mode for authored HTML screenshots (256 colours, ~34.5 dB; falls back to lossless when gradient/photo edges drop below 27.5 dB). The photo fixture goes from 1.81 MB to 226 KB (~1/8), while flat pages stay on strict `auto`
+- `--profile` gains a `png-opt` stage (original bytes → recompressed bytes)
+- Fixed the lossless pass being skipped when Chromium returns a `Uint8Array` screenshot: `optimizePngLossless` now normalizes to `Buffer` first, restoring the 9.7%–21.2% lossless savings on CLI `.html` exports
+
+### Professional diagrams
+
+- Mermaid `architecture-beta` and C4, already supported by Pele, are now documented: new `docs/ARCHITECTURE.md` / `.en.md`, example images `docs/gallery/architecture-beta.png` / `c4-context.png`, and `skill/references/architecture.md`
+- Added two standard Kubernetes templates: a `flowchart BT` cluster architecture (control plane / worker nodes, official English component names, layer `classDef`s) and a `flowchart LR` service access path (Ingress → Service → Pod, with configuration / storage side branches); example images `docs/gallery/kubernetes-architecture.png` / `kubernetes-service-path.png`
+- Added a ChatGPT / OpenAI-style technical explainer recipe: `-t openai` plus four layer `classDef`s, a numbered request path, caption and source; example image `docs/gallery/tech-architecture.png`, with the palette and layout rules in `docs/ARCHITECTURE*.md` and the skill
+- Added `docs/research-domain-diagrams.md`: D2 ELK/TALA/Dagre, PathVis, the official Kubernetes diagrams, the ChatGPT style, and what to borrow or skip from related projects
+- Regenerated the README homepage collage with 21 diagram types, including the `architecture-beta` example; `scripts/make-contact-sheet.ts` now adds `docs/gallery/architecture-beta.png` to the sheet
+- `architecture-beta` supports groups / services / junctions, four-side ports, cross-group boundaries, and built-in or Iconify icons. Pele currently draws the edge without an arrowhead; use flowchart when arrows are required
+- The AGENT_GUIDE, README and SKILL.md selection tables now include system / service / cloud boundaries, system context, K8s cluster architecture, K8s service access path and technical explainer rows
 
 ## [2.3.0] - 2026-11-21
 
