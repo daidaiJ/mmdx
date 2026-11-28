@@ -8,8 +8,9 @@
 
 - **当前状态（2026-11-28）：** `pele@1.9.0` → `1.13.0`（MIT，无新增依赖；browser bundle 706,153 → 733,670 B）。升级覆盖 1.9.1 的 XML 合法性修复、1.10.x 的解析 / 错误定位修复、1.11 的 `monospace`、1.12 的自定义填充对比色与全不透明填充、1.13 的 Mermaid 系列色板变量与连线 / 子图布局改进。
 - **行为变化：** 子图节点有跨组连线时继承父方向（Mermaid 对齐）。K8s 集群模板改为 `flowchart LR`（worker 左、控制平面右），`docs/ARCHITECTURE*.md` / `skill/references/architecture.md` / `AGENT_GUIDE*` / `SKILL.md` 同步；`recipes.md` 的 LR+TB 混排改为两组不连边；`themeVariables` 只读系列色板变量（`pie1`–`pie8` 等），其余仍忽略。
-- **验证：** `bun run test` **227/227**、`bun run typecheck` 通过；20 个标准图型 SVG 与 1.9.0 逐字节一致；`docs/gallery/kubernetes-architecture.png` 重出（1500×1200 → 2032×1016）。
+- **验证：** `bun run test` **227/227**、`bun run typecheck` 通过；20 个标准图型 SVG 与 1.9.0 逐字节一致；`docs/gallery/kubernetes-architecture.png` 重出（1500×1200 → 2032×1016）；编辑器在 Release 二进制上冒烟通过（flowchart 6 节点 / 5 边、state 8 节点 / 7 边，选节点出 8 手柄、PNG / SVG 导出正常）。
 - **发布：** v2.4.0 覆盖发布（版本号不变），tag / Release 重指到本次 commit；产物仍是 `mmdx-windows-x64.exe`、`mmdx-dynamic-v2.4.0.zip`、`mmdx-skill-v2.4.0.zip`。
+- **本地同步（2026-11-28）：** `C:\Users\panda\.grok\skills\mermaid` 已用新的 `mmdx-skill-v2.4.0.zip` 覆盖，`bin/mmdx.exe` 与 Release 二进制 SHA256 一致；`dist/mmdx.exe`（PATH 上的 `mmdx`）已换成 Release 二进制；gash 0.2.0 → 0.2.1，旧版备份在 `D:\tool-cli\gash\gash-0.2.0.exe`。
 
 ### PNG 无损压缩 + K8s / 技术解释图 — 已发布（v2.4.0）
 
