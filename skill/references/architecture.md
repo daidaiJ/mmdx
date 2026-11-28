@@ -6,7 +6,7 @@
 
 - `architecture-beta`：云服务分层、VPC/区域/命名空间边界、CI/CD、服务 ↔ 数据存储。
 - `C4Context`：系统上下文，明确人 / 当前系统 / 外部系统。
-- `flowchart BT` + 子图：K8s 集群架构（控制平面 / 工作节点）。
+- `flowchart LR` + 子图：K8s 集群架构（控制平面 / 工作节点）。
 - `flowchart LR` + `classDef`：K8s 服务访问路径、ChatGPT/OpenAI 风技术解释图。
 - 需要判定分支、泳道、逐条协议/带宽标注 → `flowchart`；需要时序 → `sequenceDiagram`。
 
@@ -51,16 +51,14 @@ C4Context
 ## Kubernetes 集群架构
 
 ```mermaid
-flowchart BT
+flowchart LR
     subgraph CP["Control Plane"]
-        direction LR
         API["kube-apiserver"]
         ETCD[("etcd")]
         SCH["kube-scheduler"]
         CM["kube-controller-manager"]
     end
     subgraph W1["Worker Node 1"]
-        direction LR
         K1["kubelet"]
         PX1["kube-proxy"]
         R1["containerd"]
@@ -82,8 +80,8 @@ flowchart BT
     class POD1 work
 ```
 
-- `flowchart BT`：API server 作为目标在顶部，kubelet / kube-proxy 作为来源在底部，箭头自然指向 API server。
-- `direction LR` 让组内组件横排；三节点就复制一份 Worker 子图。
+- `flowchart LR`：worker 在左、控制平面在右，kubelet / kube-proxy 的箭头自然指向 API server。
+- Pele 1.10.1 起子图节点有跨组连线时继承父方向，子图里不写 `direction`；横排由父图 `LR` 保证。三节点就复制一份 Worker 子图。
 - 官方英文组件名；`containerd` 可换 CRI-O；`cloud-controller-manager` / CoreDNS / Ingress Controller 按需加入。
 - 单图 ≤12 个组件；全量集群超过概览 9 节点提示属于正常。
 

@@ -4,7 +4,14 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioned per [Semantic Versioning](https://semver.org/).
 
-## [2.4.0] - 2026-11-27
+## [2.4.0] - 2026-11-28
+
+### Engine (Pele 1.13.0)
+
+- `pele@1.9.0` → `1.13.0` (MIT, no new dependencies; browser bundle 706 KB → 734 KB). The upgrade includes the 1.9.1 XML-validity fixes, the 1.10.x parser / error-location fixes, the 1.11 `monospace` option (not exposed by the mmdx CLI yet), 1.12 contrast labels on source-defined fills and full-opacity custom fills, and 1.13 Mermaid series palette variables plus edge / subgraph layout improvements
+- Labels and arrows on fills set by `style` / `classDef` pick their colour from `--pele-fg-on-light` / `--pele-fg-on-dark`; palette variables in the diagram source's `%%{init}%%` / frontmatter (`pie1`–`pie8`, `git0`–`git7`, `cScale*`, `venn*`, `xyChart.plotColorPalette`) are read, while other `themeVariables` stay ignored
+- **Behaviour change (now matches Mermaid)**: when a subgraph's nodes link outside it, the subgraph's `direction` is ignored and it inherits its parent's direction. The K8s cluster template now uses `flowchart LR` (workers left, control plane right); the LR+TB recipe in `recipes.md` keeps the two groups unlinked because a cross-group edge makes both follow the parent direction
+- Verification: `bun run test` **227/227**, `bun run typecheck` passes; the 20 standard diagram fixtures are byte-identical to 1.9.0; the K8s / skill examples and gallery images were re-rendered
 
 ### PNG compression
 
@@ -17,7 +24,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 ### Professional diagrams
 
 - Mermaid `architecture-beta` and C4, already supported by Pele, are now documented: new `docs/ARCHITECTURE.md` / `.en.md`, example images `docs/gallery/architecture-beta.png` / `c4-context.png`, and `skill/references/architecture.md`
-- Added two standard Kubernetes templates: a `flowchart BT` cluster architecture (control plane / worker nodes, official English component names, layer `classDef`s) and a `flowchart LR` service access path (Ingress → Service → Pod, with configuration / storage side branches); example images `docs/gallery/kubernetes-architecture.png` / `kubernetes-service-path.png`
+- Added two `flowchart LR` Kubernetes templates: a cluster architecture (control plane / worker nodes, official English component names, layer `classDef`s) and a service access path (Ingress → Service → Pod, with configuration / storage side branches); example images `docs/gallery/kubernetes-architecture.png` / `kubernetes-service-path.png`
 - Added a ChatGPT / OpenAI-style technical explainer recipe: `-t openai` plus four layer `classDef`s, a numbered request path, caption and source; example image `docs/gallery/tech-architecture.png`, with the palette and layout rules in `docs/ARCHITECTURE*.md` and the skill
 - Added `docs/research-domain-diagrams.md`: D2 ELK/TALA/Dagre, PathVis, the official Kubernetes diagrams, the ChatGPT style, and what to borrow or skip from related projects
 - Regenerated the README homepage collage with 21 diagram types, including the `architecture-beta` example; `scripts/make-contact-sheet.ts` now adds `docs/gallery/architecture-beta.png` to the sheet

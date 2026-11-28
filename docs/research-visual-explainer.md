@@ -174,7 +174,7 @@ bun 兼容性无需实验证明：fs/path/url/child_process 属 bun 一等兼容
 | 接触点 | 说明 | 处置 |
 | --- | --- | --- |
 | kit 资产定位 | render.mjs 用 `dirname(fileURLToPath(import.meta.url))` 定位 kit.css/defs.svg 等（3 处 readFileSync）；bun compile 后模块在虚拟路径，相对定位失效 | 最小补丁：`here` 允许环境变量覆盖（改 1 行，README 记录该补丁与同步流程）；资产照 FONT_B64/embed.generated.ts 先例内联进 exe，wrapper 解出或指路。完全自包含，方式 A 单 exe 用户也覆盖 |
-| 双 pele 副本 | 上游 vendor/pele.mjs（版本随上游）vs mmdx vendor/pele.global.js（1.9.0） | 首期各留各的（隔离上游同步风险）；合流列为 B2 吸收项，吃 mmdx 布局/中文字体改进 |
+| 双 pele 副本 | 上游 vendor/pele.mjs（版本随上游）vs mmdx vendor/pele.global.js（1.13.0） | 首期各留各的（隔离上游同步风险）；合流列为 B2 吸收项，吃 mmdx 布局/中文字体改进 |
 | look.mjs 视觉 QA | playwright-core 截图 problem sheet | 不随附（§4.1 已排除）；QA report 并入 mmdx --json warnings，截图素材就是 mmdx 自己出的 PNG |
 | 错误输出对接 | 上游 human-readable ✗/⚠ | wrapper 转译进 mmdx --json 契约（AGENT_GUIDE） |
 

@@ -4,7 +4,14 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [2.4.0] - 2026-11-27
+## [2.4.0] - 2026-11-28
+
+### 引擎（Pele 1.13.0）
+
+- 依赖 `pele@1.9.0` → `1.13.0`（MIT，无新增依赖；浏览器 bundle 706KB → 734KB）。升级包含 1.9.1 的 XML 合法性修复、1.10.x 的解析 / 错误定位修复、1.11 的 `monospace` 选项（mmdx CLI 暂未暴露）、1.12 的自定义填充对比色与全不透明填充、1.13 的 Mermaid 系列色板变量与连线 / 子图布局改进
+- `style` / `classDef` 等源码内填充上的文字与箭头会按 `--pele-fg-on-light` / `--pele-fg-on-dark` 选对比色；图内 `%%{init}%%` / frontmatter 的系列色板变量（`pie1`–`pie8`、`git0`–`git7`、`cScale*`、`venn*`、`xyChart.plotColorPalette`）会被读取，其余 `themeVariables` 仍忽略
+- **行为变化（跟 Mermaid 对齐）**：子图节点有跨组连线时，子图的 `direction` 被忽略并继承父方向。K8s 集群模板改为 `flowchart LR`（worker 在左、控制平面在右）；`recipes.md` 的 LR+TB 并列流程改为两组不连边，跨组边会让两组统一方向
+- 验证：`bun run test` **227/227**、`bun run typecheck` 通过；20 个标准图型 SVG 与 1.9.0 逐字节一致；K8s / skill 示例与 gallery 图重出
 
 ### PNG 压缩
 
@@ -17,7 +24,7 @@
 ### 专业场景图
 
 - Pele 已支持的 Mermaid `architecture-beta` 与 C4 正式写入文档：新增 `docs/ARCHITECTURE.md` / `.en.md`、示例图 `docs/gallery/architecture-beta.png` / `c4-context.png`，以及 `skill/references/architecture.md`
-- 新增两套 K8s 标准模板：`flowchart BT` 集群架构（控制平面 / 工作节点、官方英文组件名、层色 `classDef`）与 `flowchart LR` 服务访问路径（Ingress → Service → Pod，配置 / 存储旁路）；示例图 `docs/gallery/kubernetes-architecture.png` / `kubernetes-service-path.png`
+- 新增两套 `flowchart LR` K8s 标准模板：集群架构（控制平面 / 工作节点、官方英文组件名、层色 `classDef`）与服务访问路径（Ingress → Service → Pod，配置 / 存储旁路）；示例图 `docs/gallery/kubernetes-architecture.png` / `kubernetes-service-path.png`
 - 新增 ChatGPT / OpenAI 风技术解释图版式：`-t openai` + 四组层色 `classDef` + 编号请求流 + 图题 / 来源；示例图 `docs/gallery/tech-architecture.png`，色板与版式规则写入 `docs/ARCHITECTURE*.md` 与 skill
 - 新增 `docs/research-domain-diagrams.md`：汇总 D2 ELK/TALA/Dagre、PathVis、K8s 官方架构图、ChatGPT 风格与同类项目的可借鉴点和取舍
 - README 首页拼图重出为 21 张图型，加入 `architecture-beta` 示例；`scripts/make-contact-sheet.ts` 会把 `docs/gallery/architecture-beta.png` 一并纳入

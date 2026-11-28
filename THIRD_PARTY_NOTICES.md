@@ -10,7 +10,7 @@ depends on the components below. Full license texts are kept in [`licenses/`](li
 
 | Component | Version | License | Source | How it is used |
 | --- | --- | --- | --- | --- |
-| Pele | 1.9.0 | MIT | https://github.com/obsidianmd/pele | `vendor/pele.global.js`; the only Mermaid-syntax→SVG engine |
+| Pele | 1.13.0 | MIT | https://github.com/obsidianmd/pele | `vendor/pele.global.js`; the only Mermaid-syntax→SVG engine |
 | rough.js | 4.6.6 | MIT | https://github.com/rough-stuff/rough | `vendor/rough.js`; hand-drawn stroke post-processing |
 | svgo | 4.1.0 | MIT | https://github.com/svg/svgo | Browser build; SVG minification |
 | Noto Sans SC (subset) | — | OFL-1.1 | https://github.com/notofonts/noto-cjk | `assets/fonts/NotoSansSC-Subset.woff2`; bundled CJK font |
@@ -84,7 +84,7 @@ none of them dev-only. The compiled binary bundles them, so their licenses ship 
 | `modern-tar` | 0.8.4 | MIT |
 | `nth-check` | 2.1.1 | BSD-2-Clause |
 | `path-data-parser` | 0.1.0 | MIT |
-| `pele` | 1.9.0 | MIT |
+| `pele` | 1.13.0 | MIT |
 | `picocolors` | 1.1.1 | ISC |
 | `pngjs` | 7.0.0 | MIT |
 | `points-on-curve` | 0.2.0 | MIT |

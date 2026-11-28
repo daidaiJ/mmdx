@@ -16,7 +16,7 @@
     "mmdx": "src/cli.ts"
   },
   "dependencies": {
-    "pele": "1.9.0",
+    "pele": "1.13.0",
     "pngjs": "^7.0.0",
     "puppeteer-core": "^25.10.0",
     "roughjs": "^4.6.6",

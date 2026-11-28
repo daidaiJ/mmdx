@@ -2,7 +2,7 @@
 
 > **2026-10-28 补记：** Mermaid/ELK 回退已在 2.x 移除——`--engine`、`--layout` 与 `--json.fallbacks` 都不存在了，Pele 是唯一引擎（`sketch` 也已随主题收敛移除）。下面「已落地 / 降级说明」两节是当时的记录：其中 `--engine mermaid`、`--layout elk|dagre`、「`sketch` 自动回退」、「`--icon` 未接线」均已过时——图标现已通过 Pele 的 `icons` 回调注入，C4 的 `UpdateElementStyle` 也能改单个元素颜色。
 
-> 状态：**done**（v1.3.0，2026-10-23）· 对象：[obsidianmd/pele](https://github.com/obsidianmd/pele)（MIT，v1.9.0，Mermaid-12.1 语法、自研布局）
+> 状态：**done**（v1.3.0，2026-10-23）· 对象：[obsidianmd/pele](https://github.com/obsidianmd/pele)（MIT，研究时 v1.9.0，当前 v1.13.0，Mermaid-12.1 语法、自研布局）
 
 > 另见 [research-zed-mermaid.md](research-zed-mermaid.md)：Zed 用纯 Rust 的 merman 出 SVG，并把每个 mermaid 块做成「图 / 源码」两个 tab——引擎与交互两条线的移植评估（2026-10-29）。
 
@@ -13,7 +13,7 @@
 - 形状分色映射到 `.pele-shape-*`（过程蓝 / 判断琥珀 / 状态绿 / 存储紫），各主题 `--pele-*` 由 themeVariables 派生。
 - `sketch` 无手绘 Pele 实现 → 自动回退 mermaid；`--layout elk|dagre` 仅对 mermaid 生效（并修复了此前 `layoutAlgorithm` 未写入导致 ELK 未激活的问题）。
 - 扩展块（table/kpi/…）与 PNG 像素裁切仍走 Chromium，未变。
-- 依赖：`pele@1.9.0`，`vendor/pele.global.js` + `src/embed.generated.ts` 的 `PELE_JS`。
+- 依赖：`pele@1.13.0`，`vendor/pele.global.js` + `src/embed.generated.ts` 的 `PELE_JS`。
 
 详细落地清单与剩余缺口见 [tasks/p3-pele-engine.md](../tasks/p3-pele-engine.md)。
 

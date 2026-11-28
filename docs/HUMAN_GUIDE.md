@@ -303,7 +303,7 @@ Pele 的类名是稳定的，按形状选选择器：
 mmdx doc.md --config mq.json
 ```
 
-Pele 不读取 `themeVariables` / `themeCSS`；这两类 key 会被忽略并给出 `config-ignored` 警告。颜色请用 `--theme-js` 或 `--css`。
+`--config` 里的 `themeVariables` / `themeCSS` 会被忽略并给出 `config-ignored` 警告。图内 `%%{init}%%` / frontmatter 的系列色板变量会被 Pele 读取（`pie1`–`pie8`、`git0`–`git7`、`cScale0`–`cScale7`、`cScale1`–`cScale8`、`venn1`–`venn8`、`xyChart.plotColorPalette`）；其余 themeVariables 仍忽略。颜色请用 `--theme-js` 或 `--css`。
 
 ### 整套换色（--theme-js v2）
 

@@ -116,9 +116,8 @@ Kubernetes' official diagrams follow a stable pattern: control plane and worker 
 ![Kubernetes cluster architecture](gallery/kubernetes-architecture.png)
 
 ```mermaid
-flowchart BT
+flowchart LR
     subgraph CP["Control Plane"]
-        direction LR
         API["kube-apiserver"]
         ETCD[("etcd")]
         SCH["kube-scheduler"]
@@ -129,7 +128,6 @@ flowchart BT
     end
 
     subgraph W1["Worker Node 1"]
-        direction LR
         K1["kubelet"]
         PX1["kube-proxy"]
         R1["containerd"]
@@ -139,7 +137,6 @@ flowchart BT
     end
 
     subgraph W2["Worker Node 2"]
-        direction LR
         K2["kubelet"]
         PX2["kube-proxy"]
         R2["containerd"]
@@ -164,7 +161,7 @@ flowchart BT
     class POD1,POD2 work
 ```
 
-`flowchart BT` is the key to this template: the API server is the target of the edges and sits on top, while kubelet and kube-proxy are sources and sit below, so arrows point into the API server. `direction LR` inside a group keeps components in a row. Component names follow upstream documentation; replace `containerd` with the runtime the cluster actually uses. For a three-node cluster, copy the `Worker Node` subgraph. Above roughly 12 components, split the picture into cluster architecture and service path. The `flowchart-nodes` warning for exceeding the 9-node overview heuristic only appears in `--json.warnings`; it does not affect the image.
+`flowchart LR` is the key to this template: workers sit on the left and the control plane on the right, so arrows from kubelet and kube-proxy run into the API server, and the control plane stays in a row. Since Pele 1.10.1, a subgraph whose nodes link outside it inherits its parent's direction, as in Mermaid, so the template leaves `direction` out of the groups and lets the parent `LR` do the work. Component names follow upstream documentation; replace `containerd` with the runtime the cluster actually uses. For a three-node cluster, copy the `Worker Node` subgraph. Above roughly 12 components, split the picture into cluster architecture and service path. The `flowchart-nodes` warning for exceeding the 9-node overview heuristic only appears in `--json.warnings`; it does not affect the image.
 
 ### Template 2: service access path
 

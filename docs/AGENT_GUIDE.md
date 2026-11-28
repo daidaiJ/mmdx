@@ -123,7 +123,7 @@ figure lint 处置表：
 | 流程 / 审批 / 判定 | flowchart | ≤9 节点 / ≤12 边 |
 | 系统 / 服务 / 云资源边界 | architecture-beta | 组 ≤5、服务 ≤12 |
 | 系统上下文（人 / 系统 / 外部系统） | C4Context | 人+系统 ≤8 |
-| K8s 集群架构 | flowchart BT + 子图 | 组件 ≤12 |
+| K8s 集群架构 | flowchart LR + 子图 | 组件 ≤12 |
 | K8s 服务访问路径 | flowchart LR | Pod ≤6 |
 | 技术架构解释图（ChatGPT/OpenAI 风） | flowchart LR + classDef | 层 ≤4、步骤 ≤6 |
 | 跨部门交接 | ` ```swimlane ` | 泳道 ≤5、步骤 ≤8 |
@@ -203,7 +203,7 @@ stdout 单份 JSON：`theme/engine/format/background/preset?/brand?/caption?/blo
 
 信息卡：对外/打印用 `openai` + `paper`；工程文档用 `tech` + `neutral`；发布/产品用 `openai` + `product`。详见 `skill/info-card-designer/SKILL.md`。
 
-`--theme-js` 是 v2 契约：`(theme) => theme`，改 `theme.vars` / `theme.shapes` / `theme.css`，不要再碰 Mermaid 的 `themeVariables`。
+`--theme-js` 是 v2 契约：`(theme) => theme`，改 `theme.vars` / `theme.shapes` / `theme.css`；Mermaid 的 `themeVariables` 里只有图内系列色板变量会被 Pele 读取（`pie1`–`pie8` 等），其余不要碰。
 
 ## 退出码
 

@@ -292,7 +292,7 @@ Font size / spacing go through `--config` (the JSON must be a real file — no p
 mmdx doc.md --config mq.json
 ```
 
-Pele ignores `themeVariables` / `themeCSS`; those keys produce a `config-ignored` warning. Use `--theme-js` or `--css` for colors.
+`themeVariables` / `themeCSS` in `--config` are ignored and produce a `config-ignored` warning. Series palette variables in the diagram source's `%%{init}%%` / frontmatter are read by Pele (`pie1`–`pie8`, `git0`–`git7`, `cScale0`–`cScale7`, `cScale1`–`cScale8`, `venn1`–`venn8`, `xyChart.plotColorPalette`); other `themeVariables` stay ignored. Use `--theme-js` or `--css` for colors.
 
 ### Full recolor (--theme-js v2)
 

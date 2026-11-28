@@ -176,7 +176,7 @@ C4：`C4Context` / `C4Container`（Pele 画成浅色办公卡——person 是圆
 
 ### 1. 一图两个并列流程，方向各异（LR + TB 混排）
 
-subgraph 内 `direction` 各自生效：横向组与纵向组可以并排，两组都按各自方向排版。这是 Pele 的默认行为，没有第二个引擎，也不需要额外参数。
+subgraph 内 `direction` 各自生效：横向组与纵向组可以并排，两组都按各自方向排版。前提是两组之间没有跨组连线；一旦出现跨组边，Pele 1.10.1 起按 Mermaid 规则让这两个子图继承父图方向，混排失效。需要连边时，两组统一方向，衔接关系用图注说明。
 
 ````markdown
 ```mermaid
@@ -189,11 +189,10 @@ flowchart TB
     direction TB
     D[提交] --> E[评审] --> F[批准]
   end
-  C --> F
 ```
 ````
 
-要点：subgraph 必须命名（`subgraph id["显示名"]`）；跨组连线（`C --> F`）放在两组之外声明。
+要点：subgraph 必须命名（`subgraph id["显示名"]`）；两组保持独立，跨组边会让子图继承父方向。
 
 ### 2. 嵌套包含（部署 / 包含关系）
 

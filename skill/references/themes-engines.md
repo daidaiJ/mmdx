@@ -71,7 +71,7 @@ Pele 解析不了的写法直接 `Parsing error`（exit 1），没有回退引�
 
 实测（`tests/diagrams` 各图型 + 合成 fixture）：`fontSize`、`nodeSpacing`、`rankSpacing` 会直接改变画布尺寸；两个 `padding` 键在 flowchart / sequence / state / class / ER 上都没有可观察的变化，调布局先动前三个。`flowchart` 下的 `wrappingWidth` / `curve` 会被静默丢弃（不报错也不生效）。`--preset` 已经设过 `fontSize` 与三个 `flowchart.*`，`--config` 在 preset 之后叠加。
 
-`themeVariables`、`themeCSS`、`look`、`layoutAlgorithm`、`sequence.*` 这些 Mermaid 专属键都不认，顶层出现时会给 `config-ignored` 警告（`config "sequence" is not supported by the pele engine`）；颜色请走 `--theme-js` 或 `--css`。
+`--config` 里的 `themeVariables`、`themeCSS`、`look`、`layoutAlgorithm`、`sequence.*` 都不认，顶层出现时会给 `config-ignored` 警告（`config "sequence" is not supported by the pele engine`）。图内 `%%{init}%%` / frontmatter 的系列色板变量例外：Pele 1.13 起读取 `pie1`–`pie8`、`git0`–`git7`、`cScale0`–`cScale7`、`cScale1`–`cScale8`、`venn1`–`venn8` 与 `xyChart.plotColorPalette`，其余键仍忽略；颜色优先走 `--theme-js` 或 `--css`。
 
 ## 五、换色：`--theme-js` / `--css` / `--brand`
 

@@ -123,7 +123,7 @@ Figure-lint codes and fixes:
 | Process / approval / decision | flowchart | ≤9 nodes / ≤12 edges |
 | System / service / cloud boundaries | architecture-beta | ≤5 groups / ≤12 services |
 | System context (people / systems / externals) | C4Context | ≤8 people+systems |
-| K8s cluster architecture | flowchart BT + subgraphs | ≤12 components |
+| K8s cluster architecture | flowchart LR + subgraphs | ≤12 components |
 | K8s service access path | flowchart LR | ≤6 pods |
 | Technical explainer (ChatGPT/OpenAI style) | flowchart LR + classDef | ≤4 layers / ≤6 steps |
 | Cross-team handoff | ` ```swimlane ` | ≤5 lanes, ≤8 steps |
@@ -203,7 +203,7 @@ Rule of thumb: **exit 2 = wrong flags; exit 1 = wrong diagram or over limit; loo
 
 Info cards: external/print → `openai` + `paper`; engineering docs → `tech` + `neutral`; release/product → `openai` + `product`. See `skill/info-card-designer/SKILL.md`.
 
-`--theme-js` is the v2 contract: `(theme) => theme`, editing `theme.vars` / `theme.shapes` / `theme.css`; do not touch Mermaid `themeVariables`.
+`--theme-js` is the v2 contract: `(theme) => theme`, editing `theme.vars` / `theme.shapes` / `theme.css`; of Mermaid's `themeVariables`, only series palettes in the diagram source (`pie1`–`pie8` and friends) are read by Pele.
 
 ## Exit codes
 

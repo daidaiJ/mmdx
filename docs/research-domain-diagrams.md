@@ -26,7 +26,7 @@ D2 文档把一组基础架构图分别用 Dagre、ELK 和 TALA 渲染：
 | 做法 | 在 mmdx 里的对应 |
 | --- | --- |
 | 同一图切换布局引擎 | 不暴露引擎；在文档层给 `flowchart BT/LR`、子图 `direction` 的选择建议 |
-| 容器级方向 | `subgraph` 内写 `direction LR/TB`，Pele 会按组内方向排布 |
+| 容器级方向 | `subgraph` 内写 `direction LR/TB`；组间没有连线时按组内方向排布，有跨组边时按 Mermaid 规则继承父方向 |
 | 正交边路由 | Pele 的折线/正交走线；需要手工微调时用 `mmdx edit` 拖锚点与改走线 |
 | 固定坐标 / `near` | `mmdx edit` 的节点拖动与工程保存；源码层用子图约束成员 |
 | 图标 + 标签 | `@{ icon: "logos:..." }` + `--icon logos`；图标只在能增加识别度时使用 |
@@ -99,10 +99,10 @@ PathVis 的实时采集、WebSocket 推送、WHOIS/DNS 富化和交互式历史�
 
 | 模板 | 布局 | 用途 |
 | --- | --- | --- |
-| 集群架构 | `flowchart BT` + 组内 `direction LR` | 控制平面、工作节点、kubelet/kube-proxy、Pods |
+| 集群架构 | `flowchart LR` + 子图 | 控制平面、工作节点、kubelet/kube-proxy、Pods |
 | 服务访问路径 | `flowchart LR` | Ingress → Service → Pod，配置/存储旁路 |
 
-`flowchart BT` 让 API server 作为边的目标位于上方，kubelet / kube-proxy 作为来源位于下方，箭头自然指向 API server；组内 `direction LR` 保持横向排布。`architecture-beta` 的组容器也很适合 K8s，但 Pele 当前不绘制它的箭头，因此模板选择 flowchart。
+`flowchart LR` 让 worker 在左、控制平面在右，kubelet / kube-proxy 的箭头自然指向 API server；子图节点有跨组连线，按 Pele 1.10.1 起的 Mermaid 规则继承父方向，控制平面内部同样横排。`architecture-beta` 的组容器也很适合 K8s，但 Pele 当前不绘制它的箭头，因此模板选择 flowchart。
 
 示例图与完整源码见 [ARCHITECTURE.md](ARCHITECTURE.md#kubernetes-常见示意图)；速查见 [skill/references/architecture.md](../skill/references/architecture.md)。
 

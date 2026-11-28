@@ -4,11 +4,18 @@
 
 ## 🔄 Handoff 摘要
 
+### Pele 1.13.0 + v2.4.0 覆盖发布 — 已完成（2026-11-28）
+
+- **当前状态（2026-11-28）：** `pele@1.9.0` → `1.13.0`（MIT，无新增依赖；browser bundle 706,153 → 733,670 B）。升级覆盖 1.9.1 的 XML 合法性修复、1.10.x 的解析 / 错误定位修复、1.11 的 `monospace`、1.12 的自定义填充对比色与全不透明填充、1.13 的 Mermaid 系列色板变量与连线 / 子图布局改进。
+- **行为变化：** 子图节点有跨组连线时继承父方向（Mermaid 对齐）。K8s 集群模板改为 `flowchart LR`（worker 左、控制平面右），`docs/ARCHITECTURE*.md` / `skill/references/architecture.md` / `AGENT_GUIDE*` / `SKILL.md` 同步；`recipes.md` 的 LR+TB 混排改为两组不连边；`themeVariables` 只读系列色板变量（`pie1`–`pie8` 等），其余仍忽略。
+- **验证：** `bun run test` **227/227**、`bun run typecheck` 通过；20 个标准图型 SVG 与 1.9.0 逐字节一致；`docs/gallery/kubernetes-architecture.png` 重出（1500×1200 → 2032×1016）。
+- **发布：** v2.4.0 覆盖发布（版本号不变），tag / Release 重指到本次 commit；产物仍是 `mmdx-windows-x64.exe`、`mmdx-dynamic-v2.4.0.zip`、`mmdx-skill-v2.4.0.zip`。
+
 ### PNG 无损压缩 + K8s / 技术解释图 — 已发布（v2.4.0）
 
 - **当前状态（2026-11-27）：** PNG 输出在调色板量化前先做无损重压缩：`src/png-opt.ts` 按行选 PNG 滤波器（None / Sub / Up / Average / Paeth），比较 zlib default / filtered / RLE / Huffman 策略，全不透明时去掉 alpha；像素逐字节不变。照片页实测 1,808,607 → 1,634,091 B（省 9.7%），渐变 + 文字页省 21.2%。新增 `--png-colors near`：任意 HTML 截图的低损档（256 色，约 35.3 dB），渐变/照片边缘低于 27.5 dB 时回退无损；1.81MB 照片页 → 226,395 B（约 1/8）。`--png-quality fast|balanced|best` 同时控制重压缩与量化 effort；`--png-colors off` 跳过量化但保留无损重压缩。
 - **实现：** `src/png-opt.ts` 导出 `optimizePngLossless` / `filterScanlines` / `deflateSmallest`；`src/render.ts` 的 `quantizePng()` 先无损优化再量化；`src/png-quant.ts` 新增 `near` 模式与 `NEAR_POLICY`（global 34.5 / edge 27.5），索引 PNG 编码复用 `deflateSmallest` / `filterScanlines`。修复 Chromium 返回 `Uint8Array` 时 `readUInt32BE` 抛错导致无损压缩被静默跳过：`optimizePngLossless` 先统一转 `Buffer`。
-- **专业场景图：** 新增 `docs/ARCHITECTURE.md` / `.en.md`，覆盖 `architecture-beta`、C4、K8s 集群架构（`flowchart BT` + 控制平面/工作节点 + 官方英文组件名）、K8s 服务访问路径（Ingress → Service → Pod + 配置/存储旁路）、ChatGPT/OpenAI 风技术解释图（`-t openai` + 四层 `classDef` + 编号请求流）。示例图：`docs/gallery/architecture-beta.png`、`c4-context.png`、`kubernetes-architecture.png`、`kubernetes-service-path.png`、`tech-architecture.png`。调研与取舍见 `docs/research-domain-diagrams.md`；速查见 `skill/references/architecture.md`。
+- **专业场景图：** 新增 `docs/ARCHITECTURE.md` / `.en.md`，覆盖 `architecture-beta`、C4、K8s 集群架构（`flowchart LR` + 控制平面/工作节点 + 官方英文组件名）、K8s 服务访问路径（Ingress → Service → Pod + 配置/存储旁路）、ChatGPT/OpenAI 风技术解释图（`-t openai` + 四层 `classDef` + 编号请求流）。示例图：`docs/gallery/architecture-beta.png`、`c4-context.png`、`kubernetes-architecture.png`、`kubernetes-service-path.png`、`tech-architecture.png`。调研与取舍见 `docs/research-domain-diagrams.md`；速查见 `skill/references/architecture.md`。
 - **README 首页拼图：** `tests/contact-sheet.png` / `contact-sheet-pele.png` 重出为 21 张图型，加入 `architecture-beta` 示例；`scripts/make-contact-sheet.ts` 会把 `docs/gallery/architecture-beta.png` 纳入。
 - **验证：** `bun run test` **227/227**（新增 `unit/png-opt-uint8`），`bun run typecheck` 通过；`.html` CLI 实测 `--png-colors off` 1,634,314 B、`near` 226,395 B；K8s / 技术解释图文档源码均用 CLI 重新渲染通过。Release 工作流成功，产出 `mmdx-windows-x64.exe`（`--version` 为 `v2.4.0`）、`mmdx-dynamic-v2.4.0.zip`、`mmdx-skill-v2.4.0.zip` 及各自 `.sha256`；skill 包 62MB，内含 `bin/mmdx.exe` 与完整 skill。
 - **本地同步（2026-11-27）：** `C:\Users\panda\.grok\skills\mermaid` 已用 `mmdx-skill-v2.4.0.zip` 解压覆盖，`bin/mmdx.exe --version` 为 `v2.4.0`；`D:\CODE\ai\mmdx\dist\mmdx.exe`（PATH 上的 `mmdx`）也是 v2.4.0。skill 内 `references/architecture.md` 与 zip 内文件逐字节一致，已用该二进制跑通冒烟出图。

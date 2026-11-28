@@ -88,7 +88,7 @@ mmdx edit diagram.mmd --project .mmdx/arch        # 单图 / 指定工程目录
 | 流程 / 审批 / 判定 | flowchart | ≤9 节点 / ≤12 边 | 聊天/窄栏 `flowchart TD`；投屏才 `LR` + 命名 subgraph |
 | 系统 / 服务 / 云资源边界 | architecture-beta | 组 ≤5、服务 ≤12 | 见 [ARCHITECTURE.md](../docs/ARCHITECTURE.md)；`--icon logos` 加品牌图标 |
 | 系统上下文（人 / 系统 / 外部系统） | C4Context | 人+系统 ≤8 | 见 [ARCHITECTURE.md](../docs/ARCHITECTURE.md) |
-| K8s 集群架构 | flowchart BT + 子图 | 组件 ≤12 | 控制平面 / 工作节点分区；官方英文组件名；见 [ARCHITECTURE.md](../docs/ARCHITECTURE.md#kubernetes-常见示意图) |
+| K8s 集群架构 | flowchart LR + 子图 | 组件 ≤12 | 控制平面 / 工作节点分区；官方英文组件名；见 [ARCHITECTURE.md](../docs/ARCHITECTURE.md#kubernetes-常见示意图) |
 | K8s 服务访问路径 | flowchart LR | Pod ≤6 | Ingress → Service → Pod；配置/存储旁路 |
 | 技术架构解释图（ChatGPT/OpenAI 风） | flowchart LR + classDef | 层 ≤4、步骤 ≤6 | `-t openai`；固定层色 + 编号请求流；见 [ARCHITECTURE.md](../docs/ARCHITECTURE.md#技术解释图风格openai--chatgpt-系) |
 | 场景引导：一次故障 / 一次审批里「处境怎么变」 | stateDiagram-v2 | 箭头 ≤20 | 见 §1a-2；`--tone paper` 出纸底 |

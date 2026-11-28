@@ -116,9 +116,8 @@ K8s 官方文档的示意图有一套稳定写法：控制平面与工作节点�
 ![Kubernetes 集群架构](gallery/kubernetes-architecture.png)
 
 ```mermaid
-flowchart BT
+flowchart LR
     subgraph CP["Control Plane"]
-        direction LR
         API["kube-apiserver"]
         ETCD[("etcd")]
         SCH["kube-scheduler"]
@@ -129,7 +128,6 @@ flowchart BT
     end
 
     subgraph W1["Worker Node 1"]
-        direction LR
         K1["kubelet"]
         PX1["kube-proxy"]
         R1["containerd"]
@@ -139,7 +137,6 @@ flowchart BT
     end
 
     subgraph W2["Worker Node 2"]
-        direction LR
         K2["kubelet"]
         PX2["kube-proxy"]
         R2["containerd"]
@@ -164,7 +161,7 @@ flowchart BT
     class POD1,POD2 work
 ```
 
-`flowchart BT` 是这套模板的关键：API server 作为边的目标放在上方，kubelet / kube-proxy 作为来源放在下方，箭头自然指向 API server。组内的 `direction LR` 让同一层的组件横排。组件名遵循上游文档；`containerd` 可以换成集群实际使用的容器运行时。三节点集群复制一份 `Worker Node` 子图即可；组件超过 12 个时，建议拆成“集群架构”和“服务访问路径”两张图。整图超过概览 9 节点的 `flowchart-nodes` 提示只进 `--json.warnings`，不影响出图。
+`flowchart LR` 是这套模板的关键：worker 在左、控制平面在右，kubelet / kube-proxy 的箭头自然指向 API server，控制平面内部同样横排。Pele 1.10.1 起按 Mermaid 规则，子图节点一旦有跨组连线就继承父方向，因此子图里不再写 `direction`，横排由父图的 `LR` 保证。组件名遵循上游文档；`containerd` 可以换成集群实际使用的容器运行时。三节点集群复制一份 `Worker Node` 子图即可；组件超过 12 个时，建议拆成“集群架构”和“服务访问路径”两张图。整图超过概览 9 节点的 `flowchart-nodes` 提示只进 `--json.warnings`，不影响出图。
 
 ### 模板二：服务访问路径
 
